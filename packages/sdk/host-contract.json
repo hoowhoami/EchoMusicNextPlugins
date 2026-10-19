@@ -1,0 +1,834 @@
+{
+  "capabilities": ["unrestrictedNetwork", "audioSpectrum"],
+  "contexts": ["main"],
+  "features": [
+    "lifecycle",
+    "operations",
+    "playback.controls",
+    "playback.queue",
+    "playback.lyrics",
+    "appearance.read",
+    "commands",
+    "events",
+    "timers",
+    "ui.pages",
+    "ui.titlebar",
+    "ui.playerbar",
+    "tasks",
+    "storage",
+    "net.http",
+    "ui.settings",
+    "plugins.dependencies",
+    "plugins.services",
+    "audio.spectrum",
+    "ui.surfaces",
+    "ui.state"
+  ],
+  "hostVersion": "0.1.0",
+  "module": "echo:plugin-sdk",
+  "packageFormat": "echomod",
+  "qmlModule": "EchoMusic.PluginSdk",
+  "qtVersion": "6.12.0",
+  "schemaVersion": 1,
+  "sdkVersion": "1.0.0",
+  "types": {
+    "EchoPluginAudio": {
+      "enums": [],
+      "methods": [],
+      "properties": [
+        {
+          "constant": true,
+          "name": "spectrum",
+          "type": "EchoMusic::EchoPluginSpectrum*",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginContext": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "activeChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "appearanceChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "resourcesDrained",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "callbackFailed",
+          "parameters": ["QString"],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "supports",
+          "parameters": ["QString"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "onDispose",
+          "parameters": ["QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "setTimer",
+          "parameters": ["QString", "int", "bool", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "onPlayerChanged",
+          "parameters": ["QString", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "registerCommand",
+          "parameters": ["QString", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "executeCommand",
+          "parameters": ["QString", "QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "executeCommand",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": true,
+          "name": "id",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "installationId",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "activationGeneration",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "contextId",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "audio",
+          "type": "EchoMusic::EchoPluginAudio*",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "player",
+          "type": "EchoMusic::EchoPluginPlayer*",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "ui",
+          "type": "EchoMusic::EchoPluginUi*",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "io",
+          "type": "EchoMusic::EchoPluginIo*",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "plugins",
+          "type": "EchoMusic::EchoPluginRegistry*",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "font",
+          "type": "QFont",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "accent",
+          "type": "QColor",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "dark",
+          "type": "bool",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginIo": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "drained",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "get",
+          "parameters": ["QUrl"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "post",
+          "parameters": ["QUrl", "QByteArray", "QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "post",
+          "parameters": ["QUrl", "QByteArray"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "readValue",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "writeValue",
+          "parameters": ["QString", "QVariant"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "removeValue",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        }
+      ],
+      "properties": []
+    },
+    "EchoPluginOperation": {
+      "enums": [
+        {
+          "name": "State",
+          "values": {
+            "Canceled": 4,
+            "Failed": 3,
+            "Pending": 0,
+            "Running": 1,
+            "Succeeded": 2
+          }
+        }
+      ],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "completed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "cancel",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": true,
+          "name": "id",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "state",
+          "type": "EchoMusic::EchoPluginOperation::State",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "result",
+          "type": "QVariant",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorCode",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorMessage",
+          "type": "QString",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginPlayer": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "positionChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "play",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "pause",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "toggle",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "stop",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "previous",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "next",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "seek",
+          "parameters": ["qlonglong"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "setVolume",
+          "parameters": ["double"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "setSpeed",
+          "parameters": ["double"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "playIndex",
+          "parameters": ["int"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "remove",
+          "parameters": ["int"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "move",
+          "parameters": ["int", "int"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "clear",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "title",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "artist",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "album",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "coverUrl",
+          "type": "QUrl",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "loading",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "hasTrack",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorMessage",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "playing",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "positionMs",
+          "type": "qlonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "durationMs",
+          "type": "qlonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "volume",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "speed",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "queue",
+          "type": "EchoMusic::EchoPluginReadModel*",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "lyrics",
+          "type": "EchoMusic::EchoPluginReadModel*",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginReadModel": {
+      "enums": [],
+      "methods": [],
+      "properties": []
+    },
+    "EchoPluginRegistration": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "activeChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "dispose",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": true,
+          "name": "key",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "revision",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginRegistry": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "availabilityChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "isAvailable",
+          "parameters": ["QString"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "version",
+          "parameters": ["QString"],
+          "returnType": "QString",
+          "signal": false
+        },
+        {
+          "name": "serviceVersion",
+          "parameters": ["QString", "QString"],
+          "returnType": "QString",
+          "signal": false
+        },
+        {
+          "name": "registerService",
+          "parameters": ["QString", "QString", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "call",
+          "parameters": ["QString", "QString", "QString", "QString", "QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "call",
+          "parameters": ["QString", "QString", "QString", "QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        }
+      ],
+      "properties": []
+    },
+    "EchoPluginSpectrum": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "statusChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "subscribe",
+          "parameters": ["QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginSpectrumSubscription*",
+          "signal": false
+        },
+        {
+          "name": "subscribe",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginSpectrumSubscription*",
+          "signal": false
+        },
+        {
+          "name": "getStatus",
+          "parameters": [],
+          "returnType": "QVariant",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "status",
+          "type": "QVariant",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginSpectrumSubscription": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "activeChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "pausedChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "frameChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "statusChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "setPaused",
+          "parameters": ["bool"],
+          "returnType": "void",
+          "signal": false
+        },
+        {
+          "name": "dispose",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "paused",
+          "type": "bool",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "frame",
+          "type": "QVariant",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "status",
+          "type": "QVariant",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginTask": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "activeChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "cancelRequested",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "setProgress",
+          "parameters": ["double", "QString"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "setProgress",
+          "parameters": ["double"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "complete",
+          "parameters": [],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "fail",
+          "parameters": ["QString"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "abort",
+          "parameters": [],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "dispose",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginUi": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "settingsChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "stateChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "setState",
+          "parameters": ["QVariantMap"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "registerSurface",
+          "parameters": ["QString", "QString", "QString"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "registerSettings",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "registerPage",
+          "parameters": ["QString", "QString"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "navigate",
+          "parameters": ["QString", "QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "navigate",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "registerTitlebarAction",
+          "parameters": ["QString", "QString", "QString", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "registerPlayerbarAction",
+          "parameters": ["QString", "QString", "QString", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "createTask",
+          "parameters": ["QString", "QString"],
+          "returnType": "EchoMusic::EchoPluginTask*",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "state",
+          "type": "QVariantMap",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "settingsComponent",
+          "type": "QUrl",
+          "writable": false
+        }
+      ]
+    }
+  }
+}

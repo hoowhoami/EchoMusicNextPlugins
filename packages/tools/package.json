@@ -1,0 +1,25 @@
+{
+  "name": "@echomusicnext/plugin-tools",
+  "version": "1.0.0",
+  "description": "Build and validate Qt-compatible EchoMusicNext plugin packages",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "bin": {
+    "echo-plugin": "cli.mjs"
+  },
+  "files": [
+    "*.mjs",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "@echomusicnext/plugin-sdk": "1.0.0",
+    "acorn": "8.15.0",
+    "ajv": "8.17.1",
+    "esbuild": "0.28.1",
+    "typescript": "5.9.3"
+  }
+}

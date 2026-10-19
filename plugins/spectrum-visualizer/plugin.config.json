@@ -1,0 +1,18 @@
+{
+  "entry": "src/entry.ts",
+  "assets": [
+    "Layer.qml",
+    "VectorPaint.qml",
+    "Settings.qml",
+    "SettingRow.qml",
+    "SettingsSection.qml",
+    "SelectSetting.qml",
+    "SliderSetting.qml",
+    "icon.svg",
+    "LICENSE",
+    "shaders/mist.frag.qsb",
+    "shaders/mist.frag",
+    "shaders/edge-mask.frag",
+    "shaders/edge-mask.frag.qsb"
+  ]
+}

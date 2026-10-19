@@ -1,0 +1,179 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import path from 'node:path';
+import os from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { mkdtemp, rm, cp, readFile, writeFile, symlink } from 'node:fs/promises';
+import {
+  buildPackage,
+  buildPluginArchive,
+  validatePackage,
+  validateManifest,
+  sourceIndex,
+  prepareIndex,
+} from '../packages/tools/packages.mjs';
+import { loadContract, checkBindings, rangeContains } from '../packages/tools/contract.mjs';
+import { dependencyOrder } from '../packages/tools/dependencies.mjs';
+
+const root = fileURLToPath(new URL('../', import.meta.url));
+async function author(t) {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'echo-plugin-tools-'));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = path.join(temporary, 'source');
+  await cp(path.join(root, 'plugins/spectrum-visualizer'), source, { recursive: true });
+  return { source, output: path.join(temporary, 'dist') };
+}
+
+test('bindings follow actual Qt properties, signals, methods, readonly state and enum values', async () => {
+  const contract = await loadContract();
+  await checkBindings(contract);
+  const changed = structuredClone(contract);
+  changed.types.EchoPluginPlayer.properties = changed.types.EchoPluginPlayer.properties.filter(
+    (value) => value.name !== 'volume',
+  );
+  await assert.rejects(checkBindings(changed), /unavailable member.*volume/);
+  const method = structuredClone(contract);
+  method.types.EchoPluginPlayer.methods.find((value) => value.name === 'seek').parameters = [
+    'QString',
+  ];
+  await assert.rejects(checkBindings(method), /method differs/);
+});
+
+test('manifest compatibility, source-only index and comparator intersections', async () => {
+  assert.equal((await sourceIndex(root)).length, 1);
+  assert.equal(rangeContains('>=0.1.0 <1.0.0', '0.1.0'), true);
+  assert.equal(rangeContains('>=1.0.0', '0.1.0'), false);
+  assert.equal(rangeContains('^1.0.0', '1.0.0'), false);
+  const manifest = JSON.parse(
+    await readFile(path.join(root, 'plugins/spectrum-visualizer/manifest.json'), 'utf8'),
+  );
+  await validateManifest(manifest);
+  manifest.requires.features.push('lyrics.resolver');
+  await assert.rejects(validateManifest(manifest), /Unavailable required feature/);
+  manifest.requires.features.pop();
+  manifest.entry = '../entry.mjs';
+  await assert.rejects(validateManifest(manifest), /contained relative path/);
+});
+
+test('echomod is a deterministic validated container and corrupted contents are rejected', async (t) => {
+  const { source, output } = await author(t);
+  const first = await buildPluginArchive(source, output);
+  const bytes = await readFile(first.file);
+  assert.equal(bytes.readUInt32LE(0), 0x04034b50);
+  assert.equal((await validatePackage(first.file)).format, 'echomod');
+  const second = await buildPluginArchive(source, output);
+  assert.deepEqual(await readFile(second.file), bytes);
+  assert.equal(second.sha256, first.sha256);
+  const bad = Buffer.from(bytes);
+  bad[30 + bad.readUInt16LE(26)] ^= 1;
+  await writeFile(first.file, bad);
+  await assert.rejects(validatePackage(first.file), /checksum mismatch/);
+});
+
+test('published index points to plugin archives under artifacts and verifies their bytes', async (t) => {
+  const { source, output } = await author(t);
+  const repository = path.dirname(source);
+  await writeFile(
+    path.join(repository, 'echo-plugins.json'),
+    JSON.stringify({ schemaVersion: 2, plugins: [{ path: 'source' }] }),
+  );
+  await prepareIndex(repository);
+  const index = JSON.parse(await readFile(path.join(repository, 'echo-plugins.json'), 'utf8'));
+  const [published] = index.plugins;
+  assert.equal(published.artifact, 'artifacts/spectrum-visualizer-1.0.0.echomod');
+  assert.deepEqual(
+    await readFile(path.join(repository, published.artifact)),
+    await readFile(path.join(output, 'spectrum-visualizer-1.0.0.echomod')),
+  );
+  assert.equal(
+    (await validatePackage(path.join(repository, published.artifact))).id,
+    'spectrum-visualizer',
+  );
+  await prepareIndex(repository, true);
+});
+
+test('plugin dependency closure has deterministic order and rejects missing/version/cycle/conflict errors', () => {
+  const library = { id: 'z.library', version: '1.2.0' };
+  const consumer = {
+    id: 'a.consumer',
+    version: '1.0.0',
+    dependencies: { 'z.library': '>=1.0.0 <2.0.0' },
+  };
+  assert.deepEqual(dependencyOrder([consumer, library]), ['z.library', 'a.consumer']);
+  assert.throws(() => dependencyOrder([consumer]), /Missing plugin dependency/);
+  assert.throws(
+    () => dependencyOrder([consumer, { ...library, version: '2.0.0' }]),
+    /version mismatch/,
+  );
+  assert.throws(
+    () => dependencyOrder([consumer, { ...library, dependencies: { 'a.consumer': '1.0.0' } }]),
+    /Cyclic/,
+  );
+  assert.throws(
+    () => dependencyOrder([consumer, { ...library, conflicts: { 'a.consumer': '>=1.0.0' } }]),
+    /Conflicting/,
+  );
+  assert.deepEqual(
+    dependencyOrder([
+      { id: 'optional', version: '1.0.0', optionalDependencies: { absent: '1.0.0' } },
+    ]),
+    ['optional'],
+  );
+});
+
+test('build transforms typed async source into self-contained Qt ES2016 and preserves last successful output on failure', async (t) => {
+  const { source, output } = await author(t);
+  const built = await buildPackage(source, output);
+  await validatePackage(built);
+  const entry = await readFile(path.join(built, 'entry.mjs'), 'utf8');
+  assert.match(entry, /echo:plugin-sdk/);
+  assert.doesNotMatch(entry, /async\s+(function|\()/);
+  assert.equal(
+    (await readFile(path.join(built, 'LICENSE'), 'utf8')).startsWith('MIT License'),
+    true,
+  );
+  await writeFile(
+    path.join(source, 'src/entry.ts'),
+    `import type { EchoPluginContext } from 'echo:plugin-sdk';
+export function activate(ctx: EchoPluginContext) { ctx.player.volume = 9; }
+`,
+  );
+  await assert.rejects(buildPackage(source, output), /read-only property/);
+  assert.equal(await readFile(path.join(built, 'entry.mjs'), 'utf8'), entry);
+});
+
+test('validator rejects incompatible syntax, missing activation and native QML plugins', async (t) => {
+  const { source, output } = await author(t);
+  const built = await buildPackage(source, output);
+  await writeFile(path.join(built, 'entry.mjs'), 'export async function activate(ctx) {}');
+  await assert.rejects(validatePackage(built), /Unexpected token/);
+  await writeFile(path.join(built, 'entry.mjs'), 'export function deactivate(ctx) {}');
+  await assert.rejects(validatePackage(built), /export activate/);
+  await writeFile(path.join(built, 'entry.mjs'), 'export function activate(ctx) {}');
+  await writeFile(path.join(built, 'qmldir'), 'module Unsafe\noptional plugin NativeCode\n');
+  await assert.rejects(validatePackage(built), /native QML plugins/);
+});
+
+test('package copies reject symbolic links', async (t) => {
+  const { source, output } = await author(t);
+  const built = await buildPackage(source, output);
+  try {
+    await symlink(path.join(source, 'manifest.json'), path.join(built, 'linked.json'));
+  } catch (error) {
+    if (error.code === 'EPERM') return t.skip('Symlink creation requires Windows privileges');
+    throw error;
+  }
+  await assert.rejects(validatePackage(built), /symlink/);
+});
+
+test('asset directories cannot recursively include the build output', async (t) => {
+  const { source } = await author(t);
+  await writeFile(
+    path.join(source, 'plugin.config.json'),
+    JSON.stringify({ entry: 'src/entry.ts', assets: ['artifacts'] }),
+  );
+  await assert.rejects(
+    buildPackage(source, path.join(source, 'artifacts')),
+    /Assets cannot contain/,
+  );
+});

@@ -1,0 +1,22 @@
+{
+  "name": "@echomusicnext/plugin-sdk",
+  "version": "1.0.0",
+  "description": "Typed authoring contract for EchoMusicNext Qt plugins",
+  "license": "MIT",
+  "types": "index.d.ts",
+  "files": [
+    "index.d.ts",
+    "globals.d.ts",
+    "manifest.schema.json",
+    "host-contract.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./index.d.ts"
+    },
+    "./manifest.schema.json": "./manifest.schema.json",
+    "./host-contract.json": "./host-contract.json"
+  }
+}

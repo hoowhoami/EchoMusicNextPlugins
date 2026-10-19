@@ -1,0 +1,30 @@
+{
+  "format": "echomod",
+  "schemaVersion": 1,
+  "id": "spectrum-visualizer",
+  "name": "频谱可视化",
+  "version": "1.0.0",
+  "description": "在播放栏、Mini播放器和歌词页显示柱状、波形、混合、雾状与中心频谱。",
+  "author": "hoowhoami",
+  "license": "MIT",
+  "icon": "icon.svg",
+  "kind": "qml-js",
+  "entry": "entry.mjs",
+  "requires": {
+    "hostVersion": ">=0.1.0",
+    "sdkVersion": ">=1.0.0 <2.0.0",
+    "features": [
+      "lifecycle",
+      "operations",
+      "commands",
+      "storage",
+      "ui.settings",
+      "ui.state",
+      "ui.surfaces",
+      "audio.spectrum"
+    ]
+  },
+  "capabilities": ["audioSpectrum"],
+  "contexts": ["main"],
+  "tags": ["频谱", "可视化"]
+}

@@ -1,0 +1,30 @@
+{
+  "name": "echomusicnext-plugins",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "echo-plugin build-index",
+    "check": "echo-plugin check-index && echo-plugin check-sdk && tsc -p tsconfig.json && npm run format:check",
+    "test": "node --test tests/*.test.mjs",
+    "sdk:sync": "echo-plugin sdk-sync",
+    "sdk:check": "echo-plugin check-sdk",
+    "test:host": "echo-plugin test-host",
+    "format:write": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare:source": "echo-plugin prepare-index",
+    "check:published": "echo-plugin check-published"
+  },
+  "devDependencies": {
+    "@echomusicnext/plugin-sdk": "1.0.0",
+    "@echomusicnext/plugin-tools": "1.0.0",
+    "prettier": "3.9.10"
+  }
+}

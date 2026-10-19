@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EchoMusicNext .echomod manifest v1",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "version",
+    "kind",
+    "entry",
+    "requires",
+    "capabilities",
+    "contexts",
+    "format"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "kind": {
+      "const": "qml-js"
+    },
+    "entry": {
+      "type": "string",
+      "pattern": "\\.mjs$",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string"
+    },
+    "author": {
+      "type": "string"
+    },
+    "license": {
+      "type": "string"
+    },
+    "homepage": {
+      "type": "string"
+    },
+    "requires": {
+      "type": "object",
+      "required": ["hostVersion", "sdkVersion", "features"],
+      "additionalProperties": false,
+      "properties": {
+        "hostVersion": {
+          "$ref": "#/$defs/range"
+        },
+        "sdkVersion": {
+          "$ref": "#/$defs/range"
+        },
+        "features": {
+          "$ref": "#/$defs/strings"
+        }
+      }
+    },
+    "capabilities": {
+      "$ref": "#/$defs/strings"
+    },
+    "contexts": {
+      "const": ["main"]
+    },
+    "icon": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024
+    },
+    "tags": {
+      "type": "array",
+      "maxItems": 12,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64
+      }
+    },
+    "format": {
+      "const": "echomod"
+    },
+    "dependencies": {
+      "type": "object",
+      "maxProperties": 128,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/range"
+      }
+    },
+    "optionalDependencies": {
+      "type": "object",
+      "maxProperties": 128,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/range"
+      }
+    },
+    "conflicts": {
+      "type": "object",
+      "maxProperties": 128,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/range"
+      }
+    },
+    "loadAfter": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+      }
+    },
+    "loadBefore": {
+      "type": "array",
+      "maxItems": 128,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+      }
+    }
+  },
+  "$defs": {
+    "range": {
+      "type": "string",
+      "pattern": "^(>=|<=|>|<|=)?[0-9]+\\.[0-9]+\\.[0-9]+( +(>=|<=|>|<|=)?[0-9]+\\.[0-9]+\\.[0-9]+)*$"
+    },
+    "strings": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}
