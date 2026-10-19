@@ -35,8 +35,6 @@ prepare:source同时构建dist、artifacts/*.echomod和源目录发布入口；�
 - [已实现SDK](docs/sdk.md)：真实API、能力和限制。
 - [双仓库契约](docs/repository-contract.md)：宿主导出、SDK检查和版本维护。
 - [频谱可视化](plugins/spectrum-visualizer/README.md)：真实播放器 PCM、五种模式、播放栏/Mini/歌词页与持久设置。
-- [完整迁移表](https://github.com/hoowhoami/EchoMusicNext/blob/main/docs/migration/plugins.md)：保留EchoMusic扩展能力，未实现项不当作可调用API。
-- [历史验证](docs/verification.md)：历次自动检查与真实Qt加载的范围；当前接口以SDK和宿主导出为准。
 
 ## 许可证
 
