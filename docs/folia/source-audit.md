@@ -11,7 +11,7 @@
 | EchoMusic            | `cad5b8a9`                                 | 旧 Vue/Electron 皮肤协议、配置和交互对照；保持只读                                                             |
 | Folia                | `a8da4437cf19723555bd75e4685ca20815fe5b82` | 用户指定的 [chthollyphile/folia-major](https://github.com/chthollyphile/folia-major)，`main`，本地克隆只读参考 |
 
-本机三个既有仓库没有未提交 SDK 文件或其他 dirty 修改。宿主 `.gitignore:18-26` 明确忽略根 `AGENTS.md` 和大部分 docs；当前缺少 `docs/internal/`，用户确认暂时无法提供。插件仓库缺少任务提及的 `appearance.md`、`lyrics.md`、`themes-and-skins-design.md`、`ui-parts.md`。这些文件不能宣称已读，也不能由历史链接推断当前约束。
+首次检查时三个既有仓库没有未提交 SDK 文件或其他 dirty 修改；开发过程中宿主出现他人对 cmake/Rust.cmake 和 tests/tooling/test_rust_cmake.py 的修改，本任务未覆盖或提交。宿主 `.gitignore:18-26` 明确忽略根 `AGENTS.md` 和大部分 docs；当前缺少 `docs/internal/`，用户确认暂时无法提供。插件仓库缺少任务提及的 `appearance.md`、`lyrics.md`、`themes-and-skins-design.md`、`ui-parts.md`。这些文件不能宣称已读，也不能由历史链接推断当前约束。
 
 ## 已确认：宿主皮肤调用链
 
@@ -26,11 +26,11 @@
 7. `AppearanceHost.cpp` 按有效可见性、祖先裁剪、最小化、尺寸和 resourceActive 决定创建/释放；先撤销 scope，再释放对象。构建或运行警告归属当前组件后触发 catalog.fail，皮肤退回 `cover`。
 8. `AppearanceConfiguration.cpp` 按安装身份持久化，完整 JSON 校验限制为 64 KiB；单 writer 线程、最多 64 个接受写入、QSaveFile 原子写入；retire 阻止新写，已接受写入继续排空。
 
-原生用例位于 `tests/qt/plugins/PluginRuntimeAppearance.cpp`：`appearanceCatalogConfigurationAndRetirement`、`appearanceProductionThemeSkinAndMini`、`appearanceErrorsAndActivationRollback`、`playbackPresentationAndFloatingSdk`。本轮读取过用例，但尚未构建和执行；不能引用历史断言作为本轮通过证据。
+原生用例位于 `tests/qt/plugins/PluginRuntimeAppearance.cpp`：`appearanceCatalogConfigurationAndRetirement`、`appearanceProductionThemeSkinAndMini`、`appearanceErrorsAndActivationRollback`、`playbackPresentationAndFloatingSdk`。首次调查只读取这些用例。当前已执行真实 test:host，并在插件仓库新增复用 Release 库的 Folia 专项原生验收；结果及边界见 verification.md。
 
-## 已确认：作者 SDK 滞后
+## 作者 SDK 差异与当前闭环
 
-`packages/sdk/index.d.ts` 目前没有 `EchoPluginUi.lyricsPage`、appearance、fonts、windows、配置代理和页面上下文，也没有宿主新增的 player.snapshot/lyricsInfo/control/on 等成员。保存的 `host-contract.json` 同样仍是较早集合。
+首次调查时 `packages/sdk/index.d.ts` 没有 `EchoPluginUi.lyricsPage`、appearance、fonts、windows、配置代理和页面上下文，也没有宿主新增的 player.snapshot/lyricsInfo/control/on 等成员。当时保存的 `host-contract.json` 同样是较早集合。当前已补齐唯一作者声明、实际 Qt 类型映射与作者用例，并由实际宿主 sdk:sync 更新快照，没有手写宿主契约。
 
 宿主 `PluginSdkContract.cpp` 已将上述实际 Qt 类型纳入导出。插件 `check-sdk` 默认只对保存的快照校验，因此当前 `npm run check` 通过不能证明两仓库匹配。正确闭环是：实际 Release 宿主导出 → 补齐唯一作者声明及工具类型支持 → `sdk:check -- --host ...` → `sdk:sync -- --host ...` → 原生验收。禁止手造快照。
 
@@ -43,7 +43,7 @@
 - `EchoPluginIo.h` 当前仅公开 HTTP 和私有 JSON 键值，没有本地文件选择、图片池导入或字节资源托管协议。Cappella/Tempera 等源码中的自定义资产操作必须作为具体缺口核实，不能用裸路径/私有 DB 实现。
 - `PluginPackage::supportedFeatures()` 公开频谱，但没有鼓点、人声分离或 beat_this 分析。`pendolo/usePendoloBeatFx.ts` 实际消费 htdemucs 鼓点，并明确禁用旧 beat-list 特效；不能拿普通 FFT 峰值冒充鼓点数据。
 
-前两类接口滞后与模型类型不兼容已经有静态证据；新增 API 的最终范围尚未确认，不能先造一套 Folia 专用宿主类型。
+作者接口滞后已通过真实导出闭环；模型类型不兼容、资源导入与分析能力仍有静态缺口证据。新增 API 的最终范围尚未确认，不能先造一套 Folia 专用宿主类型。宿主已有公开 QML 元素 LyricClock，可复用其只读呈现投影，不能因此重复建立播放源状态或全局时钟。
 
 ## 已确认：Folia 入口与样式清单
 
@@ -75,11 +75,11 @@
 ## 许可与素材事实
 
 - 上游 [`LICENSE`](https://github.com/chthollyphile/folia-major/blob/a8da4437cf19723555bd75e4685ca20815fe5b82/LICENSE) 是 AGPLv3 文本，`package.json` 声明 `AGPL-3.0`；不能直接把参考代码移植后标成仓库根 MIT。插件许可与必要署名单独保留，宿主根 GPL-3.0-only、作者仓库根 MIT 不改。
-- 上游 README 还包含个人学习/非营利说明，代码分发条款和素材条款需要逐项记录；本轮没有复制任何上游实现或资产到插件。
+- 上游 README 还包含个人学习/非营利说明，代码分发条款和素材条款需要逐项记录；当前移植 Still 和逐字时序逻辑，随插件保留 AGPLv3 全文与 THIRD_PARTY_NOTICES；未复制上游字体、头像、模型或媒体资产。
 - Cappella 的 `avatar/README.md` 与 `emo/README.md` 分别给出独立使用/修改/分发声明；不能只引用根许可证，也不能把作者对 AI 版权的概括当作已验证的法律结论。
 - 字体通过 `src/index.css`、`src/utils/fontStacks.ts` 及自定义字体服务接入；Noto Serif SC 的远程 font-face 不能当作已获分发许可的本地资产，打包前单独核验字体许可。
 - 主题、背景、封面和歌词可能属于用户或内容来源；验收材料不得把真实账号凭据、应用 DB 或他人内容随插件打包。
 
 ## 尚未证实
 
-尚未运行 Folia 或新的 Release 宿主，尚无任何两者同条件截图、动画、真实音频连续呈现或性能对照。缺失内部约束、SDK 不同步、呈现/文件/分析能力及 3D 原生绘制需求会影响后续实现顺序；均保留在任务清单，不通过静态占位、演示数据或删除设置结案。
+尚未运行完整 Folia 作对照。当前已运行本次 Release 宿主的实际 Folia 包：正式 PlaybackPage/换肤抽屉/设置，以及原生音频驱动 Still 的播放、暂停、seek、恢复与 scope 回收均有本机证据；Cocoa/Metal 和 offscreen 分别记录。尚无 Folia 同条件截图、连续逐字动画或性能对照。缺失内部约束、SDK 不同步、呈现/文件/分析能力及 3D 原生绘制需求会影响后续实现顺序；均保留在任务清单，不通过静态占位、演示数据或删除设置结案。

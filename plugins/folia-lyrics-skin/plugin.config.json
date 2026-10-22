@@ -1,0 +1,4 @@
+{
+  "entry": "src/entry.ts",
+  "assets": ["qml", "assets", "LICENSE", "THIRD_PARTY_NOTICES.md", "README.md"]
+}
