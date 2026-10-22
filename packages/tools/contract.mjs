@@ -45,16 +45,39 @@ export function rangeContains(range, version) {
   });
 }
 
-function compatibleType(qtType, type) {
+let declaredTypes = new Map();
+function compatibleType(qtType, type, depth = 0) {
+  if (depth > 16) return false;
+  if (
+    (qtType === 'EchoMusic::EchoPluginOperation::State' || qtType === 'State') &&
+    type?.getText() === 'OperationState'
+  )
+    return true;
+  if (type && ts.isTypeReferenceNode(type)) {
+    if (type.typeName.getText() === 'Readonly' && type.typeArguments?.length === 1)
+      return compatibleType(qtType, type.typeArguments[0], depth + 1);
+    const declaration = declaredTypes.get(type.typeName.getText());
+    if (declaration && ts.isTypeAliasDeclaration(declaration))
+      return compatibleType(qtType, declaration.type, depth + 1);
+  }
   const native = qtType.replace('EchoMusic::', '').replace(/\s*\*$/, '');
   const text = type?.getText() ?? '';
-  if (native === 'QString') return text === 'string' || /^['"]/.test(text);
+  if (native === 'QString')
+    return (
+      text === 'string' ||
+      (type && ts.isLiteralTypeNode(type) && ts.isStringLiteral(type.literal)) ||
+      (type &&
+        ts.isUnionTypeNode(type) &&
+        type.types.every((part) => compatibleType(qtType, part, depth + 1)))
+    );
   if (native === 'bool') return text === 'boolean';
   if (['int', 'qint64', 'qlonglong', 'double'].includes(native)) return text === 'number';
   if (native === 'void') return text === 'void';
   if (native === 'State' || native === 'EchoPluginOperation::State')
     return text === 'OperationState';
-  if (native.startsWith('EchoPlugin')) return text.startsWith(native);
+  if (native === 'AppearanceConfiguration') return text === native || text === `${native} | null`;
+  if (native.startsWith('EchoPlugin') || native.startsWith('EchoUi'))
+    return text.startsWith(native);
   if (native === 'QFont') return text === 'QtFont';
   if (native === 'QColor') return text === 'QtColor';
   const record =
@@ -62,15 +85,46 @@ function compatibleType(qtType, type) {
     ts.isTypeReferenceNode(type) &&
     type.typeName.getText() === 'Record' &&
     type.typeArguments?.[0]?.kind === ts.SyntaxKind.StringKeyword;
+  if (native === 'QStringList') {
+    const array = type && ts.isTypeOperatorNode(type) ? type.type : type;
+    return (
+      !!array && ts.isArrayTypeNode(array) && array.elementType.kind === ts.SyntaxKind.StringKeyword
+    );
+  }
+  if (native === 'QVariantList') return !!type && ts.isArrayTypeNode(type);
+  if (native === 'QRectF') return text === 'QtRect';
   if (native === 'QVariantMap')
     return (
+      (type &&
+        ts.isTypeLiteralNode(type) &&
+        type.members.every((member) => ts.isPropertySignature(member))) ||
       record ||
+      (type &&
+        ts.isTypeReferenceNode(type) &&
+        ts.isInterfaceDeclaration(declaredTypes.get(type.typeName.getText()) ?? {}) &&
+        declaredTypes
+          .get(type.typeName.getText())
+          .members.every((member) => ts.isPropertySignature(member))) ||
       (ts.isIntersectionTypeNode(type) && type.types.some((part) => compatibleType(qtType, part)))
     );
   if (native === 'QByteArray') return text.includes('ArrayBuffer');
   if (native === 'QUrl') return text === 'string' || text.includes('toString');
   if (native === 'QJSValue')
-    return ts.isFunctionTypeNode(type) || (record && ts.isFunctionTypeNode(type.typeArguments[1]));
+    return (
+      ts.isFunctionTypeNode(type) ||
+      (record && ts.isFunctionTypeNode(type.typeArguments[1])) ||
+      [
+        'ThemeDefinition',
+        'SkinDefinition',
+        'AudioSourceDefinition',
+        'LyricResolverDefinition',
+        'TaskDefinition',
+        'TaskPatch',
+        'SidebarDefinition',
+        'SongMenuDefinition',
+        'LyricEffectDefinition',
+      ].includes(text)
+    );
   // QVariant carries API-specific JSON or operation generic results.
   if (native === 'QVariant') return !!type;
   return false;
@@ -93,6 +147,7 @@ export async function checkBindings(contract) {
     ts.forEachChild(node, visit);
   };
   visit(source);
+  declaredTypes = new Map([...interfaces, ...aliases]);
   const pkg = await readJson(`${sdkRoot}package.json`);
   if (pkg.version !== contract.sdkVersion) throw new Error('SDK package/host version mismatch');
   for (const [name, native] of Object.entries(contract.types)) {
@@ -152,6 +207,19 @@ export async function checkBindings(contract) {
     for (const declaredName of members.keys())
       if (!declaredName.startsWith('__') && !names.has(declaredName))
         throw new Error(`SDK advertises unavailable member ${name}.${declaredName}`);
+  }
+  const business = interfaces.get('KugouMethods');
+  if (contract.businessMethods) {
+    const actual = [...contract.businessMethods].sort();
+    const declared = business?.members.map((member) => member.name?.getText()).sort();
+    if (JSON.stringify(actual) !== JSON.stringify(declared))
+      throw new Error('Business catalog differs from the actual host');
+    const overloads = interfaces
+      .get('EchoPluginKugou')
+      ?.members.filter((m) => m.name?.getText() === 'request');
+    const advertised = overloads?.map((m) => m.parameters[0]?.type?.literal?.text).sort();
+    if (JSON.stringify(actual) !== JSON.stringify(advertised))
+      throw new Error('Business request overloads differ from the actual host');
   }
   const state = aliases.get('OperationState')?.type;
   const values =

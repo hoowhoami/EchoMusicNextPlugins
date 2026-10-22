@@ -36,17 +36,19 @@ SDK协议当前1.0.0，QML模块URI保留EchoMusic.PluginSdk 1.0。
 
 QML 导入 `EchoMusic.PluginSdk 1.0`，由 Qt 生成 `.qmltypes`。JS/TypeScript作者使用 `@echomusicnext/plugin-sdk`（本仓库`packages/sdk/index.d.ts`），提供只读上下文、具名服务、操作结果与Signal契约；类型检查示例在 `tests/types/authoring.ts`，只用于开发。公开类型为 `EchoPluginContext`、`EchoPluginPlayer`、`EchoPluginReadModel`、`EchoPluginUi`、`EchoPluginIo`、`EchoPluginRegistry`、`EchoPluginOperation`、`EchoPluginRegistration`、`EchoPluginTask`、`EchoPluginPage`。服务和句柄均由宿主创建；业务页面不接触裸 FFI、SQL 连接、账号凭证或宿主服务 QObject。
 
-Context 只读属性：`id`、`installationId`、`activationGeneration`、`contextId`、`active`、`audio`、`player`、`ui`、`io`、`font`、`accent`、`dark`。世代以十进制字符串表示，避免 JS 的整数精度问题。字体读取现有 ThemeStore 的完整 QFont；没有新的字体状态来源。
+Context 只读属性：`id`、`installationId`、`activationGeneration`、`contextId`、`active`、`audio`、`player`、`ui`、`io`、`sqlite`、`font`、`accent`、`dark`。世代以十进制字符串表示，避免 JS 的整数精度问题。字体读取现有 ThemeStore 的完整 QFont；没有新的字体状态来源。
 
 当前 `supports(feature)` 返回如下宿主实现状态，不代表权限已授予：
 
 Qt公开信号还提供`context.callbackFailed(message)`、`context.resourcesDrained`及`io.drained`诊断；生命周期和排空由宿主负责，作者不手动关闭worker。类型绑定与实际Qt元对象一起检查。
 
 - `lifecycle`、`operations`、`commands`、`events`、`timers`。
-- `playback.controls`、`playback.queue`、`playback.lyrics`、`appearance.read`。
-- `audio.spectrum`、`ui.state`、`ui.surfaces`、`ui.pages`、`ui.settings`、`ui.titlebar`、`ui.playerbar`、`tasks`、`storage`、`net.http`。
+- `playback.controls`、`playback.queue`、`playback.queues`、`playback.audioSource`、`playback.lyrics`、`lyrics.resolvers`、`lyrics.write`、`appearance.read`。
+- `audio.spectrum`、`ui.state`、`ui.surfaces`、`ui.pages`、`ui.settings`、`ui.titlebar`、`ui.playerbar`、`tasks`、`storage`、`net.request`。
 
-`net.http` 还要求 manifest 的 `unrestrictedNetwork` capability。其它旧能力仍为待接入，不能通过声明获得空实现。
+结构化数据另提供 `storage.sqlite`，要求 capability `sqlite`；使用命名库、迁移与事务见 [SQLite](sqlite.md)。
+
+`net.request` 还要求 manifest 的 `unrestrictedNetwork` capability。文件与下载另提供`files.references/files.dialogs/files.io/files.media/net.downloads`，实际用法见[文件、媒体与网络](files-and-network.md)。其它旧能力仍为待接入。
 
 ## 操作和注册
 
@@ -66,7 +68,7 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 
 注册返回 `EchoPluginRegistration`，属性 `key`、`revision`、`active`，方法 `dispose()`。稳定键为 `pluginId:kind:contributionId`。同键替换先回收旧注册；旧句柄重复 dispose 不影响新注册。激活中的 UI、事件、定时器和命令暂存，Promise 成功后统一提交，失败全部回收。`onDispose(callback)` 在激活未提交时也会执行，按逆序调用；清理函数异常不会跳过其他资源。
 
-生命周期 Promise 当前期限为 5 秒，超时记录失败并继续回收。该期限不可能抢占阻塞 GUI 的脚本。Promise 延迟回调经失效桥接对象安全忽略。崩溃日志在执行入口顶层之前同步写入；异常退出的下次启动和显式 `--safe-mode` 都只发现包，不执行插件，保留启用偏好。正式退出等待所有导入和 SQL 工作完成后才关闭业务服务及引擎。
+生命周期 Promise 当前期限为 5 秒，超时记录失败并继续回收。该期限不可能抢占阻塞 GUI 的脚本。Promise 延迟回调经失效桥接对象安全忽略。崩溃日志在执行入口顶层之前同步写入；进程被强制结束不会自动开启安全模式；真正的插件错误会记录并提示。显式 `--safe-mode` 只发现包而不执行插件，保留启用偏好。正式退出等待所有导入和 SQL 工作完成后才关闭业务服务及引擎。
 
 ## 已连接的 SDK
 
@@ -81,9 +83,9 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 | ui actions            | registerTitlebarAction / registerPlayerbarAction(id,title,icon,callback)，真实 ShellActionModel 渲染、可使用原布局编辑；图标使用宿主已有语义图标名。                                                                                                                                      |
 | ui tasks              | createTask(id,title) 返回 EchoPluginTask；setProgress(percent,label)、complete/fail/abort/dispose，cancelRequested 信号。当前接入任务中心的单任务进度/取消/终态，旧任务明细、操作及策略覆盖仍待接入。                                                                                     |
 | io storage            | readValue/writeValue/removeValue(key)，JSON 值、key 1..512字符、单值最多1 MiB。安装私有 SQLite 串行 worker，不暴露应用 DB，不导入旧插件数据。                                                                                                                                             |
-| io HTTP               | get(url)、post(url,body,contentType)，HTTP/HTTPS、不接受URL凭证；独立客户端，不复用宿主账号cookie。结果字段 status/headers/body/url，HTTP错误状态也作为响应返回；传输错误失败。超时30秒，请求/响应最大10 MiB，NoLessSafe重定向策略。                                                      |
+| net request           | ctx.net.request(options)，支持HTTP(S)、自定义方法/请求头/正文、响应解码/TLS/重定向；不复用宿主账号cookie，实际reply随操作取消。见[文件、媒体与网络](files-and-network.md)。                                                                                                               |
 
-这些 API 是可执行的首批契约，不等于完整能力验收。播放器写入自定义音源/歌词、主题注册、歌词皮肤、语义 part、文件引用/下载、任意插件私有 SQL、TCP/Web/WS、备份、音乐 API 和高级拦截、更多窗口/设置schema/侧栏及原生DSP产品接入，继续按迁移表实现；不删减或模拟这些功能。
+这些 API 是可执行的首批契约，不等于完整能力验收。文件引用/下载、任意插件私有 SQL、TCP/Web/WS、备份、音乐 API 和高级拦截、更多窗口/设置schema/侧栏及原生DSP产品接入，继续按迁移表实现；不删减或模拟这些功能。
 
 ## SDK1.0.0 插件依赖与服务
 
@@ -103,3 +105,13 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 官方频谱插件沿用旧插件的五种模式、配色、可见性、采样与设置。HDR开关在graphics.hdr未提供时禁用并说明原因，未将SDR渲染标为HDR。
 
 2026-10-19：官方频谱使用Qt Quick Shapes CurveRenderer与GPU光晕/模糊/遮罩，保留源五种模式路径与配色；不使用Canvas.Image逐帧CPU栅格。普通柱状/波形随新帧更新，中心频谱暂停后保留衰减至不可见再停掉插值时钟；公开SDK契约和版本不变。
+
+## 公开宿主界面
+
+`ui.parts`与`ui.styles`已提供查询、观察、公开动作、真实QML挂载和分属性视觉优先级。声明对应features后，使用`ctx.ui.parts`和`ctx.ui.styles`；所有句柄随激活scope撤销，实例引用不会跟随虚拟委托复用。宿主基础绑定持续有效，停用恢复当前外观，不写用户主题偏好。完整接口与生命周期见[ui.parts文档](ui-parts.md)。主题中心候选、完整皮肤、Mini主题和播放/歌词/字体/浮窗SDK见[外观文档](appearance.md)。
+
+音源五阶段解析/转换与自定义曲目、多队列接口见[音源与队列](audio-sources-and-queues.md)。
+
+歌词 resolver、LRC/KRC/YRC 和作用域写入见[歌词接口](lyrics.md)。
+
+业务与验证、入口、快捷键/Toast/滚动、完整任务及页面/桌面歌词动效见[扩展接口](ecosystem.md)。
