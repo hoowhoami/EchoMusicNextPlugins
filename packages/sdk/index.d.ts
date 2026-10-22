@@ -75,8 +75,169 @@ declare module 'echo:plugin-sdk' {
   }
   export interface EchoPluginReadModel {
     readonly __qtListModel: unique symbol;
+    row(index: number): Record<string, unknown>;
+  }
+  export interface QtRect {
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  }
+  export interface AppearanceConfiguration {
+    readonly values: Record<string, JsonValue>;
+    readonly defaults: Record<string, JsonValue>;
+    readonly errorMessage: string;
+    readonly active: boolean;
+    readonly busy: boolean;
+    readonly changed: QtSignal;
+    readonly errorChanged: QtSignal;
+    readonly busyChanged: QtSignal;
+    readonly drained: QtSignal;
+    patch(values: Record<string, JsonValue>): boolean;
+    reset(): boolean;
+  }
+  export interface AppearanceDefinition {
+    id: string;
+    title: string;
+    description?: string;
+    preview?: string;
+    component?: string;
+    backgroundComponent?: string;
+    sidebarComponent?: string;
+    playerComponent?: string;
+    miniComponent?: string;
+    miniBackgroundComponent?: string;
+    settingsComponent?: string;
+    titlebar?: 'host' | 'none';
+    tools?: 'host' | 'none';
+    type?: 'default' | 'solid' | 'dynamic';
+    defaultMode?: 'system' | 'light' | 'dark';
+    light?: Record<string, JsonValue>;
+    dark?: Record<string, JsonValue>;
+    defaults?: Record<string, JsonValue>;
+    validate?: (values: Record<string, JsonValue>) => boolean | { errors?: string[] };
+    resolve?: (state: Record<string, JsonValue>) => Record<string, JsonValue>;
+  }
+  export interface SkinDefinition extends AppearanceDefinition {
+    component: string;
+  }
+  export interface EchoPluginAppearanceHandle {
+    readonly key: string;
+    readonly active: boolean;
+    readonly configuration: AppearanceConfiguration;
+    readonly changed: QtSignal;
+    dispose(): void;
+  }
+  export interface EchoPluginAppearance {
+    readonly snapshot: Record<string, unknown>;
+    readonly errorMessage: string;
+    readonly changed: QtSignal;
+    registerTheme(definition: AppearanceDefinition): EchoPluginAppearanceHandle | null;
+    registerSkin(definition: SkinDefinition): EchoPluginAppearanceHandle | null;
+    useTheme(id: string): boolean;
+    useSkin(id: string): boolean;
+    previewTheme(id: string): boolean;
+    cancelPreview(): void;
+    openThemes(): void;
+    openSkins(): void;
+  }
+  export interface EchoPluginFonts {
+    readonly families: string[];
+    build(families: string[], pixelSize?: number, weight?: number, letterSpacing?: number): QtFont;
+  }
+  export interface EchoPluginViewContext {
+    readonly active: boolean;
+    readonly surface: string;
+    readonly player: EchoPluginPlayer;
+    readonly snapshot: Record<string, unknown>;
+    readonly changed: QtSignal;
+    command(action: string, arguments?: Record<string, JsonValue>): EchoPluginOperation;
+  }
+  export interface EchoPluginWindows {
+    readonly snapshot: Record<string, unknown>;
+    readonly changed: QtSignal;
+    command(
+      target: 'mini' | 'desktop',
+      action: string,
+      arguments?: Record<string, JsonValue>,
+    ): EchoPluginOperation;
+  }
+  export interface EchoUiPartRef {
+    readonly id: string;
+    readonly revision: string;
+    readonly role: string;
+    readonly key: string;
+    readonly surface: string;
+    readonly window: string;
+    readonly valid: boolean;
+    readonly visible: boolean;
+    readonly geometry: QtRect;
+    readonly visuals: Record<string, unknown>;
+    readonly properties: string[];
+    readonly actions: string[];
+    readonly replaceable: boolean;
+    readonly changed: QtSignal;
+    readonly invalidated: QtSignal;
+    readonly eventOccurred: QtSignal<[event: string, payload: Record<string, JsonValue>]>;
+    invoke(action: string, arguments?: Record<string, JsonValue>): EchoPluginOperation;
+  }
+  export interface EchoUiPartMount {
+    readonly active: boolean;
+    readonly loaded: boolean;
+    readonly errorMessage: string;
+    readonly position: string;
+    readonly changed: QtSignal;
+    dispose(): void;
+  }
+  export interface EchoPluginUiParts {
+    readonly errorMessage: string;
+    readonly errorChanged: QtSignal;
+    query(selector?: Record<string, JsonValue>): EchoUiPartRef | null;
+    queryAll(selector?: Record<string, JsonValue>): EchoUiPartRef[];
+    observe(
+      id: string,
+      selector: Record<string, JsonValue>,
+      callback: (event: {
+        type: 'added' | 'changed' | 'removed' | 'event';
+        part: EchoUiPartRef;
+        event: string;
+        payload: Record<string, JsonValue>;
+      }) => void,
+      immediate?: boolean,
+    ): EchoPluginRegistration | null;
+    mount(
+      id: string,
+      part: EchoUiPartRef,
+      position: string,
+      component: string,
+      priority?: number,
+    ): EchoUiPartMount | null;
+  }
+  export interface EchoUiStyleRule {
+    readonly key: string;
+    readonly revision: string;
+    readonly active: boolean;
+    readonly priority: number;
+    readonly values: Record<string, JsonValue>;
+    readonly changed: QtSignal;
+    update(values: Record<string, JsonValue>): boolean;
+    setPriority(priority: number): boolean;
+    dispose(): void;
+  }
+  export interface EchoPluginUiStyles {
+    readonly errorMessage: string;
+    readonly errorChanged: QtSignal;
+    registerRule(
+      id: string,
+      selector: Record<string, JsonValue>,
+      values: Record<string, JsonValue>,
+      priority?: number,
+    ): EchoUiStyleRule | null;
   }
   export interface EchoPluginPlayer {
+    readonly snapshot: Record<string, unknown>;
+    readonly lyricsInfo: Record<string, JsonValue>;
+    readonly revision: string;
     readonly title: string;
     readonly artist: string;
     readonly album: string;
@@ -95,6 +256,16 @@ declare module 'echo:plugin-sdk' {
     readonly lyrics: EchoPluginReadModel;
     readonly changed: QtSignal;
     readonly positionChanged: QtSignal;
+    readonly lyricChanged: QtSignal;
+    readonly eventOccurred: QtSignal<[event: string, payload: Record<string, unknown>]>;
+    lyricSnapshot(): Record<string, JsonValue>;
+    control(action: string, arguments?: Record<string, JsonValue>): EchoPluginOperation;
+    on(
+      id: string,
+      event: string,
+      callback: (snapshot: Record<string, unknown>) => void,
+      immediate?: boolean,
+    ): EchoPluginRegistration | null;
     play(): EchoPluginOperation;
     pause(): EchoPluginOperation;
     toggle(): EchoPluginOperation;
@@ -174,6 +345,9 @@ declare module 'echo:plugin-sdk' {
     readonly spectrum: EchoPluginSpectrum;
   }
   export interface EchoPluginUi {
+    readonly lyricsPage: EchoPluginAppearance;
+    readonly parts: EchoPluginUiParts;
+    readonly styles: EchoPluginUiStyles;
     readonly state: Record<string, JsonValue>;
     readonly stateChanged: QtSignal;
     setState(values: Record<string, JsonValue>): boolean;
@@ -220,10 +394,14 @@ declare module 'echo:plugin-sdk' {
     removeValue(key: string): EchoPluginOperation;
   }
   export interface EchoPluginContext {
+    readonly theme: EchoPluginAppearance;
+    readonly appearance: EchoPluginAppearance;
+    readonly fonts: EchoPluginFonts;
+    readonly windows: EchoPluginWindows;
     readonly id: string;
     readonly installationId: string;
     readonly activationGeneration: string;
-    readonly contextId: 'main';
+    readonly contextId: string;
     readonly active: boolean;
     readonly audio: EchoPluginAudio;
     readonly player: EchoPluginPlayer;

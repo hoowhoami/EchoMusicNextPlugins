@@ -57,3 +57,29 @@ export function spectrumTypes(ctx: EchoPluginContext) {
   ctx.player.playing = true;
   sub?.dispose();
 }
+
+export function appearanceTypes(ctx: EchoPluginContext): void {
+  const skin = ctx.ui.lyricsPage.registerSkin({
+    id: 'skin',
+    title: 'Skin',
+    component: 'Page.qml',
+    defaults: { mode: 'still' },
+    validate: (values) => typeof values.mode === 'string',
+  });
+  skin?.configuration.patch({ mode: 'classic' });
+  ctx.fonts.build(['follow'], 40, 700);
+  ctx.player.lyrics.row(0);
+  // @ts-expect-error Full skins require a package QML component.
+  ctx.ui.lyricsPage.registerSkin({ id: 'missing', title: 'Missing' });
+  ctx.ui.lyricsPage.registerSkin({
+    id: 'bad',
+    title: 'Bad',
+    component: 'Page.qml',
+    // @ts-expect-error Chrome ownership is a closed host protocol.
+    tools: 'custom',
+  });
+  // @ts-expect-error Configuration is host-owned and changes only through patch/reset.
+  if (skin) skin.configuration.values = {};
+  // @ts-expect-error The font chain is a string list, not a CSS stack.
+  ctx.fonts.build('Arial, sans-serif');
+}

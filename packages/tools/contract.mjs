@@ -45,18 +45,25 @@ export function rangeContains(range, version) {
   });
 }
 
-function compatibleType(qtType, type) {
+function compatibleType(qtType, type, nativeTypes) {
   const native = qtType.replace('EchoMusic::', '').replace(/\s*\*$/, '');
   const text = type?.getText() ?? '';
   if (native === 'QString') return text === 'string' || /^['"]/.test(text);
   if (native === 'bool') return text === 'boolean';
-  if (['int', 'qint64', 'qlonglong', 'double'].includes(native)) return text === 'number';
+  if (['int', 'qint64', 'qlonglong', 'double', 'qreal'].includes(native)) return text === 'number';
   if (native === 'void') return text === 'void';
   if (native === 'State' || native === 'EchoPluginOperation::State')
     return text === 'OperationState';
-  if (native.startsWith('EchoPlugin')) return text.startsWith(native);
+  if (nativeTypes.has(native))
+    return text === native || text.startsWith(`${native}<`) || text.startsWith(`${native} |`);
   if (native === 'QFont') return text === 'QtFont';
   if (native === 'QColor') return text === 'QtColor';
+  if (native === 'QRectF') return text === 'QtRect';
+  if (native === 'QStringList')
+    return (
+      !!type && ts.isArrayTypeNode(type) && type.elementType.kind === ts.SyntaxKind.StringKeyword
+    );
+  if (native === 'QVariantList') return !!type && ts.isArrayTypeNode(type);
   const record =
     type &&
     ts.isTypeReferenceNode(type) &&
@@ -65,12 +72,19 @@ function compatibleType(qtType, type) {
   if (native === 'QVariantMap')
     return (
       record ||
-      (ts.isIntersectionTypeNode(type) && type.types.some((part) => compatibleType(qtType, part)))
+      (ts.isIntersectionTypeNode(type) &&
+        type.types.some((part) => compatibleType(qtType, part, nativeTypes)))
     );
   if (native === 'QByteArray') return text.includes('ArrayBuffer');
   if (native === 'QUrl') return text === 'string' || text.includes('toString');
   if (native === 'QJSValue')
-    return ts.isFunctionTypeNode(type) || (record && ts.isFunctionTypeNode(type.typeArguments[1]));
+    return (
+      ts.isFunctionTypeNode(type) ||
+      (record && ts.isFunctionTypeNode(type.typeArguments[1])) ||
+      // Native appearance registration accepts a definition object containing callbacks.
+      text === 'AppearanceDefinition' ||
+      text === 'SkinDefinition'
+    );
   // QVariant carries API-specific JSON or operation generic results.
   if (native === 'QVariant') return !!type;
   return false;
@@ -78,6 +92,7 @@ function compatibleType(qtType, type) {
 
 export async function checkBindings(contract) {
   contract ??= await loadContract();
+  const nativeTypes = new Set(Object.keys(contract.types));
   const source = ts.createSourceFile(
     'index.d.ts',
     await readFile(`${sdkRoot}index.d.ts`, 'utf8'),
@@ -103,7 +118,11 @@ export async function checkBindings(contract) {
     for (const property of native.properties) {
       names.add(property.name);
       const member = members.get(property.name);
-      if (!member || !ts.isPropertySignature(member) || !compatibleType(property.type, member.type))
+      if (
+        !member ||
+        !ts.isPropertySignature(member) ||
+        !compatibleType(property.type, member.type, nativeTypes)
+      )
         throw new Error(`SDK property type differs: ${name}.${property.name} (${property.type})`);
       const readonly = member.modifiers?.some(
         (modifier) => modifier.kind === ts.SyntaxKind.ReadonlyKeyword,
@@ -132,6 +151,7 @@ export async function checkBindings(contract) {
               !compatibleType(
                 method.parameters[index],
                 ts.isNamedTupleMember(parameter) ? parameter.type : parameter,
+                nativeTypes,
               ),
           )
         )
@@ -141,9 +161,10 @@ export async function checkBindings(contract) {
           !member ||
           !ts.isMethodSignature(member) ||
           member.parameters.length !== method.parameters.length ||
-          !compatibleType(method.returnType, member.type) ||
+          !compatibleType(method.returnType, member.type, nativeTypes) ||
           member.parameters.some(
-            (parameter, index) => !compatibleType(method.parameters[index], parameter.type),
+            (parameter, index) =>
+              !compatibleType(method.parameters[index], parameter.type, nativeTypes),
           )
         )
           throw new Error(`SDK method differs: ${name}.${methodName}`);

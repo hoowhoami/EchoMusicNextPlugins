@@ -26,7 +26,7 @@ SDK协议当前1.0.0，QML模块URI保留EchoMusic.PluginSdk 1.0。
 }
 ```
 
-版本约束支持空格分隔的 `>=`、`>`、`<=`、`<`、`=` 三段数值版本比较交集，不接受 npm 的完整 range 语法。必需 feature、capability、context 或版本不受支持时，包进入 Incompatible，入口不会执行。当前只提供 `main` context；其它窗口 scope 随相应宿主窗口接入。
+版本约束支持空格分隔的 `>=`、`>`、`<=`、`<`、`=` 三段数值版本比较交集，不接受 npm 的完整 range 语法。必需 feature、capability、context 或版本不受支持时，包进入 Incompatible，入口不会执行。激活入口使用 `main` context；外观页面由宿主创建独立呈现 scope。
 
 通过正式可执行文件的 `--plugin-dir /absolute/package/path` 导入并启用可信本地包，可重复传入。包在工作线程验证和复制，发布到应用数据目录的 `plugins/packages/<installationUuid>/<sha256>/`；每个版本独立 URL。拒绝包内符号链接、路径越界、qmldir 原生 plugin 声明、超过 128 MiB 或 4096 文件的包。代码文件只读，插件数据在独立安装身份下的 `plugins/data/<installationUuid>/values.sqlite`，启用/来源/崩溃日志归宿主 QSettings；不同来源的同名 ID 不共享身份或数据，重复有效 ID 会拒绝激活。
 
@@ -83,7 +83,9 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 | io storage            | readValue/writeValue/removeValue(key)，JSON 值、key 1..512字符、单值最多1 MiB。安装私有 SQLite 串行 worker，不暴露应用 DB，不导入旧插件数据。                                                                                                                                             |
 | io HTTP               | get(url)、post(url,body,contentType)，HTTP/HTTPS、不接受URL凭证；独立客户端，不复用宿主账号cookie。结果字段 status/headers/body/url，HTTP错误状态也作为响应返回；传输错误失败。超时30秒，请求/响应最大10 MiB，NoLessSafe重定向策略。                                                      |
 
-这些 API 是可执行的首批契约，不等于完整能力验收。播放器写入自定义音源/歌词、主题注册、歌词皮肤、语义 part、文件引用/下载、任意插件私有 SQL、TCP/Web/WS、备份、音乐 API 和高级拦截、更多窗口/设置schema/侧栏及原生DSP产品接入，继续按迁移表实现；不删减或模拟这些功能。
+完整播放页皮肤、独立配置、字体和页面命令见[外观作者指南](appearance.md)。当前真实导出也包含主题注册、语义 parts/styles 和窗口操作；作者声明已与本机 Qt 宿主同步。
+
+这些 API 不等于完整能力验收。播放器写入自定义音源/歌词、文件引用/下载、任意插件私有 SQL、TCP/Web/WS、备份、音乐 API 和高级拦截、更多窗口/设置schema/侧栏及原生DSP产品接入，继续按迁移表实现；不删减或模拟这些功能。
 
 ## SDK1.0.0 插件依赖与服务
 
