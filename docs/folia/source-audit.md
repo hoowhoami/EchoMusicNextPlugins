@@ -72,6 +72,8 @@
 
 已深入读取的 classic 示例：字号 `clamp(36×scale, 6vw×scale, 72×scale)`；基于源行 startTime 生成稳定随机布局；`useLegacyLayout`、`wordSpacing`、`enableWordRotation`、`breathingFloatMultiplier` 都会影响正式行为。间奏 `......` 具有独立布局。不能将其简化为普通居中 Text。
 
+共享控件：已读取并实际挂载 `src/hooks/usePlayerChromeAutoHide.ts`，确认默认始终显示、始终隐藏不随移动恢复、auto-hide 启动时显示、空闲 3000 ms、离窗/失焦 300 ms、按住指针不隐藏、丢失松手后由 buttons=0 修复。实际源 hook 的一组输入序列为：默认显示 → 始终隐藏后移动仍隐藏 → 自动模式显示 → 按住 3200 ms 仍显示 → 松开并离窗 400 ms 后隐藏 → 移回恢复。`FloatingPlayerControls.tsx:343` 的显隐过渡为 opacity 0/1、y 24/0、scale .97/1，260 ms easeOut；它不等于胶囊自身的展开/布局弹簧（stiffness 280、damping 24）。
+
 ## 许可与素材事实
 
 - 上游 [`LICENSE`](https://github.com/chthollyphile/folia-major/blob/a8da4437cf19723555bd75e4685ca20815fe5b82/LICENSE) 是 AGPLv3 文本，`package.json` 声明 `AGPL-3.0`；不能直接把参考代码移植后标成仓库根 MIT。插件许可与必要署名单独保留，宿主根 GPL-3.0-only、作者仓库根 MIT 不改。
@@ -82,4 +84,6 @@
 
 ## 尚未证实
 
-尚未运行完整 Folia 作对照。当前已运行本次 Release 宿主的实际 Folia 包：正式 PlaybackPage/换肤抽屉/设置，以及原生音频驱动 Still 的播放、暂停、seek、恢复与 scope 回收均有本机证据；Cocoa/Metal 和 offscreen 分别记录。尚无 Folia 同条件截图、连续逐字动画或性能对照。缺失内部约束、SDK 不同步、呈现/文件/分析能力及 3D 原生绘制需求会影响后续实现顺序；均保留在任务清单，不通过静态占位、演示数据或删除设置结案。
+已运行上游 Still 源组件与探针，几何和缩放对照见 [Still 运行记录](still-reference.md)，完整 Folia 及其余 13 种样式尚未逐项运行验收。当前已运行本次 Release 宿主的实际 Folia 包：正式 PlaybackPage/换肤抽屉/设置，以及原生音频驱动 Still 的播放、暂停、seek、恢复与 scope 回收均有本机证据；Cocoa/Metal 和 offscreen 分别记录。共享 PresentationClock 已证明在引擎上报间隔内连续更新，不复制播放源；字体/字形采样、连续逐字动画和性能对照仍未完成。
+
+Qt 6.12 原生探针实际输出 `Intl=undefined`，`new RegExp("\\p{L}$", "u")` 抛 Invalid regular expression。Folia 的 `wordSegmentation.ts`、`graphemeTiming.ts`、`cjkSemanticLayout.ts` 实际依赖字素边界、分词和 Unicode 类别，不能将其默默换成 UTF-16 split 或简单 CJK 正则而宣称效果完整。缺失内部约束、呈现/文本/文件/分析能力及 3D 绘制需求继续记录，不通过静态占位、演示数据或删除设置结案。

@@ -88,7 +88,7 @@ TestCase {
         compare(findChild(view, "stillRepeater").count, 3);
     }
 
-    function test_scaledWrappedGlyphsReserveTheirActualHeight() {
+    function test_sourceScaleTransformsPixelsWithoutReflowingLayout() {
         const view = createView({
             width: 340,
             lyricsFontScale: 1.4,
@@ -104,8 +104,15 @@ TestCase {
         const row = findChild(view, "stillRow1");
         const main = findChild(view, "stillPrimary1");
         const translation = findChild(view, "stillTranslation1");
-        tryVerify(() => row.height >= main.implicitHeight * 1.4 + translation.implicitHeight * 1.4 * 1.4, 5000, "row=" + row.height + ", main=" + main.implicitHeight + ", subtitle=" + translation.implicitHeight + ", visible=" + translation.visible);
-        verify(translation.y >= main.implicitHeight * 1.4);
+        tryCompare(main, "width", 244);
+        compare(row.height, main.implicitHeight + translation.implicitHeight + 12);
+        compare(translation.y, main.implicitHeight + 12);
+        compare(main.transformOrigin, Item.Center);
+        compare(translation.transformOrigin, Item.Center);
+        const topLeft = main.mapToItem(view, 0, 0);
+        const bottomRight = main.mapToItem(view, main.width, main.height);
+        fuzzyCompare(bottomRight.x - topLeft.x, main.width * 1.4, 0.01);
+        fuzzyCompare(bottomRight.y - topLeft.y, main.height * 1.4, 0.01);
     }
 
     function test_parentVisibilityDoesNotInvalidateTextGeometry() {
@@ -124,5 +131,31 @@ TestCase {
         compare(row.height, height);
         view.visible = true;
         compare(row.height, height);
+    }
+
+    function test_measuredUpstreamLineBoxesAt1100By820() {
+        const view = createView({
+            lineWindow: [
+                {
+                    lineText: "窗外的风轻轻吹过",
+                    translation: "A quiet breeze passes by"
+                },
+                {
+                    lineText: "让每一句停留在此刻",
+                    translation: "Let every line linger in this moment"
+                },
+                {
+                    lineText: "随着旋律继续向前",
+                    translation: "Follow the melody onward"
+                }
+            ]
+        });
+        verify(view);
+        compare(findChild(view, "stillPrimary0").implicitHeight, 36);
+        compare(findChild(view, "stillPrimary1").implicitHeight, 50);
+        compare(findChild(view, "stillTranslation0").implicitHeight, 28);
+        compare(findChild(view, "stillTranslation1").implicitHeight, 32);
+        compare(findChild(view, "stillRows").height, 302);
+        compare(findChild(view, "stillRows").y, 227);
     }
 }

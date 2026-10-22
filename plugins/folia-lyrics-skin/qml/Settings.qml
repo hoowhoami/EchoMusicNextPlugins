@@ -29,6 +29,33 @@ ColumnLayout {
         color: Theme.floatingSecondaryText
         font: root.plugin.fonts.build([], 12)
     }
+    Label {
+        text: qsTr("播放控件")
+        color: Theme.floatingText
+    }
+    EchoSelect {
+        objectName: "foliaChromeVisibilityMode"
+        Layout.fillWidth: true
+        colors: Theme.floating
+        options: [
+            {
+                label: qsTr("始终显示"),
+                value: "always-visible"
+            },
+            {
+                label: qsTr("自动隐藏"),
+                value: "auto-hide"
+            },
+            {
+                label: qsTr("始终隐藏"),
+                value: "always-hidden"
+            }
+        ]
+        value: root.settings.playerChromeVisibilityMode
+        onValueEdited: nextValue => root.configuration.patch({
+                playerChromeVisibilityMode: nextValue
+            })
+    }
     RowLayout {
         Layout.fillWidth: true
         Label {

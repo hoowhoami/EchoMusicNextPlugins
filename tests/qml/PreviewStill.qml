@@ -8,6 +8,24 @@ Window {
     height: 820
     visible: true
     color: "#15181e"
+    readonly property real fontScale: Number(argument("scale", "1"))
+    readonly property real subtitleScale: Number(argument("subtitleScale", "1"))
+    readonly property string fontFamily: argument("font", "")
+    function argument(name: string, fallback: string): string {
+        const prefix = name + "=";
+        const value = Qt.application.arguments.find(arg => arg.indexOf(prefix) === 0);
+        return value ? value.substring(prefix.length) : fallback;
+    }
+    function fixtureFont(size: int, weight: int, spacing: real): font {
+        const fields = {
+            pixelSize: size,
+            weight: weight,
+            letterSpacing: spacing
+        };
+        if (fontFamily)
+            fields.family = fontFamily;
+        return Qt.font(fields);
+    }
     Item {
         id: scene
         anchors.fill: parent
@@ -17,6 +35,12 @@ Window {
         }
         Still {
             anchors.fill: parent
+            lyricsFontScale: window.fontScale
+            subtitleFontScale: window.subtitleScale
+            currentFont: window.fixtureFont(40, 700, 0.8)
+            adjacentFont: window.fixtureFont(30, 600, 0.6)
+            currentSubtitleFont: window.fixtureFont(24, 500, 0.6)
+            adjacentSubtitleFont: window.fixtureFont(20, 400, 0.5)
             primaryColor: "#f1f3f6"
             secondaryColor: "#b0b6c1"
             lineWindow: [
@@ -39,7 +63,7 @@ Window {
         interval: 300
         running: true
         onTriggered: scene.grabToImage(result => {
-            const output = decodeURIComponent(Qt.resolvedUrl("../../plugins/folia-lyrics-skin/assets/previews/still.png").toString().replace(/^file:\/\//, ""));
+            const output = window.argument("output", decodeURIComponent(Qt.resolvedUrl("../../plugins/folia-lyrics-skin/assets/previews/still.png").toString().replace(/^file:\/\//, "")));
             if (!result.saveToFile(output)) {
                 console.error("Could not save Still preview");
                 Qt.exit(1);

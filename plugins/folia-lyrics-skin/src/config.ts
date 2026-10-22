@@ -10,6 +10,7 @@ export const defaults: Readonly<Record<string, JsonValue>> = Object.freeze({
   lyricsFontScale: 1,
   subtitleFontScale: 1,
   fontFamilies: ['follow'],
+  playerChromeVisibilityMode: 'always-visible',
 });
 
 export function validate(values: Record<string, JsonValue>): true | { errors: string[] } {
@@ -26,6 +27,11 @@ export function validate(values: Record<string, JsonValue>): true | { errors: st
   for (const key of Object.keys(values))
     if (!Object.prototype.hasOwnProperty.call(defaults, key)) errors.push(`未知设置：${key}`);
   if (!styles.some((style) => style.id === values.mode)) errors.push('无效的 Folia 样式');
+  if (
+    typeof values.playerChromeVisibilityMode !== 'string' ||
+    !['always-hidden', 'always-visible', 'auto-hide'].includes(values.playerChromeVisibilityMode)
+  )
+    errors.push('无效的播放控件显示方式');
   for (const key of ['showText', 'hideTranslationSubtitle'])
     if (typeof values[key] !== 'boolean') errors.push(`${key} 必须是布尔值`);
   for (const key of ['lyricsFontScale', 'subtitleFontScale']) {

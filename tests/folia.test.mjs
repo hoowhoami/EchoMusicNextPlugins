@@ -29,6 +29,8 @@ test('Folia configuration rejects corrupt values and unknown fields before persi
     { fontFamilies: [''] },
     { fontFamilies: 'Arial' },
     { mode: 'not-a-renderer' },
+    { playerChromeVisibilityMode: 'unknown' },
+    { playerChromeVisibilityMode: ['auto-hide'] },
     { playerPosition: 1000 },
   ])
     assert.notEqual(validate({ ...defaults, ...patch }), true, JSON.stringify(patch));
@@ -36,6 +38,8 @@ test('Folia configuration rejects corrupt values and unknown fields before persi
     validate({ ...defaults, lyricsFontScale: 1.4, hideTranslationSubtitle: true }),
     true,
   );
+  for (const playerChromeVisibilityMode of ['always-hidden', 'always-visible', 'auto-hide'])
+    assert.equal(validate({ ...defaults, playerChromeVisibilityMode }), true);
 });
 
 test('Folia registers one complete skin without choosing it or creating a player', async () => {

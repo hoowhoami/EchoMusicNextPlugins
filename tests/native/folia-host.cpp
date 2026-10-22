@@ -3,6 +3,7 @@
 #include "EchoPluginAppearance.h"
 #include "EchoPluginViewContext.h"
 #include <QFontDatabase>
+#include <QWheelEvent>
 #include <QtQml/qqmlextensionplugin.h>
 Q_IMPORT_QML_PLUGIN(EchoMusic_ThemesPlugin)
 
@@ -87,6 +88,15 @@ ApplicationWindow {
         skin->property("configuration").value<AppearanceConfiguration *>();
     QVERIFY(view && view->active());
     QVERIFY(configuration && configuration->active());
+    QQmlComponent clockComponent(&host.engine, QUrl::fromLocalFile(
+        host.runtime.context(installation)->package().root + "/qml/shared/PresentationClock.qml"));
+    QPointer<QObject> presentationClock = clockComponent.createWithInitialProperties(
+        {{"page", QVariant::fromValue(view.data())}});
+    QVERIFY2(presentationClock, qPrintable(clockComponent.errorString()));
+    presentationClock->setParent(skin);
+    qobject_cast<QQuickItem *>(presentationClock.data())->setParentItem(skin);
+    QSignalSpy presented(presentationClock, SIGNAL(renderTimeChanged()));
+    QSignalSpy telemetry(view->player(), &EchoPluginPlayer::positionChanged);
     // Choosing a skin invalidates the drawer's old delegate generation.
     QTRY_VERIFY((card = visual(window->contentItem(), "pluginLyricSkinCard")));
     QVERIFY(QMetaObject::invokeMethod(card, "chosen"));
@@ -102,6 +112,10 @@ ApplicationWindow {
     QCOMPARE(configuration->values().value("mode").toString(), QString("still"));
     QVERIFY(configuration->patch({{"hideTranslationSubtitle", false}}));
     QTRY_VERIFY(!configuration->busy());
+    auto *drawer = root->findChild<QObject *>("lyricSkinDrawer");
+    QVERIFY(drawer);
+    QVERIFY(QMetaObject::invokeMethod(drawer, "close"));
+    QTRY_VERIFY(!visual(window->contentItem(), "pluginSkinSettingsHost"));
 
     // Authored local PCM and lyrics use the production decoder/output and model.
     // Position is never injected: the actual audio engine advances every row.
@@ -146,7 +160,24 @@ ApplicationWindow {
                                 {"words", QJsonArray{}}});
     QVERIFY(host.playback.lyrics()->replace({{"lines", rows}}));
     QTRY_VERIFY_WITH_TIMEOUT(host.playback.positionMs() >= 2100, 7000);
+    QVERIFY2(presented.count() > telemetry.count() + 10,
+             qPrintable(QString("presentation=%1 telemetry=%2")
+                            .arg(presented.count()).arg(telemetry.count())));
+    qInfo() << "Folia presentation updates:" << presented.count()
+            << "engine position observations:" << telemetry.count();
+    QTRY_VERIFY(presentationClock->property("renderTime").toDouble() > host.playback.positionMs() + 30);
+    const auto beforeMetadataChange = presentationClock->property("renderTime").toDouble();
+    host.playback.setVolume(0.001);
+    QCOMPARE(presentationClock->property("renderTime").toDouble(), beforeMetadataChange);
+    host.playback.setVolume(0);
     QTRY_COMPARE(primary->property("text").toString(), QString("原生音频驱动的第 1 行"));
+    QVERIFY(visual(skin, "pluginPlayToggle"));
+    QVERIFY(configuration->patch({{"playerChromeVisibilityMode", "always-hidden"}}));
+    QTRY_VERIFY(!configuration->busy());
+    QTRY_VERIFY(!visual(skin, "pluginPlayToggle"));
+    QVERIFY(configuration->patch({{"playerChromeVisibilityMode", "always-visible"}}));
+    QTRY_VERIFY(!configuration->busy());
+    QTRY_VERIFY(visual(skin, "pluginPlayToggle"));
     auto *toggle = visual(skin, "pluginPlayToggle");
     QVERIFY(toggle);
     QVERIFY(QMetaObject::invokeMethod(toggle, "clicked"));
@@ -155,19 +186,118 @@ ApplicationWindow {
     // can arrive afterwards. Observe stability after that native acknowledgement.
     QTest::qWait(350);
     const auto pausedAt = host.playback.positionMs();
+    const auto frozenAt = presentationClock->property("renderTime").toDouble();
     QTest::qWait(300);
     QCOMPARE(host.playback.positionMs(), pausedAt);
+    QCOMPARE(presentationClock->property("renderTime").toDouble(), frozenAt);
+    QVERIFY(configuration->patch({{"playerChromeVisibilityMode", "auto-hide"}}));
+    QTRY_VERIFY(!configuration->busy());
+    auto *chrome = skin->findChild<QObject *>("foliaChromeVisibility");
+    QVERIFY(chrome);
+    QVERIFY(chrome->property("pending").toBool());
+    QTest::mouseMove(window, QPoint(550, 300));
+    QTest::mousePress(window, Qt::LeftButton, Qt::NoModifier, QPoint(550, 300));
+    QTRY_VERIFY(chrome->property("pointerHeld").toBool());
+    QVERIFY(!chrome->property("pending").toBool());
+    QTest::mouseRelease(window, Qt::LeftButton, Qt::NoModifier, QPoint(550, 300));
+    QTRY_VERIFY(!chrome->property("pointerHeld").toBool());
+    QTRY_VERIFY(chrome->property("hidden").toBool());
+    QTRY_VERIFY(!visual(skin, "pluginPlayToggle"));
+    QTest::qWait(400);
+    QVERIFY(chrome->property("hidden").toBool());
+    QWheelEvent wheel(QPointF(550, 300), window->mapToGlobal(QPoint(550, 300)),
+                      QPoint(), QPoint(0, 120), Qt::NoButton, Qt::NoModifier,
+                      Qt::NoScrollPhase, false);
+    QCoreApplication::sendEvent(window, &wheel);
+    QTRY_VERIFY(!chrome->property("hidden").toBool());
+    QTest::mouseMove(window, QPoint(560, 310));
+    QTRY_VERIFY(!chrome->property("hidden").toBool());
+    QTRY_VERIFY((toggle = visual(skin, "pluginPlayToggle")));
+    auto *hover = skin->findChild<QObject *>("foliaChromeHover");
+    QVERIFY(hover);
+    QTest::mouseMove(window, QPoint(-10, -10));
+    QTRY_VERIFY(!hover->property("hovered").toBool());
+    QTRY_VERIFY(chrome->property("hidden").toBool());
+    QTest::mouseMove(window, QPoint(560, 310));
+    QTRY_VERIFY(hover->property("hovered").toBool());
+    QTRY_VERIFY(!chrome->property("hidden").toBool());
+    QTRY_VERIFY((toggle = visual(skin, "pluginPlayToggle")));
+    // Exercise the real 260ms path as well as reduced motion. An interrupted
+    // exit retains the same surface; a completed exit releases the controls.
+    host.theme.setMotionEnabled(true);
+    auto *transportHost = visual(skin, "foliaTransportHost");
+    QVERIFY(transportHost);
+    QPointer<QQuickItem> fadingSurface = visual(skin, "foliaTransportSurface");
+    QVERIFY(fadingSurface);
+    QVERIFY(configuration->patch({{"playerChromeVisibilityMode", "always-hidden"}}));
+    QTRY_VERIFY(transportHost->opacity() < 1);
+    QVERIFY(transportHost->opacity() > 0);
+    QVERIFY(fadingSurface);
+    QVERIFY(!transportHost->isEnabled());
+    QVERIFY(configuration->patch({{"playerChromeVisibilityMode", "always-visible"}}));
+    QTRY_COMPARE(transportHost->opacity(), 1.);
+    QCOMPARE(visual(skin, "foliaTransportSurface"), fadingSurface.data());
+    QVERIFY(configuration->patch({{"playerChromeVisibilityMode", "always-hidden"}}));
+    QTRY_VERIFY(fadingSurface.isNull());
+    QVERIFY(!transportHost->property("active").toBool());
+    QVERIFY(configuration->patch({{"playerChromeVisibilityMode", "auto-hide"}}));
+    QTRY_VERIFY((toggle = visual(skin, "pluginPlayToggle")));
+    QTRY_VERIFY(!configuration->busy());
+    host.theme.setMotionEnabled(false);
     auto *seek = view->command("seek", {{"value", 5000}});
     auto seekRoot = host.engine.newQObject(seek);
     QTRY_COMPARE(seek->state(), EchoPluginOperation::Succeeded);
     QTRY_VERIFY(host.playback.positionMs() >= 4900 && host.playback.positionMs() <= 5100);
+    QTRY_VERIFY(presentationClock->property("renderTime").toDouble() >= 4900 &&
+                presentationClock->property("renderTime").toDouble() <= 5100);
     QTRY_COMPARE(primary->property("text").toString(), QString("原生音频驱动的第 2 行"));
     QVERIFY(QMetaObject::invokeMethod(toggle, "clicked"));
     QTRY_VERIFY(host.playback.playing());
     QTRY_VERIFY_WITH_TIMEOUT(host.playback.positionMs() > 5350, 5000);
-    auto *drawer = root->findChild<QObject *>("lyricSkinDrawer");
-    QVERIFY(drawer);
-    QVERIFY(QMetaObject::invokeMethod(drawer, "close"));
+    int completedPlayingSeeks = 0;
+    bool clockResetAtSeekEvent = true;
+    const auto seekConnection = connect(view->player(), &EchoPluginPlayer::eventOccurred, this,
+        [&](const QString &event, const QVariantMap &) {
+            if (event != "seek")
+                return;
+            ++completedPlayingSeeks;
+            clockResetAtSeekEvent = clockResetAtSeekEvent &&
+                std::abs(presentationClock->property("renderTime").toDouble() -
+                         host.playback.positionMs()) < 2;
+        });
+    for (const auto target : {8000, 1000}) {
+        qInfo() << "Folia playing seek target:" << target;
+        auto *operation = view->command("seek", {{"value", target}});
+        auto operationRoot = host.engine.newQObject(operation);
+        QTRY_COMPARE(operation->state(), EchoPluginOperation::Succeeded);
+        const auto expected = target == 8000 ? 1 : 2;
+        QTRY_COMPARE(completedPlayingSeeks, expected);
+        QVERIFY(clockResetAtSeekEvent);
+        QVERIFY(host.playback.playing());
+    }
+    disconnect(seekConnection);
+    // The production skin host unloads its whole visual scope when the window
+    // hides. Assert destruction rather than dereferencing the retired clock.
+    window->hide();
+    QTRY_VERIFY(presentationClock.isNull());
+    QTRY_VERIFY(!view || !view->active());
+    const auto hiddenTime = host.playback.positionMs();
+    const auto hiddenUpdates = presented.count();
+    QTest::qWait(350);
+    QCOMPARE(presented.count(), hiddenUpdates);
+    QVERIFY(host.playback.positionMs() > hiddenTime);
+    window->show();
+    QTRY_VERIFY((skin = visual(window->contentItem(), "foliaPlaybackPage")));
+    view = skin->property("page").value<EchoPluginViewContext *>();
+    configuration = skin->property("configuration").value<AppearanceConfiguration *>();
+    QVERIFY(view && view->active());
+    presentationClock = clockComponent.createWithInitialProperties(
+        {{"page", QVariant::fromValue(view.data())}});
+    QVERIFY2(presentationClock, qPrintable(clockComponent.errorString()));
+    presentationClock->setParent(skin);
+    qobject_cast<QQuickItem *>(presentationClock.data())->setParentItem(skin);
+    QTRY_VERIFY(presentationClock->property("live").toBool());
+    QTRY_VERIFY(presentationClock->property("renderTime").toDouble() >= host.playback.positionMs());
     host.playback.pause();
     QTRY_VERIFY(!host.playback.playing());
     QTest::qWait(100);
@@ -179,6 +309,7 @@ ApplicationWindow {
     window->setWidth(1100);
     QVERIFY(QMetaObject::invokeMethod(page, "close"));
     QTRY_VERIFY(!view || !view->active());
+    QTRY_VERIFY(presentationClock.isNull());
     QVERIFY(!configuration || !configuration->patch({{"lyricsFontScale", 1.1}}));
 
     // Reload the same installed package: persisted configuration survives and
@@ -188,6 +319,8 @@ ApplicationWindow {
     QTRY_COMPARE(host.runtime.state(installation), PluginRuntime::Active);
     entry = catalog->entries("skin").first();
     QCOMPARE(entry->configuration()->values().value("lyricsFontScale").toDouble(), 1.2);
+    QCOMPARE(entry->configuration()->values().value("playerChromeVisibilityMode").toString(),
+             QString("auto-hide"));
     auto *scope = host.runtime.context(installation);
     QVERIFY(scope->appearance()->useSkin("folia"));
     QVERIFY(QMetaObject::invokeMethod(root.get(), "openPlayback"));

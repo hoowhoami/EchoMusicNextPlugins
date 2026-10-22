@@ -76,12 +76,14 @@ Item {
                 readonly property bool hasTranslation: line !== null && (line.translation || "").length > 0 && !root.hideTranslationSubtitle
                 objectName: "stillRow" + index
                 width: rows.width
-                height: line ? main.implicitHeight * root.lyricsFontScale + (hasTranslation ? translation.implicitHeight * root.lyricsFontScale * root.subtitleFontScale + (current ? 12 : 8) : 0) : 80
+                // Upstream CSS scale transforms pixels around each text's
+                // center; it does not reflow or enlarge the flex row geometry.
+                height: line ? main.implicitHeight + (hasTranslation ? translation.implicitHeight + (current ? 12 : 8) : 0) : 80
 
                 ShadowText {
                     id: main
                     objectName: "stillPrimary" + row.index
-                    width: Math.min(896, row.width) / Math.max(0.01, root.lyricsFontScale)
+                    width: Math.min(896, row.width)
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: row.line ? row.line.lineText || "" : ""
                     textFormat: Text.PlainText
@@ -93,16 +95,16 @@ Item {
                     opacity: row.current ? 1 : 0.3
                     font: row.current ? root.currentFont : root.adjacentFont
                     scale: root.lyricsFontScale
-                    transformOrigin: Item.Top
+                    transformOrigin: Item.Center
                     renderType: Text.QtRendering
                 }
                 ShadowText {
                     id: translation
                     objectName: "stillTranslation" + row.index
                     subtitle: true
-                    width: Math.min(896, row.width) / Math.max(0.01, root.lyricsFontScale * root.subtitleFontScale)
+                    width: Math.min(896, row.width)
                     anchors.horizontalCenter: parent.horizontalCenter
-                    y: main.implicitHeight * root.lyricsFontScale + (row.current ? 12 : 8)
+                    y: main.implicitHeight + (row.current ? 12 : 8)
                     visible: row.hasTranslation
                     text: row.line ? row.line.translation || "" : ""
                     textFormat: Text.PlainText
@@ -114,7 +116,7 @@ Item {
                     opacity: row.current ? 0.8 : 0.3
                     font: row.current ? root.currentSubtitleFont : root.adjacentSubtitleFont
                     scale: root.lyricsFontScale * root.subtitleFontScale
-                    transformOrigin: Item.Top
+                    transformOrigin: Item.Center
                     renderType: Text.QtRendering
                 }
             }
