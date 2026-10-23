@@ -4,7 +4,7 @@
 
 ## 业务与验证
 
-`ctx.kugou.request(method, arguments)` 调用宿主类型化业务服务。编辑器按 method 提示准确的参数和结果字段；方法目录见 `KugouMethods`。目前提供 96 个正式命令，覆盖搜索、推荐/榜单、专辑/歌手、歌单、收藏、云盘、社交、评论/弹幕、音效、歌词、媒体和一起听。结果使用宿主已经转换的领域数据，字段保留其真实单位和可空性。业务 ID 使用十进制字符串，避免 JavaScript 大整数精度损失。
+`ctx.kugou.request(method, arguments)` 调用宿主类型化业务服务。编辑器按 method 提示准确的参数和结果字段；方法目录见 `KugouMethods`。目前提供 97 个正式命令，覆盖搜索、推荐/榜单、专辑/歌手、歌单、收藏、云盘、社交、评论/弹幕、音效、歌词、媒体和一起听。结果使用宿主已经转换的领域数据，字段保留其真实单位和可空性。业务 ID 使用十进制字符串，避免 JavaScript 大整数精度损失。
 
 ```ts
 const result = await awaitOperation(
@@ -84,3 +84,5 @@ component 是包内 QML，作为歌词视口 foreground 装饰按可见性创建
 完整歌词数据按需要读取 player.lyricSnapshot()；视口快照不在每一帧重复拷贝整首歌词。时间与词/glyph 的 startMs 对照时减去 snapshot.offsetMs；run 自带的 timelineMs 已位于原始逐字时间轴。快照只在持有公开引用时生成，字形几何随排版缓存，正常播放不重做 CPU 字体栅格化。
 
 `autoScroll({host, request, snapshot})` 同步返回 true 表示接管这次滚动，否则宿主按原逻辑跟随。较高 order 先执行；已接管后不再调用较低优先级处理器。通过 host.invoke('scrollTo',{position}) 调整位置；resumeFollow 恢复默认跟随。页面手动浏览时不调用接管处理器，减少动态效果时 request.reducedMotion=true、smooth=false。桌面横排、拼音和竖排均使用实际跟随位置。停用会移除处理器、装饰组件、样式和呈现订阅，下一次跟随回到原生行为。
+
+头像接口分为 `uploadUserAvatar({ image })`（仅上传，返回 `file_name`）与 `updateUserAvatar({ fileName })`（仅提交头像引用）。图片选择、处理、两步协调及账号状态更新由调用方负责，失败或取消不自动重放写入。歌单更新 `update.kind` 可为 `owned` 或 `collected`，目标始终使用当前账号目录中的 `id`。

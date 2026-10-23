@@ -115,3 +115,7 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 歌词 resolver、LRC/KRC/YRC 和作用域写入见[歌词接口](lyrics.md)。
 
 业务与验证、入口、快捷键/Toast/滚动、完整任务及页面/桌面歌词动效见[扩展接口](ecosystem.md)。
+
+完整备份、检查、恢复和设置中的存储提供者见 [备份](backups.md)。
+
+独立 QML 窗口、资源授权、TCP 与同端口 HTTP/WebSocket 服务见[窗口与网络服务](windows-network.md)。

@@ -117,6 +117,7 @@ function compatibleType(qtType, type, depth = 0) {
         'ThemeDefinition',
         'SkinDefinition',
         'AudioSourceDefinition',
+        'BackupProviderDefinition',
         'LyricResolverDefinition',
         'TaskDefinition',
         'TaskPatch',

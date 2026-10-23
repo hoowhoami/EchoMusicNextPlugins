@@ -139,6 +139,87 @@
         "type": "string",
         "pattern": "^[a-z][a-z0-9.-]{1,127}$"
       }
+    },
+    "windows": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "component"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9.-]{0,63}$"
+          },
+          "component": {
+            "type": "string",
+            "pattern": "\\.qml$",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 256
+          },
+          "position": {
+            "enum": ["center", "top-center"]
+          },
+          "transparent": {
+            "type": "boolean"
+          },
+          "alwaysOnTop": {
+            "type": "boolean"
+          },
+          "skipTaskbar": {
+            "type": "boolean"
+          },
+          "resizable": {
+            "type": "boolean"
+          },
+          "movable": {
+            "type": "boolean"
+          },
+          "rememberBounds": {
+            "type": "boolean"
+          },
+          "allowOutsideWorkArea": {
+            "type": "boolean"
+          },
+          "acceptFirstMouse": {
+            "type": "boolean"
+          },
+          "defaultWidth": {
+            "type": "integer",
+            "minimum": 32,
+            "maximum": 8192
+          },
+          "defaultHeight": {
+            "type": "integer",
+            "minimum": 32,
+            "maximum": 8192
+          },
+          "minWidth": {
+            "type": "integer",
+            "minimum": 32,
+            "maximum": 8192
+          },
+          "minHeight": {
+            "type": "integer",
+            "minimum": 32,
+            "maximum": 8192
+          },
+          "maxWidth": {
+            "type": "integer",
+            "minimum": 32,
+            "maximum": 8192
+          },
+          "maxHeight": {
+            "type": "integer",
+            "minimum": 32,
+            "maximum": 8192
+          }
+        }
+      }
     }
   },
   "$defs": {

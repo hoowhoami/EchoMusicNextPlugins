@@ -177,3 +177,25 @@ test('asset directories cannot recursively include the build output', async (t) 
     /Assets cannot contain/,
   );
 });
+
+test('custom windows validate declaration, capability and contained component files', async (t) => {
+  const { source, output } = await author(t);
+  const file = path.join(source, 'manifest.json');
+  const manifest = JSON.parse(await readFile(file, 'utf8'));
+  const contract = await loadContract();
+  manifest.windows = [{ id: 'tools', component: 'Tools.qml', minWidth: 200, maxWidth: 600 }];
+  await assert.rejects(validateManifest(manifest, contract), /windows capability/);
+  manifest.capabilities.push('windows');
+  await validateManifest(manifest, contract);
+  manifest.windows.push({ ...manifest.windows[0] });
+  await assert.rejects(validateManifest(manifest, contract), /Duplicate window/);
+  manifest.windows.pop();
+  manifest.windows[0].minWidth = 700;
+  await assert.rejects(validateManifest(manifest, contract), /size range/);
+  manifest.windows[0].minWidth = 200;
+  manifest.windows[0].component = '../Escape.qml';
+  await assert.rejects(validateManifest(manifest, contract), /contained relative path/);
+  manifest.windows[0].component = 'Missing.qml';
+  await writeFile(file, JSON.stringify(manifest));
+  await assert.rejects(buildPackage(source, output), /ENOENT|Missing|missing/);
+});

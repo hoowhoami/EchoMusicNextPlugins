@@ -12,3 +12,5 @@ export async function activate(ctx: EchoPluginContext): Promise<void> {
 ```
 
 先经工具转换为ES2016再加载，不能把async源码直接交给Qt。包内含manifest JSON Schema、实际Qt元对象契约快照和Qt console类型，默认不加载DOM/Node类型。版本1.0.0，目标宿主0.1.0 / Qt6.12.0，具体范围见根docs/sdk.md。
+
+独立窗口、TCP 和本地 HTTP/WebSocket 服务的声明、授权、消息处理与生命周期见 [窗口与网络服务](../../docs/windows-network.md)。

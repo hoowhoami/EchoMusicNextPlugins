@@ -383,7 +383,98 @@ declare module 'echo:plugin-sdk' {
     readonly miniBounds?: Partial<QtRect>;
     readonly desktopBounds?: Partial<QtRect>;
   }
+  export type ResourceCapability = 'tcp' | 'webServer' | 'windows';
+  export interface ResourcePermission {
+    readonly id: string;
+    readonly installationId: string;
+    readonly pluginName: string;
+    readonly capability: ResourceCapability;
+    readonly name: string;
+    readonly contentHash: string;
+  }
+  export interface PluginPermissionStore {
+    readonly pendingChanged: QtSignal;
+    readonly records: ResourcePermission[];
+    readonly changed: QtSignal;
+    readonly confirmationRequested: QtSignal<
+      [requestId: string, request: Omit<ResourcePermission, 'id'> & { purpose: string }]
+    >;
+    readonly revoked: QtSignal<[installationId: string, capability: ResourceCapability]>;
+    revoke(id: string): boolean;
+    decide(requestId: string, allow: boolean): void;
+  }
+  export interface EchoPluginPermissions {
+    granted(capability: ResourceCapability): boolean;
+    request(capability: ResourceCapability, purpose?: string): EchoPluginOperation<boolean>;
+  }
+  export interface PluginWindowDefinition {
+    id: string;
+    component: string;
+    title?: string;
+    defaultWidth?: number;
+    defaultHeight?: number;
+    minWidth?: number;
+    minHeight?: number;
+    maxWidth?: number;
+    maxHeight?: number;
+    position?: 'center' | 'top-center';
+    transparent?: boolean;
+    alwaysOnTop?: boolean;
+    skipTaskbar?: boolean;
+    resizable?: boolean;
+    movable?: boolean;
+    rememberBounds?: boolean;
+    allowOutsideWorkArea?: boolean;
+    acceptFirstMouse?: boolean;
+  }
+  export interface PluginWindowShowOptions {
+    alwaysOnTop?: boolean;
+    allowOutsideWorkArea?: boolean;
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    focus?: boolean;
+  }
+  export type WindowResizeDirection = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
+  export interface EchoPluginWindow {
+    readonly id: string;
+    readonly snapshot: {
+      id: string;
+      visible: boolean;
+      loading: boolean;
+      bounds: QtRect;
+      ignoreMouseEvents: boolean;
+      alwaysOnTop: boolean;
+      positionSupported: boolean;
+      error: string;
+    };
+    readonly changed: QtSignal;
+    hide(): void;
+    close(): void;
+    setBounds(bounds: {
+      x?: number;
+      y?: number;
+      width?: number;
+      height?: number;
+    }): EchoPluginOperation;
+    setIgnoreMouseEvents(ignore: boolean): EchoPluginOperation;
+    showOnTop(focus?: boolean): EchoPluginOperation;
+    startMove(): EchoPluginOperation;
+    startResize(direction: WindowResizeDirection): EchoPluginOperation;
+    beginMove(globalX: number, globalY: number): EchoPluginOperation;
+    beginResize(
+      direction: WindowResizeDirection | '',
+      globalX: number,
+      globalY: number,
+    ): EchoPluginOperation;
+    updatePointer(globalX: number, globalY: number): void;
+    endPointer(): void;
+  }
   export interface EchoPluginWindows {
+    list(): PluginWindowDefinition[];
+    get(id: string): EchoPluginWindow | null;
+    show(id: string, options?: PluginWindowShowOptions): EchoPluginOperation<EchoPluginWindow>;
     readonly snapshot: FloatingWindowsSnapshot;
     readonly changed: QtSignal;
     command(
@@ -1294,7 +1385,127 @@ declare module 'echo:plugin-sdk' {
     readonly data: JsonValue | ArrayBuffer | undefined;
     readonly url: string;
   }
+  export interface TcpConnectOptions {
+    host: string;
+    port: number;
+    connectTimeoutMs?: number;
+    writeTimeoutMs?: number;
+    noDelay?: boolean;
+    keepAlive?: boolean;
+    keepAliveInitialDelayMs?: number;
+  }
+  export interface EchoPluginTcp {
+    readonly drained: QtSignal;
+    connect(options: TcpConnectOptions): EchoPluginOperation<EchoPluginTcpConnection>;
+  }
+  export interface EchoPluginTcpConnection {
+    readonly id: string;
+    readonly closed: boolean;
+    readonly changed: QtSignal;
+    read(): EchoPluginOperation<ArrayBuffer | null>;
+    write(data: ArrayBuffer): EchoPluginOperation;
+    end(): EchoPluginOperation;
+    close(): void;
+  }
+  export interface WebServerListenOptions {
+    host?: '127.0.0.1' | 'localhost';
+    port?: number;
+    path?: string;
+    allowCrossOrigin?: boolean;
+    maxConnections?: number;
+    maxMessageBytes?: number;
+    maxBufferedBytes?: number;
+  }
+  export interface WebServerRequest {
+    readonly requestId: string;
+    readonly pluginId: string;
+    readonly method: string;
+    readonly url: string;
+    readonly path: string;
+    readonly query: Record<string, string | string[]>;
+    readonly headers: Record<string, string | string[]>;
+    readonly body: ArrayBuffer;
+    readonly remoteAddress: string;
+  }
+  export interface WebServerResponse {
+    status?: number;
+    headers?: Record<string, string | string[]>;
+    body?: JsonValue | ArrayBuffer;
+  }
+  export interface WebSocketUpgradeRequest extends Omit<WebServerRequest, 'body' | 'method'> {
+    readonly connectionId: string;
+    readonly protocols: string[];
+  }
+  export interface WebSocketUpgradeDecision {
+    accept?: boolean;
+    protocol?: string;
+  }
+  export interface EchoPluginWebSocket {
+    readonly id: string;
+    readonly request: Omit<WebSocketUpgradeRequest, 'protocols' | 'requestId'> & {
+      readonly connectionId: string;
+      readonly protocol: string;
+    };
+    readonly readyState: number;
+    readonly changed: QtSignal;
+    readonly message: QtSignal<[data: string | ArrayBuffer, binary: boolean]>;
+    readonly closed: QtSignal<[code: number, reason: string]>;
+    readonly error: QtSignal<[message: string]>;
+    readonly pong: QtSignal<[elapsedMs: number, payload: ArrayBuffer]>;
+    sendText(text: string): EchoPluginOperation;
+    sendBytes(bytes: ArrayBuffer): EchoPluginOperation;
+    ping(bytes?: ArrayBuffer): EchoPluginOperation;
+    close(code?: number, reason?: string): void;
+  }
+  export interface EchoPluginWebServer {
+    readonly status: {
+      running: boolean;
+      host?: string;
+      port?: number;
+      origin?: string;
+      url?: string;
+      startedAt?: number;
+      connections: number;
+      pendingRequests: number;
+    };
+    readonly changed: QtSignal;
+    readonly drained: QtSignal;
+    listen(options?: WebServerListenOptions): EchoPluginOperation<{
+      host: string;
+      port: number;
+      origin: string;
+      url: string;
+      startedAt: number;
+    }>;
+    onRequest(
+      id: string,
+      callback: (
+        request: WebServerRequest,
+      ) =>
+        | WebServerResponse
+        | JsonValue
+        | ArrayBuffer
+        | void
+        | Promise<WebServerResponse | JsonValue | ArrayBuffer | void>,
+    ): EchoPluginRegistration | null;
+    onUpgrade(
+      id: string,
+      callback: (
+        request: WebSocketUpgradeRequest,
+      ) =>
+        | WebSocketUpgradeDecision
+        | boolean
+        | void
+        | Promise<WebSocketUpgradeDecision | boolean | void>,
+    ): EchoPluginRegistration | null;
+    onConnection(
+      id: string,
+      callback: (socket: EchoPluginWebSocket) => void | (() => void),
+    ): EchoPluginRegistration | null;
+    close(): EchoPluginOperation;
+  }
   export interface EchoPluginNetwork {
+    readonly tcp: EchoPluginTcp;
     readonly drained: QtSignal;
     request(options: NetworkRequestOptions): EchoPluginOperation<NetworkResponse>;
   }
@@ -1361,6 +1572,74 @@ declare module 'echo:plugin-sdk' {
     transaction(statements: SqliteStatement[]): EchoPluginOperation<SqliteRunResult[]>;
     close(): EchoPluginOperation<boolean>;
   }
+  export interface BackupScope {
+    settings?: boolean;
+    plugins?: boolean;
+  }
+  export interface BackupSummary {
+    readonly createdAt: string;
+    readonly appVersion: string;
+    readonly settings: boolean;
+    readonly plugins: boolean;
+    readonly settingCount: number;
+    readonly pluginCount: number;
+    readonly pluginNames: string[];
+  }
+  export interface BackupArchive {
+    readonly data: ArrayBuffer;
+    readonly fileName: string;
+    readonly summary: BackupSummary;
+  }
+  export interface BackupInspection {
+    readonly token: string;
+    readonly summary: BackupSummary;
+  }
+  export interface BackupRestoreResult {
+    readonly restartScheduled: boolean;
+    readonly settingsImported: boolean;
+    readonly pluginsImported: number;
+  }
+  export interface BackupProviderEntry {
+    id: string;
+    name: string;
+    createdAt?: string;
+    size?: number;
+    description?: string;
+  }
+  export interface BackupProviderDefinition {
+    name: string;
+    description?: string;
+    save(request: EchoPluginBackupRequest): unknown | Promise<unknown>;
+    list(request: EchoPluginBackupRequest): BackupProviderEntry[] | Promise<BackupProviderEntry[]>;
+    load(
+      request: EchoPluginBackupRequest,
+    ): ArrayBuffer | ArrayBufferView | Promise<ArrayBuffer | ArrayBufferView>;
+    remove?(request: EchoPluginBackupRequest): unknown | Promise<unknown>;
+  }
+  /** One provider invocation. context owns cancellable requests/timers; track links an existing operation. */
+  export interface EchoPluginBackupRequest {
+    readonly id: string;
+    readonly fileName: string;
+    readonly data: ArrayBuffer;
+    readonly summary: BackupSummary;
+    readonly active: boolean;
+    readonly canceled: boolean;
+    readonly context: EchoPluginContext | null;
+    readonly changed: QtSignal;
+    track<T>(operation: EchoPluginOperation<T>): EchoPluginOperation<T> | null;
+  }
+  export interface EchoPluginBackups {
+    create(scope?: BackupScope): EchoPluginOperation<BackupArchive>;
+    inspect(data: ArrayBuffer): EchoPluginOperation<BackupInspection>;
+    /** Presents host confirmation. Success means a restore/restart has been scheduled. */
+    restore(token: string, scope?: BackupScope): EchoPluginOperation<BackupRestoreResult>;
+    /** Main activation only; removing the registration cancels its running storage invocation. */
+    registerProvider(
+      id: string,
+      definition: BackupProviderDefinition,
+    ): EchoPluginRegistration | null;
+  }
+
   export interface EchoPluginSqlite {
     readonly drained: QtSignal;
     open(options?: SqliteOpenOptions): EchoPluginOperation<EchoPluginDatabase>;
@@ -1443,6 +1722,7 @@ declare module 'echo:plugin-sdk' {
     position: number;
   }
   export interface KugouPlaylistUpdate {
+    kind?: 'owned' | 'collected';
     id: string;
     totalRevision: number;
     sortIndex: number;
@@ -2310,6 +2590,8 @@ declare module 'echo:plugin-sdk' {
     readonly album_count: number | null;
   }
   export interface KugouDto_user_playlist_UserPlaylist {
+    readonly description_present: boolean;
+    readonly tags_present: boolean;
     readonly cloud_list_id: string | null;
     readonly global_id: string;
     readonly creator_global_id: string;
@@ -3271,8 +3553,12 @@ declare module 'echo:plugin-sdk' {
       arguments: { update: KugouPlaylistUpdate };
       result: KugouDto_domain_LibraryPlaylistChange;
     };
-    updateUserAvatar: {
+    uploadUserAvatar: {
       arguments: { image: ArrayBuffer };
+      result: { readonly file_name: string };
+    };
+    updateUserAvatar: {
+      arguments: { fileName: string };
       result: KugouDto_user_update_avatar_AvatarUpdate;
     };
     updateUserProfile: {
@@ -3670,8 +3956,12 @@ declare module 'echo:plugin-sdk' {
       arguments: { update: KugouPlaylistUpdate },
     ): EchoPluginOperation<KugouMethods['updatePlaylist']['result']>;
     request(
-      method: 'updateUserAvatar',
+      method: 'uploadUserAvatar',
       arguments: { image: ArrayBuffer },
+    ): EchoPluginOperation<KugouMethods['uploadUserAvatar']['result']>;
+    request(
+      method: 'updateUserAvatar',
+      arguments: { fileName: string },
     ): EchoPluginOperation<KugouMethods['updateUserAvatar']['result']>;
     request(
       method: 'updateUserProfile',
@@ -3759,7 +4049,10 @@ declare module 'echo:plugin-sdk' {
     readonly kugou: EchoPluginKugou;
     readonly io: EchoPluginIo;
     readonly sqlite: EchoPluginSqlite;
+    readonly backups: EchoPluginBackups;
     readonly net: EchoPluginNetwork;
+    readonly permissions: EchoPluginPermissions;
+    readonly webServer: EchoPluginWebServer;
     readonly files: EchoPluginFiles;
     readonly downloads: EchoPluginDownloads;
     readonly plugins: EchoPluginRegistry;

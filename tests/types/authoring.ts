@@ -272,3 +272,40 @@ async function sqliteStorage(ctx: EchoPluginContext): Promise<void> {
   db.all('SELECT ?', { id: 1 });
 }
 void sqliteStorage;
+
+async function backups(ctx: EchoPluginContext): Promise<void> {
+  const archive = await awaitOperation(ctx.backups.create({ settings: true, plugins: true }));
+  const inspected = await awaitOperation(ctx.backups.inspect(archive.data));
+  inspected.summary.pluginCount.toFixed();
+  await awaitOperation(ctx.backups.restore(inspected.token, { plugins: false }));
+  ctx.backups.registerProvider('cloud', {
+    name: 'Cloud',
+    save: async (request) => {
+      if (!request.context) return;
+      await awaitOperation(
+        request.context.net.request({
+          url: 'https://example.test',
+          method: 'PUT',
+          body: request.data,
+        }),
+      );
+    },
+    list: () => [{ id: 'a', name: 'Backup' }],
+    load: async (request) => {
+      const result = await awaitOperation(
+        request.context!.net.request({
+          url: 'https://example.test/' + request.id,
+          responseType: 'arrayBuffer',
+        }),
+      );
+      return result.data as ArrayBuffer;
+    },
+  });
+  // @ts-expect-error Must inspect archive bytes, not a path or URL.
+  ctx.backups.inspect('/tmp/backup');
+  // @ts-expect-error Storage backends need save/list/load.
+  ctx.backups.registerProvider('bad', { name: 'Bad', list: () => [] });
+  // @ts-expect-error Scope keys are defined by the host.
+  ctx.backups.create({ credentials: true });
+}
+void backups;

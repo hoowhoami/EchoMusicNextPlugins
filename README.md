@@ -47,3 +47,5 @@ SDK/tools当前1.0.0，正式包使用`.echomod`。依赖/可选依赖/冲突/�
 业务、侧栏/卡片/歌曲菜单、快捷键/通知/滚动、任务中心及歌词动效见[扩展接口](docs/ecosystem.md)。
 
 结构化持久数据见 [SQLite](docs/sqlite.md)。
+
+备份与存储提供者见 [备份 API](docs/backups.md)。

@@ -30,6 +30,19 @@ export async function validateManifest(manifest, contract) {
   if (!validateSchema(manifest))
     throw new Error(`Invalid manifest: ${JSON.stringify(validateSchema.errors)}`);
   relativePath(manifest.entry);
+  if ((manifest.windows ?? []).length && !manifest.capabilities.includes('windows'))
+    throw new Error('Window declarations require windows capability');
+  const windowIds = new Set();
+  for (const window of manifest.windows ?? []) {
+    relativePath(window.component);
+    if (windowIds.has(window.id)) throw new Error('Duplicate window ID');
+    windowIds.add(window.id);
+    if (
+      (window.minWidth ?? 64) > (window.maxWidth ?? 8192) ||
+      (window.minHeight ?? 64) > (window.maxHeight ?? 8192)
+    )
+      throw new Error('Invalid window size range');
+  }
   for (const key of [
     'dependencies',
     'optionalDependencies',
@@ -127,6 +140,7 @@ export async function validatePackage(root) {
   const manifestPath = await containedFile(root, 'manifest.json');
   if ((await lstat(manifestPath)).size > 256 * 1024) throw new Error('Oversized manifest');
   const manifest = await validateManifest(await readJson(manifestPath));
+  for (const window of manifest.windows ?? []) await containedFile(root, window.component);
   const files = await inventory(root);
   const entries = new Map();
   for (const file of files) {
