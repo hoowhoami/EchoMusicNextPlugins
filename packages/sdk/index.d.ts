@@ -383,7 +383,15 @@ declare module 'echo:plugin-sdk' {
     readonly miniBounds?: Partial<QtRect>;
     readonly desktopBounds?: Partial<QtRect>;
   }
-  export type ResourceCapability = 'tcp' | 'webServer' | 'windows';
+  export type ResourceCapability =
+    | 'tcp'
+    | 'webServer'
+    | 'windows'
+    | 'process'
+    | 'serverIntercept'
+    | 'navigation'
+    | 'hostSettings'
+    | 'cover';
   export interface ResourcePermission {
     readonly id: string;
     readonly installationId: string;
@@ -391,6 +399,7 @@ declare module 'echo:plugin-sdk' {
     readonly capability: ResourceCapability;
     readonly name: string;
     readonly contentHash: string;
+    readonly resource?: string;
   }
   export interface PluginPermissionStore {
     readonly pendingChanged: QtSignal;
@@ -406,6 +415,101 @@ declare module 'echo:plugin-sdk' {
   export interface EchoPluginPermissions {
     granted(capability: ResourceCapability): boolean;
     request(capability: ResourceCapability, purpose?: string): EchoPluginOperation<boolean>;
+  }
+  export interface ProcessLaunchOptions {
+    /** Package-relative executable. Windows: .exe/.com; Unix: executable permission. */
+    executable: string;
+    args?: string[];
+    cwd?: string;
+    env?: Record<string, string | number | boolean | null>;
+  }
+  export interface PluginProcessInfo {
+    readonly id: string;
+    readonly pid: number;
+    readonly executable: string;
+    readonly cwd: string;
+    readonly startedAt: number;
+    readonly exitCode?: number;
+    readonly crashed?: boolean;
+  }
+  export interface EchoPluginProcess {
+    readonly running: PluginProcessInfo[];
+    readonly changed: QtSignal;
+    readonly exited: QtSignal<[process: PluginProcessInfo]>;
+    readonly drained: QtSignal;
+    launch(options: ProcessLaunchOptions): EchoPluginOperation<PluginProcessInfo>;
+    /** Scope-owned opaque id, never an arbitrary system pid. Cancelling the wait does not undo termination. */
+    terminate(id: string): EchoPluginOperation<boolean>;
+  }
+  export interface HostApiResponse {
+    /** Host status: 0 success, 1 cancelled, 2 invalid input, 3 closed, 4 internal, 5 API failure. */
+    status: number;
+    body: JsonValue;
+  }
+  export interface HostApiRequest {
+    readonly stage: 'api';
+    readonly operation: string;
+    readonly query: Record<string, JsonValue>;
+    readonly headers: Record<string, string>;
+  }
+  export interface HostTransportRequest {
+    readonly stage: 'transport';
+    readonly operation: string;
+    method: string;
+    url: string;
+    headers: Record<string, string[]>;
+    bodyBase64: string;
+  }
+  export interface HostTransportResponse {
+    readonly error?: Record<string, JsonValue>;
+    /** Actual HTTP status; zero carries the original transport error. */
+    status: number;
+    headers: Record<string, string[]>;
+    bodyBase64: string;
+  }
+  export interface HostApiPatch {
+    query?: Record<string, JsonValue>;
+  }
+  export interface HostTransportPatch {
+    method?: string;
+    url?: string;
+    headers?: Record<string, string[]>;
+    bodyBase64?: string;
+  }
+  export interface EchoPluginInterceptRequest {
+    readonly stage: 'api' | 'transport';
+    readonly operation: string;
+    readonly query: Record<string, JsonValue>;
+    readonly transport: HostTransportRequest | Record<string, never>;
+    /** api: frozen logical Authorization; transport: actual multi-value HTTP headers. */
+    readonly headers: Record<string, string | string[]>;
+    readonly active: boolean;
+    readonly changed: QtSignal;
+    /** First patch wins; every call observes the same downstream exchange. */
+    next(
+      patch?: HostApiPatch | HostTransportPatch,
+    ): EchoPluginOperation<HostApiResponse | HostTransportResponse>;
+  }
+  export interface HostInterceptorDefinition {
+    id: string;
+    /** api patches unsigned operation queries; transport runs before wire conversion, with actual headers and bytes. */
+    stage?: 'api' | 'transport';
+    priority?: number;
+    timeoutMs?: number;
+    /** Operation prefix or synchronous predicate. Match failures pass through. */
+    match?: string | RegExp | ((request: HostApiRequest | HostTransportRequest) => boolean);
+    handle(
+      request: EchoPluginInterceptRequest,
+    ):
+      | HostApiResponse
+      | HostTransportResponse
+      | void
+      | Promise<HostApiResponse | HostTransportResponse | void>;
+  }
+  export interface EchoPluginServer {
+    encodeBody(value: JsonValue, encoding?: 'json' | 'utf8'): string;
+    decodeBody(base64: string, encoding?: 'json' | 'utf8'): JsonValue;
+    intercept(definition: HostInterceptorDefinition): EchoPluginOperation<EchoPluginRegistration>;
   }
   export interface PluginWindowDefinition {
     id: string;
@@ -1109,10 +1213,306 @@ declare module 'echo:plugin-sdk' {
       priority?: number,
     ): EchoUiStyleRule | null;
   }
+  export type HostRoute =
+    | 'home'
+    | 'recommend-songs'
+    | 'ranking'
+    | 'free-listen'
+    | 'discover-flow'
+    | 'personal-fm'
+    | 'explore'
+    | 'recognize'
+    | 'search'
+    | 'song-detail'
+    | 'mv-detail'
+    | 'artist-detail'
+    | 'album-detail'
+    | 'playlist-detail'
+    | 'favorites'
+    | 'history'
+    | 'cloud'
+    | 'purchased'
+    | 'profile'
+    | 'listen-together'
+    | 'themes'
+    | 'plugin-management'
+    | 'settings';
+  export interface HostNavigationTarget {
+    name: HostRoute;
+    resourceId?: string;
+    query?: Record<string, string>;
+    replace?: boolean;
+  }
+  export interface HostNavigationState {
+    readonly name: string;
+    readonly resourceId: string;
+    readonly query: Record<string, string>;
+    readonly canGoBack: boolean;
+    readonly canGoForward: boolean;
+  }
+  export interface EchoPluginNavigation {
+    available(): string[];
+    read(): EchoPluginOperation<HostNavigationState>;
+    navigate(target: HostNavigationTarget): EchoPluginOperation<HostNavigationState>;
+    history(command: 'back' | 'forward' | 'refresh'): EchoPluginOperation<HostNavigationState>;
+    observe(
+      id: string,
+      callback: (state: HostNavigationState) => void,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+  }
+  export interface HostPlaybackSettings {
+    mvAudioFallbackEnabled: boolean;
+    queueMode: 'single' | 'context';
+    defaultQuality:
+      'standard' | 'higher' | 'flac' | 'hi_res' | 'viper_tape' | 'viper_clear' | 'viper_atmos';
+    autoPlayOnLaunch: boolean;
+    compatibilityMode: boolean;
+    volumeFade: boolean;
+    volumeFadeMs: number;
+    viperQualityEnabled: boolean;
+    autoNext: boolean;
+    preventSleep: boolean;
+    autoNextDelaySeconds: number;
+    autoNextMaxAttempts: number;
+  }
+  export interface HostShellSettings {
+    keepAliveEnabled: boolean;
+    keepAliveMax: number;
+    motionEnabled: boolean;
+    searchDefaultEnabled: boolean;
+    lyricBarrageEnabled: boolean;
+    mvBarrageEnabled: boolean;
+    showFullscreenButton: boolean;
+  }
+  export interface HostAppearanceSettings {
+    mode: 0 | 1 | 2 | 3;
+    coverAtmosphere: boolean;
+    atmosphereHeight: number;
+    atmosphereStrength: number;
+    transparency: number;
+    windowFrosted: boolean;
+    floatingFrosted: boolean;
+    panelOpacity: number;
+    globalFont: string;
+    lyricFont: string;
+    desktopLyricFont: string;
+    miniLyricFont: string;
+    taskbarLyricFont: string;
+  }
+  export interface HostLyricSettings {
+    alignPosition: number;
+    enableSpring: boolean;
+    highRefreshRate: boolean;
+    enableBlur: boolean;
+    enableScale: boolean;
+    hidePassedLines: boolean;
+    wordFadeWidth: number;
+    dynamicAlbumCover: boolean;
+    textColor: string;
+    useCoverColor: boolean;
+    fontScale: number;
+    fontWeight: number;
+    backgroundBlur: boolean;
+    backgroundRhythm: boolean;
+    playedColor: string;
+    unplayedColor: string;
+    followCoverColor: boolean;
+    unplayedFollowCoverColor: boolean;
+    unplayedTextColor: string;
+    unplayedUseCoverColor: boolean;
+  }
+  export interface HostMiniSettings {
+    alwaysOnTop: boolean;
+    layout: 'horizontal' | 'vertical';
+    alignment: 'left' | 'center' | 'right';
+    shadowStrength: 'none' | 'soft' | 'normal' | 'strong';
+    bold: boolean;
+    showNextLinePreview: boolean;
+    playedColor: string;
+    unplayedColor: string;
+    followCoverColor: boolean;
+    unplayedFollowCoverColor: boolean;
+    fontSize: number;
+    secondaryFontSize: number;
+    lineGap: number;
+    fontWeight: 400 | 600 | 780;
+    backgroundBlur: boolean;
+  }
+  export interface HostDesktopSettings {
+    alwaysOnTop: boolean;
+    showUnlockButton: boolean;
+    layout: 'horizontal' | 'vertical';
+    alignment: 'left' | 'center' | 'right' | 'both';
+    shadowStrength: 'none' | 'soft' | 'normal' | 'strong';
+    bold: boolean;
+    showNextLinePreview: boolean;
+    playedColor: string;
+    unplayedColor: string;
+    followCoverColor: boolean;
+    unplayedFollowCoverColor: boolean;
+    fontSize: number;
+    secondaryFontSize: number;
+    lineGap: number;
+    fontWeight: 400 | 600 | 780;
+    backgroundBlur: boolean;
+  }
+  export interface HostSettingDescriptor {
+    readonly key: string;
+    readonly type: 'boolean' | 'string' | 'number';
+    readonly writable: boolean;
+    readonly integer?: boolean;
+    readonly minimum?: number;
+    readonly maximum?: number;
+    readonly choices?: string[] | number[];
+  }
+  export interface EchoPluginSettings {
+    readonly sourceChanged: QtSignal;
+    catalog(): { domain: string; properties: HostSettingDescriptor[] }[];
+    read(domain: 'playback'): EchoPluginOperation<Readonly<HostPlaybackSettings>>;
+    read(domain: 'shell'): EchoPluginOperation<Readonly<HostShellSettings>>;
+    read(domain: 'appearance'): EchoPluginOperation<Readonly<HostAppearanceSettings>>;
+    read(domain: 'lyrics'): EchoPluginOperation<Readonly<HostLyricSettings>>;
+    read(domain: 'mini'): EchoPluginOperation<Readonly<HostMiniSettings>>;
+    read(domain: 'desktop'): EchoPluginOperation<Readonly<HostDesktopSettings>>;
+    update(
+      domain: 'playback',
+      patch: Partial<HostPlaybackSettings>,
+    ): EchoPluginOperation<Readonly<HostPlaybackSettings>>;
+    update(
+      domain: 'shell',
+      patch: Partial<HostShellSettings>,
+    ): EchoPluginOperation<Readonly<HostShellSettings>>;
+    update(
+      domain: 'appearance',
+      patch: Partial<HostAppearanceSettings>,
+    ): EchoPluginOperation<Readonly<HostAppearanceSettings>>;
+    update(
+      domain: 'lyrics',
+      patch: Partial<HostLyricSettings>,
+    ): EchoPluginOperation<Readonly<HostLyricSettings>>;
+    update(
+      domain: 'mini',
+      patch: Partial<HostMiniSettings>,
+    ): EchoPluginOperation<Readonly<HostMiniSettings>>;
+    update(
+      domain: 'desktop',
+      patch: Partial<HostDesktopSettings>,
+    ): EchoPluginOperation<Readonly<HostDesktopSettings>>;
+    observe(
+      id: string,
+      domain: 'playback',
+      callback: (values: Readonly<HostPlaybackSettings>) => void,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+    observe(
+      id: string,
+      domain: 'shell',
+      callback: (values: Readonly<HostShellSettings>) => void,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+    observe(
+      id: string,
+      domain: 'appearance',
+      callback: (values: Readonly<HostAppearanceSettings>) => void,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+    observe(
+      id: string,
+      domain: 'lyrics',
+      callback: (values: Readonly<HostLyricSettings>) => void,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+    observe(
+      id: string,
+      domain: 'mini',
+      callback: (values: Readonly<HostMiniSettings>) => void,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+    observe(
+      id: string,
+      domain: 'desktop',
+      callback: (values: Readonly<HostDesktopSettings>) => void,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+  }
+  export interface CoverFallbackContext {
+    readonly url: string;
+    readonly normalizedUrl: string;
+    readonly failedUrl?: string;
+    readonly reason: 'empty' | 'error';
+    readonly scope: string;
+    readonly alt: string;
+    readonly size: number;
+    readonly accentColor: string;
+    readonly accentColorRgb: [number, number, number];
+  }
+  export interface EchoPluginCover {
+    createThemedIconCoverUrl(options: {
+      icon?: string | { body: string; width?: number; height?: number };
+      color?: string;
+    }): string;
+    createThemedIconCoverUrl(icon?: string, color?: string): string;
+    setFallback(
+      id: string,
+      resolver: (context: CoverFallbackContext) => string | null | undefined,
+      priority?: number,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+    invalidate(): void;
+  }
+  export interface HostActionDefinition {
+    title: string;
+    icon: string;
+    tooltip?: string;
+    defaultPlacement?: 'toolbar' | 'left' | 'center' | 'right' | 'more';
+    order?: number;
+    visible?: boolean | (() => boolean);
+    disabled?: boolean | (() => boolean);
+    active?: boolean | (() => boolean);
+    badge?: string | number | null | (() => string | number | null | undefined);
+    badgeTitle?: string;
+    badgeDefaultVisible?: boolean;
+    trigger?: 'click' | 'hover';
+    onClick: () => void | Promise<void>;
+  }
+  export type HostTitlebarActionDefinition = Omit<HostActionDefinition, 'defaultPlacement'> & {
+    defaultPlacement?: 'toolbar' | 'more';
+  };
+  export type HostPlayerbarActionDefinition = Omit<HostActionDefinition, 'defaultPlacement'> & {
+    defaultPlacement?: 'left' | 'center' | 'right' | 'more';
+  };
+  export type HostActionPatch = Partial<
+    Omit<HostActionDefinition, 'defaultPlacement' | 'order' | 'badgeDefaultVisible'>
+  >;
+  export interface EchoPluginAction {
+    readonly key: string;
+    readonly revision: string;
+    readonly active: boolean;
+    readonly busy: boolean;
+    readonly state: {
+      title: string;
+      icon: string;
+      tooltip: string;
+      visible: boolean;
+      disabled: boolean;
+      active: boolean;
+      badge: string;
+      busy: boolean;
+    };
+    readonly changed: QtSignal;
+    update(patch: HostActionPatch): boolean;
+    refresh(): void;
+    invoke(): EchoPluginOperation<JsonValue | void> | null;
+    cancel(): void;
+    dispose(): void;
+  }
   export interface EchoPluginUi {
     registerSidebarItem(id: string, definition: SidebarDefinition): EchoPluginRegistration | null;
     registerShortcutCard(id: string, definition: SidebarDefinition): EchoPluginRegistration | null;
     registerSongMenuItem(id: string, definition: SongMenuDefinition): EchoPluginRegistration | null;
+    readonly navigation: EchoPluginNavigation;
+    readonly cover: EchoPluginCover;
+    registerTitlebarActionDefinition(
+      id: string,
+      definition: HostTitlebarActionDefinition,
+    ): EchoPluginAction | null;
+    registerPlayerbarActionDefinition(
+      id: string,
+      definition: HostPlayerbarActionDefinition,
+    ): EchoPluginAction | null;
     readonly lyricsPage: EchoPluginAppearance;
     readonly parts: EchoPluginUiParts;
     readonly styles: EchoPluginUiStyles;
@@ -4027,6 +4427,9 @@ declare module 'echo:plugin-sdk' {
   }
 
   export interface EchoPluginContext {
+    readonly settings: EchoPluginSettings;
+    readonly cover: EchoPluginCover;
+    readonly sessionInvalidated: QtSignal;
     readonly theme: EchoPluginAppearance;
     readonly appearance: EchoPluginAppearance;
     readonly fonts: EchoPluginFonts;
@@ -4052,6 +4455,8 @@ declare module 'echo:plugin-sdk' {
     readonly backups: EchoPluginBackups;
     readonly net: EchoPluginNetwork;
     readonly permissions: EchoPluginPermissions;
+    readonly process: EchoPluginProcess;
+    readonly server: EchoPluginServer;
     readonly webServer: EchoPluginWebServer;
     readonly files: EchoPluginFiles;
     readonly downloads: EchoPluginDownloads;
