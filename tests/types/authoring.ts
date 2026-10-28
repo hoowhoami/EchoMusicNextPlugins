@@ -18,6 +18,23 @@ function checkReadonlyContract(ctx: EchoPluginContext): void {
   ctx.account;
 }
 void checkReadonlyContract;
+function artistImageTypes(ctx: EchoPluginContext): void {
+  const images = ctx.kugou.request('audioImages', {
+    resources: [{ hash: '105A2705BEEE36A8BED029A8E1A6311D', albumAudioId: '32042818' }],
+  });
+  awaitOperation(images).then((groups) => {
+    const artist = groups[0]?.[0];
+    const url: string | null | undefined = artist?.images['3']?.[0]?.url;
+    const id: string | null | undefined = artist?.artist_id;
+    void url;
+    void id;
+  });
+  // @ts-expect-error Business IDs are decimal strings.
+  ctx.kugou.request('audioImages', { resources: [{ hash: 'a'.repeat(32), audioId: 123 }] });
+  // @ts-expect-error Resources are required for song/group correspondence.
+  ctx.kugou.request('audioImages', { count: 5 });
+}
+void artistImageTypes;
 
 function checkPluginServiceContract(ctx: EchoPluginContext): void {
   ctx.plugins.isAvailable('audio-library');

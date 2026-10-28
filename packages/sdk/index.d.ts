@@ -3661,7 +3661,35 @@ declare module 'echo:plugin-sdk' {
     readonly hash: string;
     readonly provider_extension: Record<string, JsonValue>;
   }
+  export interface KugouAudioImageResource {
+    readonly hash: string;
+    readonly audioId?: string;
+    readonly albumAudioId?: string;
+    readonly filename?: string;
+  }
+  export interface KugouArtistPortrait {
+    readonly id: string | null;
+    readonly file_hash: string | null;
+    readonly url: string | null;
+    readonly filename: string | null;
+    readonly publish_time: string | null;
+    readonly source: number | null;
+  }
+  export interface KugouArtistImages {
+    readonly artist_id: string | null;
+    readonly name: string | null;
+    readonly publish_status: number | null;
+    readonly resource_hash: string | null;
+    readonly avatar: string | null;
+    readonly avatar_url: string | null;
+    readonly audio_publish_date: string | null;
+    readonly images: Readonly<Record<string, readonly KugouArtistPortrait[]>>;
+  }
   export interface KugouMethods {
+    audioImages: {
+      arguments: { resources: readonly KugouAudioImageResource[]; count?: number };
+      result: KugouArtistImages[][];
+    };
     addPlaylistTracks: {
       arguments: { id: string; tracks: readonly KugouPlaylistTrackInput[] };
       result: KugouDto_domain_CloudTrackChange;
@@ -4315,6 +4343,10 @@ declare module 'echo:plugin-sdk' {
       method: 'songClimax',
       arguments: { hash: string },
     ): EchoPluginOperation<KugouMethods['songClimax']['result']>;
+    request(
+      method: 'audioImages',
+      arguments: KugouMethods['audioImages']['arguments'],
+    ): EchoPluginOperation<KugouMethods['audioImages']['result']>;
     request(
       method: 'songMetadata',
       arguments: { ids: readonly string[] },
