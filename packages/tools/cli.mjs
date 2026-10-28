@@ -100,7 +100,15 @@ try {
         throw new Error('Runtime command acceptance requires the spectrum-visualizer package');
       const result = await execute(
         path.resolve(values['runtime-test']),
-        ['builtAuthorPackageCommands'],
+        [
+          'builtAuthorPackageCommands',
+          'customWindowsRealEntryScopesAndRetirement',
+          'tcpRealBinaryCancellationAndRevocation',
+          'tcpHalfCloseReceivesResponseAfterFin',
+          'localHttpRealRequestsChunkingAndErrors',
+          'localWebSocketUpgradeBinaryPingAndLimits',
+          'resourceAccountAndDisableDrainRealTransports',
+        ],
         {
           env: {
             ...process.env,

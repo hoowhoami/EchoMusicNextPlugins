@@ -43,3 +43,9 @@ prepare:source同时构建dist、artifacts/*.echomod和源目录发布入口；�
 ## 正式插件格式与依赖
 
 SDK/tools当前1.0.0，正式包使用`.echomod`。依赖/可选依赖/冲突/加载顺序和typed跨插件服务见[插件指南](docs/plugin-packages.md)。官方频谱可视化直接使用宿主类型化频谱服务，不需要依赖演示插件。完整EchoMusic扩展能力继续按宿主65项对照推进，不将本阶段记为全部完成。
+
+业务、侧栏/卡片/歌曲菜单、快捷键/通知/滚动、任务中心及歌词动效见[扩展接口](docs/ecosystem.md)。
+
+结构化持久数据见 [SQLite](docs/sqlite.md)。
+
+备份与存储提供者见 [备份 API](docs/backups.md)。
