@@ -276,7 +276,7 @@ export async function buildPackage(source, outputRoot) {
         if (await exists(target)) throw new Error(`Asset overwrites generated file: ${relative}`);
         if (stat.size > maximumBytes) throw new Error('Asset exceeds package limit');
         await mkdir(path.dirname(target), { recursive: true });
-        await writeFile(target, await readFile(file));
+        await writeFile(target, await readFile(file), { mode: 0o644 | (stat.mode & 0o111) });
       } else throw new Error(`Unsupported asset: ${relative}`);
     };
     for (const asset of config.assets) await copy(relativePath(asset));

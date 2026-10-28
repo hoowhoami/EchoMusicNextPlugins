@@ -45,22 +45,50 @@ export function rangeContains(range, version) {
   });
 }
 
+const nativeScriptDefinitions = new Set([
+  'HostActionDefinition',
+  'HostTitlebarActionDefinition',
+  'HostPlayerbarActionDefinition',
+  'HostActionPatch',
+  'HostInterceptorDefinition',
+  'ThemeDefinition',
+  'SkinDefinition',
+  'AudioSourceDefinition',
+  'BackupProviderDefinition',
+  'LyricResolverDefinition',
+  'TaskDefinition',
+  'TaskPatch',
+  'SidebarDefinition',
+  'SongMenuDefinition',
+  'LyricEffectDefinition',
+]);
 let declaredTypes = new Map();
 function compatibleType(qtType, type, depth = 0) {
   if (depth > 16) return false;
+  const native = qtType.replace('EchoMusic::', '').replace(/\s*\*$/, '');
+  if (
+    native === 'QJSValue' &&
+    type &&
+    ts.isTypeReferenceNode(type) &&
+    nativeScriptDefinitions.has(type.typeName.getText())
+  )
+    return true;
   if (
     (qtType === 'EchoMusic::EchoPluginOperation::State' || qtType === 'State') &&
     type?.getText() === 'OperationState'
   )
     return true;
   if (type && ts.isTypeReferenceNode(type)) {
-    if (type.typeName.getText() === 'Readonly' && type.typeArguments?.length === 1)
+    if (
+      ['Readonly', 'Partial'].includes(type.typeName.getText()) &&
+      type.typeArguments?.length === 1
+    )
       return compatibleType(qtType, type.typeArguments[0], depth + 1);
     const declaration = declaredTypes.get(type.typeName.getText());
     if (declaration && ts.isTypeAliasDeclaration(declaration))
       return compatibleType(qtType, declaration.type, depth + 1);
   }
-  const native = qtType.replace('EchoMusic::', '').replace(/\s*\*$/, '');
+
   const text = type?.getText() ?? '';
   if (native === 'QString')
     return (
@@ -93,6 +121,8 @@ function compatibleType(qtType, type, depth = 0) {
   }
   if (native === 'QVariantList') return !!type && ts.isArrayTypeNode(type);
   if (native === 'QRectF') return text === 'QtRect';
+  if (native === 'QVariantMap' && type && ts.isUnionTypeNode(type))
+    return type.types.every((part) => compatibleType(qtType, part, depth + 1));
   if (native === 'QVariantMap')
     return (
       (type &&
@@ -113,18 +143,7 @@ function compatibleType(qtType, type, depth = 0) {
     return (
       ts.isFunctionTypeNode(type) ||
       (record && ts.isFunctionTypeNode(type.typeArguments[1])) ||
-      [
-        'ThemeDefinition',
-        'SkinDefinition',
-        'AudioSourceDefinition',
-        'BackupProviderDefinition',
-        'LyricResolverDefinition',
-        'TaskDefinition',
-        'TaskPatch',
-        'SidebarDefinition',
-        'SongMenuDefinition',
-        'LyricEffectDefinition',
-      ].includes(text)
+      nativeScriptDefinitions.has(text)
     );
   // QVariant carries API-specific JSON or operation generic results.
   if (native === 'QVariant') return !!type;

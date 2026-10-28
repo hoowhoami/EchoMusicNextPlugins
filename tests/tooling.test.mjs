@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { mkdtemp, rm, cp, readFile, writeFile, symlink } from 'node:fs/promises';
+import { mkdtemp, rm, cp, readFile, writeFile, symlink, chmod, stat } from 'node:fs/promises';
 import {
   buildPackage,
   buildPluginArchive,
@@ -13,6 +13,7 @@ import {
   prepareIndex,
 } from '../packages/tools/packages.mjs';
 import { loadContract, checkBindings, rangeContains } from '../packages/tools/contract.mjs';
+import { packPluginArchive, unpackPluginArchive } from '../packages/tools/archives.mjs';
 import { dependencyOrder } from '../packages/tools/dependencies.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -198,4 +199,20 @@ test('custom windows validate declaration, capability and contained component fi
   manifest.windows[0].component = 'Missing.qml';
   await writeFile(file, JSON.stringify(manifest));
   await assert.rejects(buildPackage(source, output), /ENOENT|Missing|missing/);
+});
+
+test('echomod archives preserve executable resources without setuid or writable mode bits', async (t) => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'echo-executable-'));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = path.join(temporary, 'source');
+  await cp(path.join(root, 'plugins/spectrum-visualizer'), source, { recursive: true });
+  const helper = path.join(source, 'helper');
+  await writeFile(helper, '#!/bin/sh\nexit 0\n');
+  await chmod(helper, 0o755);
+  const archive = path.join(temporary, 'helper.echomod');
+  await packPluginArchive(source, archive);
+  const extracted = path.join(temporary, 'extracted');
+  await unpackPluginArchive(archive, extracted);
+  if (process.platform !== 'win32')
+    assert.equal((await stat(path.join(extracted, 'helper'))).mode & 0o7777, 0o755);
 });

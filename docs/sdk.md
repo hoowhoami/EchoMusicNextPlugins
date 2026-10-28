@@ -85,7 +85,7 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 | io storage            | readValue/writeValue/removeValue(key)，JSON 值、key 1..512字符、单值最多1 MiB。安装私有 SQLite 串行 worker，不暴露应用 DB，不导入旧插件数据。                                                                                                                                             |
 | net request           | ctx.net.request(options)，支持HTTP(S)、自定义方法/请求头/正文、响应解码/TLS/重定向；不复用宿主账号cookie，实际reply随操作取消。见[文件、媒体与网络](files-and-network.md)。                                                                                                               |
 
-这些 API 是可执行的首批契约，不等于完整能力验收。文件引用/下载、任意插件私有 SQL、TCP/Web/WS、备份、音乐 API 和高级拦截、更多窗口/设置schema/侧栏及原生DSP产品接入，继续按迁移表实现；不删减或模拟这些功能。
+可用功能以宿主导出的 feature/capability 为准，平台验证边界见各 API 说明。
 
 ## SDK1.0.0 插件依赖与服务
 
@@ -119,3 +119,17 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 完整备份、检查、恢复和设置中的存储提供者见 [备份](backups.md)。
 
 独立 QML 窗口、资源授权、TCP 与同端口 HTTP/WebSocket 服务见[窗口与网络服务](windows-network.md)。
+
+### 包内程序与宿主请求
+
+`process` 能力提供 `ctx.process.launch({executable,args,cwd,env})`、`running`、`exited` 和 `terminate(id)`。路径相对插件包，不能启动系统路径或 shell 命令；包内脚本仍须有可执行位及正确 shebang。作者工具会保留资源执行位。首次运行确认具体程序与当前用户权限，授权绑定安装内容、相对路径及可执行 SHA-256。取消待启动操作、账号切换、撤销授权、窗口 scope 结束、停用和退出均回收资源；Unix 用独立进程组，Windows 用创建时加入的 Job，父进程正常退出也清理后代。最多 8 个启动/进程；无 stdin/stdout/stderr 管道。原生程序是受信任代码，不是沙箱，主动脱离进程组等行为不属于隔离保证。
+
+`serverIntercept` 能力提供 `ctx.server.intercept({id,stage,priority,match,timeoutMs,handle})`，异步授权后返回可 dispose 的租约。默认 `stage:'api'` 修改签名前的类型化操作 query，`await awaitOperation(request.next({query}))` 得到宿主状态和领域数据 `{status,body}`。登录与验证命令不进入链；受信任拦截器可读取冻结的 `request.headers.Authorization`，身份字段不可覆写。
+
+`stage:'transport'` 取得实际 HTTP `url/method/headers/bodyBase64`，next 同名补丁可转发，得到 `{status,headers,bodyBase64}`；返回同形响应可短路或在端点 Wire 转换之前修改原始响应。请求头保留重复值，数据使用 Base64 保持任意字节；JSON/UTF-8 正文可用 `ctx.server.encodeBody/decodeBody` 转换。传输层已签名，修改签名覆盖的 URL/正文时作者须负责相应协议；普通查询修改应使用 api 阶段，由宿主重新签名。该权限能读取请求中的账号资料，只授予信任的插件。它不处理播放器流、图片、插件 `net.request` 或插件 `kugou` 请求。
+
+优先级从高到低，等优先级按注册顺序。每次宿主请求固定链快照，next 的首次补丁生效，重复 next 观察同一个下游请求；先 next 再抛错、超时或停用，均复用该结果，写请求不会重发。默认回调期限 2500ms、可选 1–30000ms；未调用 next 时抛错/返回无效值会放行原请求。显式取消与账号变化直接终止，不放行旧请求；账号切换撤下旧拦截租约，插件应在新会话重新注册。管理页“插件授权”可撤销程序与拦截权限，停用自动清理，无需手工移除租约。
+
+## 宿主界面与设置
+
+导航、分域设置、动态工具栏操作与全局封面 API 的使用和生命周期见[宿主扩展](host-access.md)。

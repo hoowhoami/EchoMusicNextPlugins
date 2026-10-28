@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { readFile, writeFile, rename, readdir, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, rename, readdir, mkdir, stat, chmod } from 'node:fs/promises';
 import { crc32, inflateRawSync } from 'node:zlib';
 import { createHash, randomUUID } from 'node:crypto';
 
@@ -45,7 +45,8 @@ export async function packPluginArchive(directory, destination) {
     header.writeUInt32LE(data.length, 20);
     header.writeUInt32LE(data.length, 24);
     header.writeUInt16LE(filename.length, 28);
-    header.writeUInt32LE(0x81a40000, 38);
+    const executable = (await stat(path.join(directory, name))).mode & 0o111;
+    header.writeUInt32LE(((0o100644 | executable) << 16) >>> 0, 38);
     header.writeUInt32LE(offset, 42);
     chunks.push(local, filename, data);
     central.push(header, filename);
@@ -145,6 +146,7 @@ export async function unpackPluginArchive(archive, destination) {
     const target = path.join(destination, name);
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, data, { flag: 'wx' });
+    await chmod(target, 0o644 | ((attributes >>> 16) & 0o111));
   }
   if (cursor !== directoryEnd || !seen.has('manifest.json'))
     throw new Error('Plugin requires root manifest.json');
