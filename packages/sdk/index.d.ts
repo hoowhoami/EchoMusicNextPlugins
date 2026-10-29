@@ -1119,36 +1119,145 @@ declare module 'echo:plugin-sdk' {
   /** Numeric arrays use dataFormat; ArrayBuffer contains already packed bytes. */
   export type GpuData = readonly number[] | ArrayBuffer | ArrayBufferView;
   export type GpuDataFormat = 'float32' | 'float16' | 'uint8' | 'uint16' | 'uint32';
-  export interface GpuBufferDefinition { size: number; usage: readonly ('uniform'|'vertex'|'index'|'storage')[]; format?: GpuDataFormat; }
-  export interface GpuTextureDefinition { width: number; height: number; format?: 'rgba8'|'rgba16f'|'rgba32f'|'r32f'; usage: readonly ('sampled'|'storage'|'render-target'|'readback')[]; }
-  export interface GpuSamplerDefinition { minFilter?: 'linear'|'nearest'; magFilter?: 'linear'|'nearest'; u?: 'clamp'|'repeat'|'mirror'; v?: 'clamp'|'repeat'|'mirror'; }
-  export interface GpuRenderPipelineDefinition { vertexShader: string; fragmentShader: string; topology?: 'triangles'|'triangle-strip'|'lines'|'line-strip'|'points'; blend?: 'none'|'alpha'|'add'; cull?: 'none'|'back'|'front'; depthTest?: boolean;depthWrite?:boolean; vertexLayout?: {stride:number;attributes:readonly {location:number;offset:number;format:'float'|'float2'|'float3'|'float4'}[]}; }
-  export interface GpuComputePipelineDefinition { computeShader: string; }
-  export interface GpuBinding { kind: 'uniform'|'texture'|'storage-buffer'|'storage-image'; binding: number; resource: string; sampler?: string; access?: 'read'|'write'|'read-write'; }
-  export interface GpuDraw { count:number; first?:number; instances?:number; vertexBuffer?:string; vertexOffset?:number; indexBuffer?:string; indexFormat?:'uint16'|'uint32'; }
-  export interface GpuRenderPass { type:'render'; pipeline:string; target?:string;loadOp?:'clear'|'load'; clear?:readonly [number,number,number,number]; bindings:readonly GpuBinding[]; draws:readonly GpuDraw[]; }
-  export interface GpuComputePass { type:'compute'; pipeline:string; bindings:readonly GpuBinding[]; groups:readonly [number,number,number]; }
-  export interface GpuFrame { passes:readonly (GpuRenderPass|GpuComputePass)[]; }
-  export interface GpuCapabilities { readonly available:boolean;readonly limits?:Readonly<Record<string,number>>;readonly nativeBudgetUsed?:number;readonly targetBudgetUsed?:number;readonly state?:'ready'|'error'|'suspended'|'unavailable'|'waiting';readonly reason?:string;readonly backend?:string;readonly compute:boolean;readonly hdr:boolean;readonly floatTextures?:boolean;readonly hdrSwapChain?:boolean;readonly headroom?:number;readonly sdrWhiteLevel?:number;readonly generation?:number;readonly frames?:number;readonly nativeResources?:number;readonly pipelineBuilds?:number;readonly logicalResources?:number;readonly logicalBytes?:number; }
-  export interface GpuReadback { data:ArrayBuffer;width?:number;height?:number;format?:string; }
-  export interface EchoGpuResource { readonly id:string; readonly kind:string; readonly active:boolean; readonly changed:QtSignal;dispose():void; }
+  export interface GpuBufferDefinition {
+    size: number;
+    usage: readonly ('uniform' | 'vertex' | 'index' | 'storage')[];
+    format?: GpuDataFormat;
+  }
+  export interface GpuTextureDefinition {
+    width: number;
+    height: number;
+    format?: 'rgba8' | 'rgba16f' | 'rgba32f' | 'r32f';
+    usage: readonly ('sampled' | 'storage' | 'render-target' | 'readback')[];
+  }
+  export interface GpuSamplerDefinition {
+    minFilter?: 'linear' | 'nearest';
+    magFilter?: 'linear' | 'nearest';
+    u?: 'clamp' | 'repeat' | 'mirror';
+    v?: 'clamp' | 'repeat' | 'mirror';
+  }
+  export interface GpuRenderPipelineDefinition {
+    vertexShader: string;
+    fragmentShader: string;
+    topology?: 'triangles' | 'triangle-strip' | 'lines' | 'line-strip' | 'points';
+    blend?: 'none' | 'alpha' | 'add';
+    cull?: 'none' | 'back' | 'front';
+    depthTest?: boolean;
+    depthWrite?: boolean;
+    vertexLayout?: {
+      stride: number;
+      attributes: readonly {
+        location: number;
+        offset: number;
+        format: 'float' | 'float2' | 'float3' | 'float4';
+      }[];
+    };
+  }
+  export interface GpuComputePipelineDefinition {
+    computeShader: string;
+  }
+  export interface GpuBinding {
+    kind: 'uniform' | 'texture' | 'storage-buffer' | 'storage-image';
+    binding: number;
+    resource: string;
+    sampler?: string;
+    access?: 'read' | 'write' | 'read-write';
+  }
+  export interface GpuDraw {
+    count: number;
+    first?: number;
+    instances?: number;
+    vertexBuffer?: string;
+    vertexOffset?: number;
+    indexBuffer?: string;
+    indexFormat?: 'uint16' | 'uint32';
+  }
+  export interface GpuRenderPass {
+    type: 'render';
+    pipeline: string;
+    target?: string;
+    loadOp?: 'clear' | 'load';
+    clear?: readonly [number, number, number, number];
+    bindings: readonly GpuBinding[];
+    draws: readonly GpuDraw[];
+  }
+  export interface GpuComputePass {
+    type: 'compute';
+    pipeline: string;
+    bindings: readonly GpuBinding[];
+    groups: readonly [number, number, number];
+  }
+  export interface GpuFrame {
+    passes: readonly (GpuRenderPass | GpuComputePass)[];
+  }
+  export interface GpuCapabilities {
+    readonly available: boolean;
+    readonly limits?: Readonly<Record<string, number>>;
+    readonly nativeBudgetUsed?: number;
+    readonly targetBudgetUsed?: number;
+    readonly state?: 'ready' | 'error' | 'suspended' | 'unavailable' | 'waiting';
+    readonly reason?: string;
+    readonly backend?: string;
+    readonly compute: boolean;
+    readonly hdr: boolean;
+    readonly floatTextures?: boolean;
+    /** A local HDR request is distinct from actual HDR presentation. */
+    readonly hdrRequested?: boolean;
+    readonly localHdrSupported: boolean;
+    readonly dynamicRange: 'sdr' | 'hdr';
+    readonly headroom?: number;
+    readonly sdrWhiteLevel?: number;
+    readonly generation?: number;
+    readonly frames?: number;
+    readonly nativeResources?: number;
+    readonly pipelineBuilds?: number;
+    readonly logicalResources?: number;
+    readonly logicalBytes?: number;
+  }
+  export interface GpuReadback {
+    data: ArrayBuffer;
+    width?: number;
+    height?: number;
+    format?: string;
+  }
+  export interface EchoGpuResource {
+    readonly id: string;
+    readonly kind: string;
+    readonly active: boolean;
+    readonly changed: QtSignal;
+    dispose(): void;
+  }
   /** Handles are scoped to this presentation, account and activation. */
   export interface EchoPluginGraphics {
-    readonly capabilities:GpuCapabilities;readonly errorMessage:string;
-    readonly changed:QtSignal;readonly resourcesChanged:QtSignal;readonly drainedChanged:QtSignal;
-    createBuffer(definition:GpuBufferDefinition,data?:GpuData):EchoGpuResource|null;
-    createTexture(definition:GpuTextureDefinition,data?:GpuData):EchoGpuResource|null;
-    createSampler(definition?:GpuSamplerDefinition):EchoGpuResource|null;
-    createRenderPipeline(definition:GpuRenderPipelineDefinition):EchoGpuResource|null;
-    createComputePipeline(definition:GpuComputePipelineDefinition):EchoGpuResource|null;
-    writeBuffer(resource:EchoGpuResource,data:GpuData,offset?:number):boolean;
-    writeTexture(resource:EchoGpuResource,data:GpuData):boolean;
+    readonly capabilities: GpuCapabilities;
+    readonly errorMessage: string;
+    readonly changed: QtSignal;
+    readonly resourcesChanged: QtSignal;
+    readonly drainedChanged: QtSignal;
+    createBuffer(definition: GpuBufferDefinition, data?: GpuData): EchoGpuResource | null;
+    createTexture(definition: GpuTextureDefinition, data?: GpuData): EchoGpuResource | null;
+    createSampler(definition?: GpuSamplerDefinition): EchoGpuResource | null;
+    createRenderPipeline(definition: GpuRenderPipelineDefinition): EchoGpuResource | null;
+    createComputePipeline(definition: GpuComputePipelineDefinition): EchoGpuResource | null;
+    writeBuffer(resource: EchoGpuResource, data: GpuData, offset?: number): boolean;
+    writeTexture(resource: EchoGpuResource, data: GpuData): boolean;
   }
-  /** QML item from EchoMusic.PluginSdk. Output is linear, premultiplied RGBA. */
+  /** Plugin-local GPU item. Default dynamicRange is sdr; requests never change its host window.
+   * Shaders output linear premultiplied RGBA; unsupported local HDR is tone mapped to SDR.
+   */
   export interface EchoGpuSurface {
-    graphics:EchoPluginGraphics|null;paused:boolean;continuous:boolean;fps:number;dynamicRange:'auto'|'sdr'|'hdr';
-    readonly status:GpuCapabilities;readonly graphicsChanged:QtSignal;readonly configurationChanged:QtSignal;readonly statusChanged:QtSignal;
-    submit(frame:GpuFrame):boolean;requestFrame():void;readback(resource?:EchoGpuResource|null):EchoPluginOperation<GpuReadback>|null;
+    graphics: EchoPluginGraphics | null;
+    paused: boolean;
+    continuous: boolean;
+    fps: number;
+    dynamicRange: 'auto' | 'sdr' | 'hdr';
+    readonly status: GpuCapabilities;
+    readonly graphicsChanged: QtSignal;
+    readonly configurationChanged: QtSignal;
+    readonly statusChanged: QtSignal;
+    submit(frame: GpuFrame): boolean;
+    requestFrame(): void;
+    readback(resource?: EchoGpuResource | null): EchoPluginOperation<GpuReadback> | null;
   }
   export interface EchoPluginAudio {
     readonly spectrum: EchoPluginSpectrum;

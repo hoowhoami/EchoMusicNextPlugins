@@ -119,6 +119,8 @@ try {
         path.resolve(values['runtime-test']),
         [
           ...(spectrum ? ['builtAuthorPackageCommands'] : []),
+          'graphicsValidationOwnershipAndAccount',
+          ...(process.env.ECHO_TEST_NATIVE_GPU ? ['graphicsNativePixelsComputeAndRecovery'] : []),
           'hostNavigationRoutesHistoryCancellationAndAccount',
           'hostSettingsPersistenceSubscriptionsAndRevocation',
           'hostActionsDynamicAsyncAndLifecycle',

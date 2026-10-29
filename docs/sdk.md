@@ -102,7 +102,7 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 
 `ctx.ui.setState(JSON object)`发布最多1MiB的只读ui.state/stateChanged，供同一插件的设置与绘制组件共享私有偏好，不保存另一套播放器状态。`registerSurface(id,target,packageRelativeQml)`只支持playerbar.background、mini.background、lyrics.aboveControls三个原生位置；注入plugin/placement，宿主隐藏、最小化和停用时销毁挂载实例，重新显示按需创建。这不是任意改写宿主UI的接口。
 
-官方频谱插件沿用旧插件的五种模式、配色、可见性、采样与设置。HDR开关在graphics.hdr未提供时禁用并说明原因，未将SDR渲染标为HDR。
+官方频谱插件沿用旧插件的五种模式、配色、可见性、采样与设置。高级绘图已接入 ctx.graphics / EchoGpuSurface；HDR 默认关闭，局部输出不可用时禁用开关；GPU 绘图不改变宿主窗口。参见[GPU绘图](graphics.md)。
 
 2026-10-19：官方频谱使用Qt Quick Shapes CurveRenderer与GPU光晕/模糊/遮罩，保留源五种模式路径与配色；不使用Canvas.Image逐帧CPU栅格。普通柱状/波形随新帧更新，中心频谱暂停后保留衰减至不可见再停掉插值时钟；公开SDK契约和版本不变。
 
@@ -133,3 +133,5 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 ## 宿主界面与设置
 
 导航、分域设置、动态工具栏操作与全局封面 API 的使用和生命周期见[宿主扩展](host-access.md)。
+
+2026-10-29：频谱改由宿主RHI API执行GPU插值与绘制；旧Shapes保留为不支持GPU/compute时的回退。着色器由发布工具生成，版本保持1.0.0。

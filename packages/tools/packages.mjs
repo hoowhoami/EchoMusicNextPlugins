@@ -153,7 +153,7 @@ export async function validatePackage(root) {
   const files = await inventory(root);
   const entries = new Map();
   for (const file of files) {
-    if(file.endsWith('.qsb'))await validateShader(path.join(root,file),await loadContract());
+    if (file.endsWith('.qsb')) await validateShader(path.join(root, file), await loadContract());
     if (
       path.basename(file) === 'qmldir' &&
       /^\s*(optional\s+)?plugin\s+/m.test(await readFile(path.join(root, file), 'utf8'))
@@ -290,7 +290,14 @@ export async function buildPackage(source, outputRoot) {
       } else throw new Error(`Unsupported asset: ${relative}`);
     };
     for (const asset of config.assets) await copy(relativePath(asset));
-    await bakeShaders(source, staging, config.shaders, containedFile, relativePath, await loadContract());
+    await bakeShaders(
+      source,
+      staging,
+      config.shaders,
+      containedFile,
+      relativePath,
+      await loadContract(),
+    );
     await validatePackage(staging);
     if (await exists(destination)) {
       backup = `${destination}.previous-${randomUUID()}`;

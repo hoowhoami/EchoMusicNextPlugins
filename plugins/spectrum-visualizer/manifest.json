@@ -23,20 +23,10 @@
       "ui.surfaces",
       "audio.spectrum",
       "graphics.rhi",
-      "graphics.compute",
-      "graphics.hdr",
-      "graphics.readback"
+      "graphics.compute"
     ]
   },
-  "capabilities": [
-    "audioSpectrum",
-    "graphics"
-  ],
-  "contexts": [
-    "main"
-  ],
-  "tags": [
-    "频谱",
-    "可视化"
-  ]
+  "capabilities": ["audioSpectrum", "graphics"],
+  "contexts": ["main"],
+  "tags": ["频谱", "可视化"]
 }

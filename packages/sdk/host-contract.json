@@ -123,13 +123,10 @@
     "hostSettings",
     "cover"
   ],
-  "contexts": [
-    "main"
-  ],
+  "contexts": ["main"],
   "features": [
     "graphics.rhi",
     "graphics.compute",
-    "graphics.hdr",
     "graphics.readback",
     "ui.navigation",
     "settings.host",
@@ -232,9 +229,7 @@
         },
         {
           "name": "patch",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "bool",
           "signal": false
         },
@@ -338,9 +333,7 @@
         },
         {
           "name": "submit",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "bool",
           "signal": false
         },
@@ -352,9 +345,7 @@
         },
         {
           "name": "readback",
-          "parameters": [
-            "EchoMusic::EchoGpuResource*"
-          ],
+          "parameters": ["EchoMusic::EchoGpuResource*"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -415,9 +406,7 @@
         },
         {
           "name": "update",
-          "parameters": [
-            "QJSValue"
-          ],
+          "parameters": ["QJSValue"],
           "returnType": "bool",
           "signal": false
         },
@@ -490,41 +479,31 @@
         },
         {
           "name": "registerTheme",
-          "parameters": [
-            "QJSValue"
-          ],
+          "parameters": ["QJSValue"],
           "returnType": "EchoMusic::EchoPluginAppearanceHandle*",
           "signal": false
         },
         {
           "name": "registerSkin",
-          "parameters": [
-            "QJSValue"
-          ],
+          "parameters": ["QJSValue"],
           "returnType": "EchoMusic::EchoPluginAppearanceHandle*",
           "signal": false
         },
         {
           "name": "useTheme",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "useSkin",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "previewTheme",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "bool",
           "signal": false
         },
@@ -616,10 +595,7 @@
       "methods": [
         {
           "name": "registerResolver",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         }
@@ -637,9 +613,7 @@
         },
         {
           "name": "track",
-          "parameters": [
-            "EchoMusic::EchoPluginOperation*"
-          ],
+          "parameters": ["EchoMusic::EchoPluginOperation*"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -694,9 +668,7 @@
       "methods": [
         {
           "name": "create",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -708,35 +680,25 @@
         },
         {
           "name": "inspect",
-          "parameters": [
-            "QByteArray"
-          ],
+          "parameters": ["QByteArray"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "restore",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "restore",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "registerProvider",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         }
@@ -772,71 +734,49 @@
         },
         {
           "name": "callbackFailed",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "void",
           "signal": true
         },
         {
           "name": "supports",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "onDispose",
-          "parameters": [
-            "QJSValue"
-          ],
+          "parameters": ["QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "setTimer",
-          "parameters": [
-            "QString",
-            "int",
-            "bool",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "int", "bool", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "onPlayerChanged",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "registerCommand",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "executeCommand",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "executeCommand",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -1071,26 +1011,19 @@
       "methods": [
         {
           "name": "createThemedIconCoverUrl",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "QString",
           "signal": false
         },
         {
           "name": "createThemedIconCoverUrl",
-          "parameters": [
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString"],
           "returnType": "QString",
           "signal": false
         },
         {
           "name": "createThemedIconCoverUrl",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "QString",
           "signal": false
         },
@@ -1102,20 +1035,13 @@
         },
         {
           "name": "setFallback",
-          "parameters": [
-            "QString",
-            "QJSValue",
-            "int"
-          ],
+          "parameters": ["QString", "QJSValue", "int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "setFallback",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -1139,78 +1065,55 @@
         },
         {
           "name": "exec",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "run",
-          "parameters": [
-            "QString",
-            "QVariantList"
-          ],
+          "parameters": ["QString", "QVariantList"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "run",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "get",
-          "parameters": [
-            "QString",
-            "QVariantList"
-          ],
+          "parameters": ["QString", "QVariantList"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "get",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "all",
-          "parameters": [
-            "QString",
-            "QVariantList",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantList", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "all",
-          "parameters": [
-            "QString",
-            "QVariantList"
-          ],
+          "parameters": ["QString", "QVariantList"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "all",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "transaction",
-          "parameters": [
-            "QVariantList"
-          ],
+          "parameters": ["QVariantList"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -1265,9 +1168,7 @@
         },
         {
           "name": "resume",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -1279,9 +1180,7 @@
         },
         {
           "name": "retry",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -1330,26 +1229,19 @@
       "methods": [
         {
           "name": "start",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "list",
-          "parameters": [
-            "int",
-            "int"
-          ],
+          "parameters": ["int", "int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "list",
-          "parameters": [
-            "int"
-          ],
+          "parameters": ["int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -1361,25 +1253,19 @@
         },
         {
           "name": "get",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "attach",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "remove",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -1397,26 +1283,19 @@
         },
         {
           "name": "requestDirectory",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "requestFiles",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "reauthorize",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -1428,17 +1307,13 @@
         },
         {
           "name": "revoke",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "privateDirectory",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -1450,194 +1325,133 @@
         },
         {
           "name": "stat",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "stat",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "mkdir",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "mkdir",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "listFiles",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "listFiles",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "readText",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "readText",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "readBytes",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "readBytes",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "metadata",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "metadata",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "writeText",
-          "parameters": [
-            "QVariantMap",
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "writeText",
-          "parameters": [
-            "QVariantMap",
-            "QString"
-          ],
+          "parameters": ["QVariantMap", "QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "writeBytes",
-          "parameters": [
-            "QVariantMap",
-            "QByteArray",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QByteArray", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "writeBytes",
-          "parameters": [
-            "QVariantMap",
-            "QByteArray"
-          ],
+          "parameters": ["QVariantMap", "QByteArray"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "deleteFile",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "deleteFile",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "copyFile",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "copyFile",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "openMedia",
-          "parameters": [
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "openMedia",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -1649,39 +1463,25 @@
       "methods": [
         {
           "name": "build",
-          "parameters": [
-            "QStringList",
-            "int",
-            "int",
-            "double"
-          ],
+          "parameters": ["QStringList", "int", "int", "double"],
           "returnType": "QFont",
           "signal": false
         },
         {
           "name": "build",
-          "parameters": [
-            "QStringList",
-            "int",
-            "int"
-          ],
+          "parameters": ["QStringList", "int", "int"],
           "returnType": "QFont",
           "signal": false
         },
         {
           "name": "build",
-          "parameters": [
-            "QStringList",
-            "int"
-          ],
+          "parameters": ["QStringList", "int"],
           "returnType": "QFont",
           "signal": false
         },
         {
           "name": "build",
-          "parameters": [
-            "QStringList"
-          ],
+          "parameters": ["QStringList"],
           "returnType": "QFont",
           "signal": false
         }
@@ -1718,43 +1518,31 @@
         },
         {
           "name": "createBuffer",
-          "parameters": [
-            "QVariantMap",
-            "QJSValue"
-          ],
+          "parameters": ["QVariantMap", "QJSValue"],
           "returnType": "EchoMusic::EchoGpuResource*",
           "signal": false
         },
         {
           "name": "createBuffer",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoGpuResource*",
           "signal": false
         },
         {
           "name": "createTexture",
-          "parameters": [
-            "QVariantMap",
-            "QJSValue"
-          ],
+          "parameters": ["QVariantMap", "QJSValue"],
           "returnType": "EchoMusic::EchoGpuResource*",
           "signal": false
         },
         {
           "name": "createTexture",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoGpuResource*",
           "signal": false
         },
         {
           "name": "createSampler",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoGpuResource*",
           "signal": false
         },
@@ -1766,45 +1554,31 @@
         },
         {
           "name": "createRenderPipeline",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoGpuResource*",
           "signal": false
         },
         {
           "name": "createComputePipeline",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoGpuResource*",
           "signal": false
         },
         {
           "name": "writeBuffer",
-          "parameters": [
-            "EchoMusic::EchoGpuResource*",
-            "QJSValue",
-            "int"
-          ],
+          "parameters": ["EchoMusic::EchoGpuResource*", "QJSValue", "int"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "writeBuffer",
-          "parameters": [
-            "EchoMusic::EchoGpuResource*",
-            "QJSValue"
-          ],
+          "parameters": ["EchoMusic::EchoGpuResource*", "QJSValue"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "writeTexture",
-          "parameters": [
-            "EchoMusic::EchoGpuResource*",
-            "QJSValue"
-          ],
+          "parameters": ["EchoMusic::EchoGpuResource*", "QJSValue"],
           "returnType": "bool",
           "signal": false
         }
@@ -1835,9 +1609,7 @@
         },
         {
           "name": "next",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -1898,26 +1670,19 @@
         },
         {
           "name": "readValue",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "writeValue",
-          "parameters": [
-            "QString",
-            "QVariant"
-          ],
+          "parameters": ["QString", "QVariant"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "removeValue",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -1935,26 +1700,19 @@
         },
         {
           "name": "request",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "request",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "verify",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -1973,18 +1731,13 @@
       "methods": [
         {
           "name": "registerEffect",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "snapshot",
-          "parameters": [
-            "EchoMusic::EchoUiPartRef*"
-          ],
+          "parameters": ["EchoMusic::EchoUiPartRef*"],
           "returnType": "QVariant",
           "signal": false
         }
@@ -2002,80 +1755,55 @@
         },
         {
           "name": "registerResolver",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "onSnapshot",
-          "parameters": [
-            "QString",
-            "QJSValue",
-            "bool"
-          ],
+          "parameters": ["QString", "QJSValue", "bool"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "onSnapshot",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "write",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "clear",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "reload",
-          "parameters": [
-            "QString",
-            "bool"
-          ],
+          "parameters": ["QString", "bool"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "reload",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "command",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "command",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -2149,26 +1877,19 @@
         },
         {
           "name": "navigate",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "history",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "observe",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -2186,9 +1907,7 @@
         },
         {
           "name": "request",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -2273,26 +1992,19 @@
       "methods": [
         {
           "name": "granted",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "request",
-          "parameters": [
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "request",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -2310,10 +2022,7 @@
         },
         {
           "name": "eventOccurred",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "void",
           "signal": true
         },
@@ -2337,39 +2046,25 @@
         },
         {
           "name": "control",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "control",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "on",
-          "parameters": [
-            "QString",
-            "QString",
-            "QJSValue",
-            "bool"
-          ],
+          "parameters": ["QString", "QString", "QJSValue", "bool"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "on",
-          "parameters": [
-            "QString",
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
@@ -2411,50 +2106,37 @@
         },
         {
           "name": "seek",
-          "parameters": [
-            "qlonglong"
-          ],
+          "parameters": ["qlonglong"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "setVolume",
-          "parameters": [
-            "double"
-          ],
+          "parameters": ["double"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "setSpeed",
-          "parameters": [
-            "double"
-          ],
+          "parameters": ["double"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "playIndex",
-          "parameters": [
-            "int"
-          ],
+          "parameters": ["int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "remove",
-          "parameters": [
-            "int"
-          ],
+          "parameters": ["int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "move",
-          "parameters": [
-            "int",
-            "int"
-          ],
+          "parameters": ["int", "int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -2587,107 +2269,67 @@
         },
         {
           "name": "tracks",
-          "parameters": [
-            "QString",
-            "int",
-            "int"
-          ],
+          "parameters": ["QString", "int", "int"],
           "returnType": "QVariantList",
           "signal": false
         },
         {
           "name": "tracks",
-          "parameters": [
-            "QString",
-            "int"
-          ],
+          "parameters": ["QString", "int"],
           "returnType": "QVariantList",
           "signal": false
         },
         {
           "name": "tracks",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "QVariantList",
           "signal": false
         },
         {
           "name": "replace",
-          "parameters": [
-            "QString",
-            "QString",
-            "QVariantList",
-            "int"
-          ],
+          "parameters": ["QString", "QString", "QVariantList", "int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "replace",
-          "parameters": [
-            "QString",
-            "QString",
-            "QVariantList"
-          ],
+          "parameters": ["QString", "QString", "QVariantList"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "play",
-          "parameters": [
-            "QString",
-            "int"
-          ],
+          "parameters": ["QString", "int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "append",
-          "parameters": [
-            "QString",
-            "QVariantList",
-            "QString"
-          ],
+          "parameters": ["QString", "QVariantList", "QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "append",
-          "parameters": [
-            "QString",
-            "QVariantList"
-          ],
+          "parameters": ["QString", "QVariantList"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "remove",
-          "parameters": [
-            "QString",
-            "QString",
-            "int"
-          ],
+          "parameters": ["QString", "QString", "int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "move",
-          "parameters": [
-            "QString",
-            "QString",
-            "int",
-            "int"
-          ],
+          "parameters": ["QString", "QString", "int", "int"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "clear",
-          "parameters": [
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -2712,9 +2354,7 @@
         },
         {
           "name": "exited",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "void",
           "signal": true
         },
@@ -2726,17 +2366,13 @@
         },
         {
           "name": "launch",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "terminate",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -2755,9 +2391,7 @@
       "methods": [
         {
           "name": "row",
-          "parameters": [
-            "int"
-          ],
+          "parameters": ["int"],
           "returnType": "QVariantMap",
           "signal": false
         }
@@ -2812,59 +2446,37 @@
         },
         {
           "name": "isAvailable",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "version",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "QString",
           "signal": false
         },
         {
           "name": "serviceVersion",
-          "parameters": [
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString"],
           "returnType": "QString",
           "signal": false
         },
         {
           "name": "registerService",
-          "parameters": [
-            "QString",
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "call",
-          "parameters": [
-            "QString",
-            "QString",
-            "QString",
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QString", "QString", "QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "call",
-          "parameters": [
-            "QString",
-            "QString",
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString", "QString", "QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -2876,9 +2488,7 @@
       "methods": [
         {
           "name": "snapshot",
-          "parameters": [
-            "EchoMusic::EchoUiPartRef*"
-          ],
+          "parameters": ["EchoMusic::EchoUiPartRef*"],
           "returnType": "QVariant",
           "signal": false
         },
@@ -2890,9 +2500,7 @@
         },
         {
           "name": "query",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoUiPartRef*",
           "signal": false
         },
@@ -2904,9 +2512,7 @@
         },
         {
           "name": "queryAll",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "QVariantList",
           "signal": false
         },
@@ -2918,56 +2524,37 @@
         },
         {
           "name": "observe",
-          "parameters": [
-            "QString",
-            "QVariantMap",
-            "QJSValue",
-            "bool"
-          ],
+          "parameters": ["QString", "QVariantMap", "QJSValue", "bool"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "observe",
-          "parameters": [
-            "QString",
-            "QVariantMap",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QVariantMap", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "scrollTo",
-          "parameters": [
-            "EchoMusic::EchoUiPartRef*",
-            "double"
-          ],
+          "parameters": ["EchoMusic::EchoUiPartRef*", "double"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "scrollBy",
-          "parameters": [
-            "EchoMusic::EchoUiPartRef*",
-            "double"
-          ],
+          "parameters": ["EchoMusic::EchoUiPartRef*", "double"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "top",
-          "parameters": [
-            "EchoMusic::EchoUiPartRef*"
-          ],
+          "parameters": ["EchoMusic::EchoUiPartRef*"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "bottom",
-          "parameters": [
-            "EchoMusic::EchoUiPartRef*"
-          ],
+          "parameters": ["EchoMusic::EchoUiPartRef*"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -2979,43 +2566,31 @@
       "methods": [
         {
           "name": "encodeBody",
-          "parameters": [
-            "QVariant",
-            "QString"
-          ],
+          "parameters": ["QVariant", "QString"],
           "returnType": "QString",
           "signal": false
         },
         {
           "name": "encodeBody",
-          "parameters": [
-            "QVariant"
-          ],
+          "parameters": ["QVariant"],
           "returnType": "QString",
           "signal": false
         },
         {
           "name": "decodeBody",
-          "parameters": [
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString"],
           "returnType": "QVariant",
           "signal": false
         },
         {
           "name": "decodeBody",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "QVariant",
           "signal": false
         },
         {
           "name": "intercept",
-          "parameters": [
-            "QJSValue"
-          ],
+          "parameters": ["QJSValue"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -3039,28 +2614,19 @@
         },
         {
           "name": "read",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "update",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "observe",
-          "parameters": [
-            "QString",
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -3109,22 +2675,13 @@
       "methods": [
         {
           "name": "registerShortcut",
-          "parameters": [
-            "QString",
-            "QString",
-            "QJSValue",
-            "bool"
-          ],
+          "parameters": ["QString", "QString", "QJSValue", "bool"],
           "returnType": "EchoMusic::EchoPluginShortcut*",
           "signal": false
         },
         {
           "name": "registerShortcut",
-          "parameters": [
-            "QString",
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginShortcut*",
           "signal": false
         }
@@ -3142,9 +2699,7 @@
         },
         {
           "name": "track",
-          "parameters": [
-            "EchoMusic::EchoPluginOperation*"
-          ],
+          "parameters": ["EchoMusic::EchoPluginOperation*"],
           "returnType": "bool",
           "signal": false
         }
@@ -3169,9 +2724,7 @@
         },
         {
           "name": "subscribe",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginSpectrumSubscription*",
           "signal": false
         },
@@ -3226,9 +2779,7 @@
         },
         {
           "name": "setPaused",
-          "parameters": [
-            "bool"
-          ],
+          "parameters": ["bool"],
           "returnType": "void",
           "signal": false
         },
@@ -3277,9 +2828,7 @@
         },
         {
           "name": "open",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -3297,9 +2846,7 @@
         },
         {
           "name": "deleteDatabase",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -3341,9 +2888,7 @@
         },
         {
           "name": "start",
-          "parameters": [
-            "QJSValue"
-          ],
+          "parameters": ["QJSValue"],
           "returnType": "bool",
           "signal": false
         },
@@ -3355,26 +2900,19 @@
         },
         {
           "name": "update",
-          "parameters": [
-            "QJSValue"
-          ],
+          "parameters": ["QJSValue"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "finish",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "finish",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "bool",
           "signal": false
         },
@@ -3386,18 +2924,13 @@
         },
         {
           "name": "setProgress",
-          "parameters": [
-            "double",
-            "QString"
-          ],
+          "parameters": ["double", "QString"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "setProgress",
-          "parameters": [
-            "double"
-          ],
+          "parameters": ["double"],
           "returnType": "bool",
           "signal": false
         },
@@ -3409,9 +2942,7 @@
         },
         {
           "name": "fail",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "bool",
           "signal": false
         },
@@ -3454,10 +2985,7 @@
       "methods": [
         {
           "name": "registerTask",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginTask*",
           "signal": false
         }
@@ -3475,9 +3003,7 @@
         },
         {
           "name": "connect",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -3501,9 +3027,7 @@
         },
         {
           "name": "write",
-          "parameters": [
-            "QByteArray"
-          ],
+          "parameters": ["QByteArray"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -3540,77 +3064,55 @@
       "methods": [
         {
           "name": "info",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "info",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "success",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "success",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "warning",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "warning",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "danger",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "danger",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "dismiss",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "void",
           "signal": false
         }
@@ -3634,129 +3136,85 @@
         },
         {
           "name": "registerSidebarItem",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "registerShortcutCard",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "registerSongMenuItem",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "setState",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "registerSurface",
-          "parameters": [
-            "QString",
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString", "QString"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "registerSettings",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "registerPage",
-          "parameters": [
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "navigate",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "navigate",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "registerTitlebarAction",
-          "parameters": [
-            "QString",
-            "QString",
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QString", "QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "registerPlayerbarAction",
-          "parameters": [
-            "QString",
-            "QString",
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QString", "QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "registerTitlebarActionDefinition",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginAction*",
           "signal": false
         },
         {
           "name": "registerPlayerbarActionDefinition",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginAction*",
           "signal": false
         },
         {
           "name": "createTask",
-          "parameters": [
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString"],
           "returnType": "EchoMusic::EchoPluginTask*",
           "signal": false
         }
@@ -3817,9 +3275,7 @@
         },
         {
           "name": "query",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoUiPartRef*",
           "signal": false
         },
@@ -3831,9 +3287,7 @@
         },
         {
           "name": "queryAll",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "QVariantList",
           "signal": false
         },
@@ -3845,45 +3299,25 @@
         },
         {
           "name": "observe",
-          "parameters": [
-            "QString",
-            "QVariantMap",
-            "QJSValue",
-            "bool"
-          ],
+          "parameters": ["QString", "QVariantMap", "QJSValue", "bool"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "observe",
-          "parameters": [
-            "QString",
-            "QVariantMap",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QVariantMap", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "mount",
-          "parameters": [
-            "QString",
-            "EchoMusic::EchoUiPartRef*",
-            "QString",
-            "QString",
-            "int"
-          ],
+          "parameters": ["QString", "EchoMusic::EchoUiPartRef*", "QString", "QString", "int"],
           "returnType": "EchoMusic::EchoUiPartMount*",
           "signal": false
         },
         {
           "name": "mount",
-          "parameters": [
-            "QString",
-            "EchoMusic::EchoUiPartRef*",
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "EchoMusic::EchoUiPartRef*", "QString", "QString"],
           "returnType": "EchoMusic::EchoUiPartMount*",
           "signal": false
         }
@@ -3908,22 +3342,13 @@
         },
         {
           "name": "registerRule",
-          "parameters": [
-            "QString",
-            "QVariantMap",
-            "QVariantMap",
-            "int"
-          ],
+          "parameters": ["QString", "QVariantMap", "QVariantMap", "int"],
           "returnType": "EchoMusic::EchoUiStyleRule*",
           "signal": false
         },
         {
           "name": "registerRule",
-          "parameters": [
-            "QString",
-            "QVariantMap",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoUiStyleRule*",
           "signal": false
         }
@@ -3948,18 +3373,13 @@
         },
         {
           "name": "command",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "command",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -4008,9 +3428,7 @@
         },
         {
           "name": "listen",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -4022,28 +3440,19 @@
         },
         {
           "name": "onRequest",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "onConnection",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {
           "name": "onUpgrade",
-          "parameters": [
-            "QString",
-            "QJSValue"
-          ],
+          "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
@@ -4074,60 +3483,43 @@
         },
         {
           "name": "message",
-          "parameters": [
-            "QVariant",
-            "bool"
-          ],
+          "parameters": ["QVariant", "bool"],
           "returnType": "void",
           "signal": true
         },
         {
           "name": "closed",
-          "parameters": [
-            "int",
-            "QString"
-          ],
+          "parameters": ["int", "QString"],
           "returnType": "void",
           "signal": true
         },
         {
           "name": "error",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "void",
           "signal": true
         },
         {
           "name": "pong",
-          "parameters": [
-            "double",
-            "QByteArray"
-          ],
+          "parameters": ["double", "QByteArray"],
           "returnType": "void",
           "signal": true
         },
         {
           "name": "sendText",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "sendBytes",
-          "parameters": [
-            "QByteArray"
-          ],
+          "parameters": ["QByteArray"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "ping",
-          "parameters": [
-            "QByteArray"
-          ],
+          "parameters": ["QByteArray"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -4139,18 +3531,13 @@
         },
         {
           "name": "close",
-          "parameters": [
-            "int",
-            "QString"
-          ],
+          "parameters": ["int", "QString"],
           "returnType": "void",
           "signal": false
         },
         {
           "name": "close",
-          "parameters": [
-            "int"
-          ],
+          "parameters": ["int"],
           "returnType": "void",
           "signal": false
         },
@@ -4205,25 +3592,19 @@
         },
         {
           "name": "setBounds",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "setIgnoreMouseEvents",
-          "parameters": [
-            "bool"
-          ],
+          "parameters": ["bool"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "showOnTop",
-          "parameters": [
-            "bool"
-          ],
+          "parameters": ["bool"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -4241,37 +3622,25 @@
         },
         {
           "name": "startResize",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "beginMove",
-          "parameters": [
-            "double",
-            "double"
-          ],
+          "parameters": ["double", "double"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "beginResize",
-          "parameters": [
-            "QString",
-            "double",
-            "double"
-          ],
+          "parameters": ["QString", "double", "double"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "updatePointer",
-          "parameters": [
-            "double",
-            "double"
-          ],
+          "parameters": ["double", "double"],
           "returnType": "void",
           "signal": false
         },
@@ -4314,45 +3683,31 @@
         },
         {
           "name": "get",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginWindow*",
           "signal": false
         },
         {
           "name": "show",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "show",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "command",
-          "parameters": [
-            "QString",
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "command",
-          "parameters": [
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -4426,27 +3781,19 @@
         },
         {
           "name": "eventOccurred",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "void",
           "signal": true
         },
         {
           "name": "invoke",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {
           "name": "invoke",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
@@ -4549,17 +3896,13 @@
         },
         {
           "name": "update",
-          "parameters": [
-            "QVariantMap"
-          ],
+          "parameters": ["QVariantMap"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "setPriority",
-          "parameters": [
-            "int"
-          ],
+          "parameters": ["int"],
           "returnType": "bool",
           "signal": false
         },
@@ -4620,36 +3963,25 @@
         },
         {
           "name": "confirmationRequested",
-          "parameters": [
-            "QString",
-            "QVariantMap"
-          ],
+          "parameters": ["QString", "QVariantMap"],
           "returnType": "void",
           "signal": true
         },
         {
           "name": "revoked",
-          "parameters": [
-            "QString",
-            "QString"
-          ],
+          "parameters": ["QString", "QString"],
           "returnType": "void",
           "signal": true
         },
         {
           "name": "revoke",
-          "parameters": [
-            "QString"
-          ],
+          "parameters": ["QString"],
           "returnType": "bool",
           "signal": false
         },
         {
           "name": "decide",
-          "parameters": [
-            "QString",
-            "bool"
-          ],
+          "parameters": ["QString", "bool"],
           "returnType": "void",
           "signal": false
         }

@@ -386,12 +386,13 @@ ColumnLayout {
                     Layout.fillWidth: true
                     visible: true
                     title: "HDR 峰值高光"
-                    hint: "HDR 显示器输出峰值高光；SDR 屏幕自动映射亮度"
+                    hint: settingsRoot.plugin.graphics.capabilities.localHdrSupported === true ? "仅为频谱开启 HDR 高光，不改变普通界面" : "当前嵌入式画布不支持局部 HDR 输出"
                     switchRow: true
                     editor: Component {
                         EchoSwitch {
-                            checked: !!settingsRoot.s.hdrHighlights
-                            enabled: settingsRoot.plugin.supports("graphics.hdr")
+                            objectName: "spectrumHdrSwitch"
+                            checked: !!settingsRoot.s.hdrHighlights && settingsRoot.plugin.graphics.capabilities.localHdrSupported === true
+                            enabled: settingsRoot.plugin.graphics.capabilities.localHdrSupported === true
                             Accessible.name: "HDR 峰值高光"
                             onToggled: settingsRoot.patch("hdrHighlights", checked)
                         }
@@ -410,7 +411,7 @@ ColumnLayout {
                             stepSize: 5
                             suffix: "%"
                             value: Number(settingsRoot.s.hdrIntensity)
-                            enabled: settingsRoot.s.hdrHighlights && settingsRoot.plugin.supports("graphics.hdr")
+                            enabled: settingsRoot.s.hdrHighlights && settingsRoot.plugin.graphics.capabilities.localHdrSupported === true
                             onCommitted: nextValue => settingsRoot.patch("hdrIntensity", nextValue)
                         }
                     }
