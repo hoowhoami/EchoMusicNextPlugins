@@ -1,0 +1,4 @@
+{
+  "repository": "https://github.com/hoowhoami/EchoMusicNextPlugins",
+  "plugins": ["plugins/spectrum-visualizer"]
+}

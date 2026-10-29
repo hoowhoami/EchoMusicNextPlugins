@@ -26,7 +26,11 @@ npm run prepare:source
 npm run check:published
 ```
 
-build-index同时提供开发目录和正式包；prepare:source发布源入口与artifacts/*.echomod，并生成schema2索引的path/artifact/sha256。check:published重新生成并逐字节核对入口、正式包与索引哈希。提交真实产物后远端才可安装；工具不自动push或发布。SHA-256只保证与读取索引一致，不能代替签名。
+跨仓库收录使用 schema2：`id` 为预期插件 ID，`repo` 为作者 GitHub 仓库（省略为当前源），`ref` 默认为 HEAD，`path` 为 manifest 目录（空字符串表示根），`artifact` 为仓库根的相对 .echomod 路径或 HTTPS 下载地址，`sha256` 绑定包字节。名称、描述、版本和能力来自 manifest；下载后同时核对哈希与完整清单。官方收录源与作者仓库分别记录，仓库按钮打开作者地址。
+
+作者构建后运行 `echo-plugin index-entry dist/plugin-1.0.0.echomod --repo https://github.com/author/plugin --ref v1.0.0 --path "" --artifact https://github.com/author/plugin/releases/download/v1.0.0/plugin-1.0.0.echomod` 生成条目，提交到官方源的 plugins 数组即可。命令不上传或发布。
+
+本地构建清单在 `echo-plugin.build.json`，与公开索引分开。`build-index` 构建其中明确列出的本地插件；`prepare-index` 更新同仓插件的 artifacts 与索引，保留第三方条目；`check-index` 不读取第三方本地源码；`check-published` 联网校验每条作者清单和实际包。频谱仍在本仓库维护，第三方可独立维护仓库。生成入口只需放在 .echomod 内。
 
 manifest支持dependencies/optionalDependencies/conflicts（ID到版本范围）及loadAfter/loadBefore（ID数组）。范围使用`>=1.0.0 <2.0.0`等比较交集；拒绝自依赖和矛盾声明。完整源索引构建验证依赖闭包、版本、冲突与循环；单独build允许声明由其它可信来源提供的依赖，最终由宿主基于实际安装集合检查。
 

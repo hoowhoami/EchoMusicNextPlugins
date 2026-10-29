@@ -1,6 +1,6 @@
 # 备份与存储提供者
 
-声明 `backups.operations` / `backups.providers` feature 和 `backups` capability。备份内容包含可跨设备恢复的应用设置、已安装插件及其私有数据；宿主账号凭证、设备身份、外部文件授权及本机路径不进入归档。插件自己保存的凭证仍可能出现在插件私有数据中，归档未加密。
+声明 `backups.operations` / `backups.providers` feature 和 `backups` capability。备份内容包含可跨设备恢复的应用设置、已安装插件及其私有数据；宿主账号凭证、设备身份和外部文件授权留在本机；受管资源随备份迁移，外部授权文件不会自动收集。插件自己保存的凭证仍可能出现在插件私有数据中，归档未加密。
 
 ```ts
 import { awaitOperation, type EchoPluginContext } from 'echo:plugin-sdk';
@@ -18,7 +18,7 @@ export async function saveBackup(ctx: EchoPluginContext) {
 }
 ```
 
-`create` 的范围缺省均为 true。创建含插件的快照时，宿主短暂冻结插件存储，排空已接受的写入，再对每个受管 SQLite 库生成一致性快照；插件实例和数据库句柄继续有效。冻结期间新增存储操作返回 Busy，持续下载或更新尚未完成时也可能返回 Busy，应在工作完成后重试。创建不是停用再激活插件。
+`create` 的范围缺省均为 true。宿主按存储域自动收集设置和受管文件，新增偏好或资源无需 provider 更新备份字段清单。创建含插件的快照时，宿主短暂冻结插件存储，排空已接受的写入，再对每个受管 SQLite 库生成一致性快照；插件实例和数据库句柄继续有效。冻结期间新增存储操作返回 Busy，持续下载或更新尚未完成时也可能返回 Busy，应在工作完成后重试。创建不是停用再激活插件。
 
 `inspect(data)` 校验归档格式、大小、路径和文件摘要，返回 `{token, summary}`。输入来自内存二进制，不接受文件路径或 URL。令牌绑定当前插件作用域，有效期十分钟，最多保留八个预览。停用、组件销毁或账号会话变化撤销旧预览。
 

@@ -2,6 +2,23 @@
 /** Qt 6.12 authoring contract. Compile source to the supported ECMAScript syntax;
  * this declaration adds no Node, Electron or browser runtime. */
 declare module 'echo:plugin-sdk' {
+  /** A curated index points at author-owned manifests and immutable .echomod bytes. */
+  export interface PluginSourceEntry {
+    id: string;
+    /** GitHub repository URL; omitted for a package maintained in the index repository. */
+    repo?: string;
+    /** Branch, tag or commit; defaults to HEAD. */
+    ref?: string;
+    /** Manifest directory relative to the author repository; empty means repository root. */
+    path: string;
+    /** Repository-relative package path or an absolute HTTPS .echomod URL. */
+    artifact: string;
+    sha256: string;
+  }
+  export interface PluginSourceIndex {
+    schemaVersion: 2;
+    plugins: PluginSourceEntry[];
+  }
   export type JsonValue =
     null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue };
   export interface QtSignal<Arguments extends unknown[] = []> {
