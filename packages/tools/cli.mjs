@@ -6,24 +6,26 @@ import { promisify } from 'node:util';
 import { mkdir } from 'node:fs/promises';
 import { readJson } from './contract.mjs';
 import { checkBindings, checkHost } from './contract.mjs';
+import { readIndex, indexEntry, checkPublished } from './index.mjs';
 import {
   buildPackage,
   buildPluginArchive,
   buildIndex,
-  sourceIndex,
+  localPackages,
   validatePackage,
   prepareIndex,
 } from './packages.mjs';
 
 const usage = `echo-plugin build <source> [--out <directory>]
 echo-plugin validate <built-package>
+echo-plugin index-entry <package.echomod> --repo <github-url> --ref <ref> --path <manifest-directory> --artifact <path-or-https-url>
 echo-plugin build-index [--root <repository>]
 echo-plugin prepare-index [--root <repository>]
 echo-plugin check-published [--root <repository>]
 echo-plugin check-index [--root <repository>]
 echo-plugin check-sdk [--host <executable>]
 echo-plugin sdk-sync --host <executable>
-echo-plugin test-host --host <executable> [--runtime-test <executable>] [--root <repository>]`;
+echo-plugin test-host [package.echomod] --host <executable> [--runtime-test <executable>] [--root <repository>]`;
 
 try {
   const { positionals, values } = parseArgs({
@@ -32,6 +34,10 @@ try {
       host: { type: 'string' },
       out: { type: 'string' },
       root: { type: 'string' },
+      repo: { type: 'string' },
+      ref: { type: 'string' },
+      path: { type: 'string' },
+      artifact: { type: 'string' },
       'runtime-test': { type: 'string' },
       help: { type: 'boolean' },
     },
@@ -46,15 +52,22 @@ try {
     );
   else if (command === 'validate' && input)
     console.info((await validatePackage(path.resolve(input))).id);
+  else if (command === 'index-entry' && input)
+    console.info(JSON.stringify(await indexEntry(path.resolve(input), values), null, 2));
   else if (command === 'build-index')
     for (const destination of await buildIndex(root)) {
       const manifest = await readJson(path.join(destination, 'manifest.json'));
       console.info(path.join(root, 'dist', `${manifest.id}-${manifest.version}.echomod`));
     }
-  else if (command === 'prepare-index' || command === 'check-published')
-    console.info(await prepareIndex(root, command === 'check-published'));
+  else if (command === 'prepare-index') console.info(await prepareIndex(root));
+  else if (command === 'check-published')
+    console.info(
+      `Verified ${(await checkPublished(root, { sourceRepo: values.repo })).length} published packages`,
+    );
   else if (command === 'check-index')
-    console.info(`Validated ${(await sourceIndex(root)).length} source manifests`);
+    console.info(
+      `Validated ${(await readIndex(root, values.repo)).plugins.length} curated entries`,
+    );
   else if (command === 'check-sdk') {
     if (values.host) await checkHost(path.resolve(values.host));
     else await checkBindings();
@@ -65,13 +78,19 @@ try {
   } else if (command === 'test-host' && values.host) {
     const host = path.resolve(values.host);
     await checkHost(host);
-    const directories = await buildIndex(root);
-    const destinations = await Promise.all(
-      directories.map(async (directory) => {
-        const manifest = await readJson(path.join(directory, 'manifest.json'));
-        return path.join(root, 'dist', `${manifest.id}-${manifest.version}.echomod`);
-      }),
-    );
+    let destinations;
+    if (input) {
+      await validatePackage(path.resolve(input));
+      destinations = [path.resolve(input)];
+    } else {
+      const directories = await buildIndex(root);
+      destinations = await Promise.all(
+        directories.map(async (directory) => {
+          const manifest = await readJson(path.join(directory, 'manifest.json'));
+          return path.join(root, 'dist', `${manifest.id}-${manifest.version}.echomod`);
+        }),
+      );
+    }
     if (!destinations.length)
       throw new Error('Host acceptance requires at least one actual package');
     const logDirectory = path.join(root, 'build/host-smoke-logs');
@@ -96,12 +115,10 @@ try {
       const spectrum = destinations.find((destination) =>
         path.basename(destination).startsWith('spectrum-visualizer-'),
       );
-      if (!spectrum)
-        throw new Error('Runtime command acceptance requires the spectrum-visualizer package');
       const result = await execute(
         path.resolve(values['runtime-test']),
         [
-          'builtAuthorPackageCommands',
+          ...(spectrum ? ['builtAuthorPackageCommands'] : []),
           'hostNavigationRoutesHistoryCancellationAndAccount',
           'hostSettingsPersistenceSubscriptionsAndRevocation',
           'hostActionsDynamicAsyncAndLifecycle',
@@ -125,7 +142,7 @@ try {
           env: {
             ...process.env,
             QT_QPA_PLATFORM: process.env.QT_QPA_PLATFORM || 'offscreen',
-            ECHO_AUTHOR_PLUGIN_PACKAGE: spectrum,
+            ...(spectrum ? { ECHO_AUTHOR_PLUGIN_PACKAGE: spectrum } : {}),
           },
           timeout: 90000,
           maxBuffer: 4 * 1024 * 1024,

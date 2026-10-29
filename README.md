@@ -20,14 +20,14 @@ npm run build
   --plugin-dir /absolute/EchoMusicNextPlugins/dist/spectrum-visualizer-1.0.0.echomod
 ```
 
-宿主正式设置“插件→管理面板”提供已安装与在线插件、自定义源、安装/更新/卸载、开发目录/.echomod拖入、设置和分享；默认官方源为本仓库。echo-plugins.json及dist索引使用schema2，记录manifest目录、.echomod产物路径和SHA-256；元数据始终来自manifest。官方仓库的源目录必须含已构建的ES2016入口：
+宿主正式设置“插件→管理面板”提供已安装与在线插件、自定义源、安装/更新/卸载、开发目录/.echomod拖入、设置和分享；默认官方源为本仓库。echo-plugins.json 支持同仓插件与独立作者仓库，条目为 id/repo/ref/path/artifact/sha256；安装以 manifest、.echomod 和 SHA-256 为准。频谱继续同仓维护，本地构建集合单独声明在 echo-plugin.build.json。
 
 ```sh
 npm run prepare:source
 npm run check:published
 ```
 
-prepare:source同时构建dist、artifacts/*.echomod和源目录发布入口；生成入口由工具维护、随源码提交，不能手改。宿主从GitHub HEAD读索引/manifest，下载索引指定的.echomod、验证SHA-256并再次核对清单。当前仅在本地生成，未自动推送远端。将产物提交发布后，管理页刷新才会取得真实目录。
+prepare:source 只构建/发布本地清单并保留第三方条目；check:published 检查远端作者资源，不重建第三方源码。生成入口只需进入正式包。命令不自动推送或发布，提交产物与索引后远端才会更新。
 
 ## 文档和插件
 

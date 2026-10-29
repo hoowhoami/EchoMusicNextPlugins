@@ -14,7 +14,11 @@ manifest.entry指产物路径，plugin.config.json声明源码和静态资源：
 
 资源按原相对路径复制，不自动复制源码/依赖/账号数据/仓库文件。禁止链接、路径越界和资源覆盖entry/manifest/构建标记。纯JS依赖可bundle，其许可证由作者随包保留；原生QML plugin声明拒绝，DSP产品SDK仍待接入。
 
-索引新增插件相对源目录，元数据仅在manifest维护。npm run build生成目录包和dist索引，dist目录git忽略，不手改生成入口。发布GitHub源前执行npm run prepare:source和check:published，把源目录中的生成entry.mjs、manifest和所有QML/assets纳入提交；仅本地build不会让远端索引可安装。
+跨仓库收录使用 schema2：`id` 为预期插件 ID，`repo` 为作者 GitHub 仓库（省略为当前源），`ref` 默认为 HEAD，`path` 为 manifest 目录（空字符串表示根），`artifact` 为仓库根的相对 .echomod 路径或 HTTPS 下载地址，`sha256` 绑定包字节。名称、描述、版本和能力来自 manifest；下载后同时核对哈希与完整清单。官方收录源与作者仓库分别记录，仓库按钮打开作者地址。
+
+作者构建后运行 `echo-plugin index-entry dist/plugin-1.0.0.echomod --repo https://github.com/author/plugin --ref v1.0.0 --path "" --artifact https://github.com/author/plugin/releases/download/v1.0.0/plugin-1.0.0.echomod` 生成条目，提交到官方源的 plugins 数组即可。命令不上传或发布。
+
+本地构建清单在 `echo-plugin.build.json`，与公开索引分开。`build-index` 构建其中明确列出的本地插件；`prepare-index` 更新同仓插件的 artifacts 与索引，保留第三方条目；`check-index` 不读取第三方本地源码；`check-published` 联网校验每条作者清单和实际包。频谱仍在本仓库维护，第三方可独立维护仓库。生成入口只需放在 .echomod 内。
 
 ## 类型和Qt环境
 
@@ -44,3 +48,7 @@ test:host重建包、比对真实契约，隔离smoke加载并排空；runtime-t
 正式开发用--plugin-dir加载构建目录，runtime.reload可先停旧scope再采集新代码；管理页提供安装、启停、更新、卸载、依赖状态和设置；手动安全模式阻止执行但保留偏好。
 
 宿主页面导航、六域偏好、动态工具栏操作和全局封面回退参见[宿主扩展](host-access.md)。
+
+独立作者可用 `echo-plugin test-host dist/plugin-1.0.0.echomod --host /absolute/echomusicnext` 验证实际包，不需要官方源的本地构建清单。SDK 导出 `PluginSourceEntry` 和 `PluginSourceIndex` 索引类型。
+
+备份由宿主按存储归属自动收集：插件 KV、全部命名 SQLite 和持久私有文件均使用同一快照链路，无需提供备份文件名名单；缓存与外部授权目录不自动进入归档。provider 继续负责归档的 save/list/load/remove，使用宿主生成的归档字节；恢复确认、取消及停用回收仍由宿主处理。

@@ -21,7 +21,7 @@
     },
     "id": {
       "type": "string",
-      "pattern": "^[a-z][a-z0-9.-]{1,127}$"
+      "pattern": "^(?!(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\\.|$))(?!.*\\.\\.)(?!.*\\.$)[a-z][a-z0-9.-]{1,127}$"
     },
     "name": {
       "type": "string",

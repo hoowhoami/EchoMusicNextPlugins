@@ -21,6 +21,6 @@
 
 ## 发布边界
 
-SDK/tools已有workspace及本地打包/安装能力，未发布npm。构建不发布GitHub Release/插件市场。当前schema2索引记录manifest目录、正式.echomod路径和SHA-256，dist同时保留开发目录和正式包；prepare:source把确定的ES2016入口发布到索引所指源目录，check:published逐字节检查，CI同样检查。源码entry必须与发布entry不同，工具拒绝覆盖作者入口。宿主已接通正式.echomod/开发目录与完整安装提交、激活失败回滚及卸载，其他扩展按宿主完整迁移表实施。宿主GPL许可与本仓库MIT许可分别保留。
+SDK/tools已有workspace及本地打包/安装能力，未发布npm。构建不发布GitHub Release/插件市场。schema2 索引支持作者 repo/ref、根或子目录、正式 .echomod 路径或 HTTPS 下载地址及 SHA-256。echo-plugin.build.json 只列本地构建源码，prepare:source 仅更新这些本地插件并保留跨仓库条目；check:published 联网检查实际远端清单/包/哈希，CI 同样检查。源码entry必须与发布entry不同，工具拒绝覆盖作者入口。宿主已接通正式.echomod/开发目录与完整安装提交、激活失败回滚及卸载，其他扩展按宿主完整迁移表实施。宿主GPL许可与本仓库MIT许可分别保留。
 
 2026-10-18：正式插件包与依赖协议见[plugin-packages.md](plugin-packages.md)。prepare:source还生成并核对artifacts/*.echomod；官方源安装不再下载整个仓库ZIP。

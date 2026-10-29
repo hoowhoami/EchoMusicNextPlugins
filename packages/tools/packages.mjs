@@ -20,6 +20,7 @@ import ts from 'typescript';
 import { sdkRoot, readJson, loadContract, rangeContains } from './contract.mjs';
 import { packPluginArchive, unpackPluginArchive } from './archives.mjs';
 import { dependencyOrder } from './dependencies.mjs';
+import { readIndex, indexEntry, parseEntry } from './index.mjs';
 
 const maximumBytes = 128 * 1024 * 1024;
 const validateSchema = new Ajv({ allErrors: true, strict: true }).compile(
@@ -29,6 +30,13 @@ export async function validateManifest(manifest, contract) {
   contract ??= await loadContract();
   if (!validateSchema(manifest))
     throw new Error(`Invalid manifest: ${JSON.stringify(validateSchema.errors)}`);
+  if (
+    !/^[a-z][a-z0-9.-]{1,127}$/.test(manifest.id) ||
+    manifest.id.endsWith('.') ||
+    manifest.id.includes('..') ||
+    /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/.test(manifest.id)
+  )
+    throw new Error('Plugin ID is not a portable directory name');
   relativePath(manifest.entry);
   if ((manifest.windows ?? []).length && !manifest.capabilities.includes('windows'))
     throw new Error('Window declarations require windows capability');
@@ -308,103 +316,66 @@ export async function buildPluginArchive(source, outputRoot) {
   );
 }
 
-export async function sourceIndex(root) {
-  const index = await readJson(path.join(root, 'echo-plugins.json'));
-  if (index.schemaVersion !== 2 || !Array.isArray(index.plugins))
-    throw new Error('Invalid plugin index');
-  const seen = new Set();
+export async function localPackages(root) {
+  const config = await readJson(path.join(root, 'echo-plugin.build.json'));
+  if (!Array.isArray(config.plugins) || config.plugins.length > 128)
+    throw new Error('echo-plugin.build.json must explicitly list local plugin sources');
+  const ids = new Set();
   const result = [];
-  for (const record of index.plugins) {
-    if (
-      Object.keys(record).some((key) => !['path', 'artifact', 'sha256'].includes(key)) ||
-      !record.path
-    )
-      throw new Error('Index contains paths only; metadata belongs to manifest');
-    const source = await containedFile(root, record.path);
+  for (const relative of config.plugins) {
+    const source = await containedFile(root, relative);
     const manifest = await validateManifest(await readJson(path.join(source, 'manifest.json')));
-    if (seen.has(manifest.id)) throw new Error(`Duplicate index plugin ID: ${manifest.id}`);
-    seen.add(manifest.id);
+    if (ids.has(manifest.id)) throw new Error(`Duplicate local plugin ID: ${manifest.id}`);
+    ids.add(manifest.id);
     result.push({ source, manifest });
   }
-  dependencyOrder(result.map((item) => item.manifest));
   return result;
 }
-
 export async function buildIndex(root) {
-  const sources = await sourceIndex(root);
   const destinations = [];
-  for (const { source } of sources)
-    destinations.push(await buildPackage(source, path.join(root, 'dist')));
-  const artifacts = [];
-  for (const directory of destinations) {
-    const manifest = await readJson(path.join(directory, 'manifest.json'));
-    artifacts.push(
-      await packPluginArchive(
-        directory,
-        path.join(root, 'dist', `${manifest.id}-${manifest.version}.echomod`),
-      ),
+  for (const { source } of await localPackages(root)) {
+    const destination = await buildPackage(source, path.join(root, 'dist'));
+    const manifest = await readJson(path.join(destination, 'manifest.json'));
+    await packPluginArchive(
+      destination,
+      path.join(root, 'dist', `${manifest.id}-${manifest.version}.echomod`),
     );
+    destinations.push(destination);
   }
-  await mkdir(path.join(root, 'dist'), { recursive: true });
-  await writeFile(
-    path.join(root, 'dist/echo-plugins.json'),
-    `${JSON.stringify(
-      {
-        schemaVersion: 2,
-        plugins: destinations.map((destination, index) => ({
-          path: path.basename(destination),
-          artifact: path.basename(artifacts[index].file),
-          sha256: artifacts[index].sha256,
-        })),
-      },
-      null,
-      2,
-    )}\n`,
-  );
   return destinations;
 }
-
-// The GitHub source installs repository paths directly. Commit the native ESM
-// artifact beside its manifest; no npm/TypeScript step runs in the music player.
-export async function prepareIndex(root, check = false) {
-  // containedFile returns canonical paths; use the same root when publishing
-  // relative index paths (for example /var and /private/var on macOS).
+// Local official packages and remote curated entries are independent. Preparing
+// a local package never requires another author's source or rewrites their entry.
+export async function prepareIndex(root) {
   root = await realpath(root);
-  const sources = await sourceIndex(root);
+  const config = await readJson(path.join(root, 'echo-plugin.build.json'));
+  const published = await readIndex(root, config.repository);
+  const sources = await localPackages(root);
   const destinations = await buildIndex(root);
-  const index = { schemaVersion: 2, plugins: [] };
   await mkdir(path.join(root, 'artifacts'), { recursive: true });
   for (let i = 0; i < sources.length; ++i) {
-    const target = path.join(sources[i].source, sources[i].manifest.entry);
-    const bytes = await readFile(path.join(destinations[i], sources[i].manifest.entry));
-    if (check) {
-      if (!(await readFile(target)).equals(bytes))
-        throw new Error(`Published entry differs from author source: ${target}`);
-    } else {
-      await mkdir(path.dirname(target), { recursive: true });
-      await writeFile(target, bytes);
-    }
-    await validatePackage(sources[i].source);
-    const manifest = sources[i].manifest;
+    const { manifest, source } = sources[i];
     const filename = `${manifest.id}-${manifest.version}.echomod`;
     const artifact = `artifacts/${filename}`;
-    const archive = await readFile(path.join(root, 'dist', filename));
-    const { createHash } = await import('node:crypto');
-    const sha256 = createHash('sha256').update(archive).digest('hex');
-    if (check) {
-      if (!(await readFile(path.join(root, artifact))).equals(archive))
-        throw new Error(`Published plugin differs: ${artifact}`);
-      const published = (await readJson(path.join(root, 'echo-plugins.json'))).plugins[i];
-      if (published.artifact !== artifact || published.sha256 !== sha256)
-        throw new Error(`Published artifact/hash mismatch: ${manifest.id}`);
-    } else await writeFile(path.join(root, artifact), archive);
-    index.plugins.push({
-      path: path.relative(root, sources[i].source).split(path.sep).join('/'),
+    const file = path.join(root, 'dist', filename);
+    const entry = await indexEntry(file, {
+      repo: config.repository,
+      ref: config.ref ?? 'HEAD',
+      path: path.relative(root, source).split(path.sep).join('/'),
       artifact,
-      sha256,
     });
+    const previous = published.plugins.findIndex((value) => value.id === entry.id);
+    if (previous >= 0 && published.plugins[previous].repository !== parseEntry(entry).repository)
+      throw new Error(`Local package conflicts with a curated author: ${entry.id}`);
+    const portable = { id: entry.id, path: entry.path, artifact, sha256: entry.sha256 };
+    if (entry.ref !== 'HEAD') portable.ref = entry.ref;
+    if (previous >= 0) published.original.plugins[previous] = portable;
+    else published.original.plugins.push(portable);
+    await writeFile(path.join(root, artifact), await readFile(file));
   }
-  if (!check)
-    await writeFile(path.join(root, 'echo-plugins.json'), `${JSON.stringify(index, null, 2)}\n`);
+  await writeFile(
+    path.join(root, 'echo-plugins.json'),
+    `${JSON.stringify(published.original, null, 2)}\n`,
+  );
   return destinations;
 }

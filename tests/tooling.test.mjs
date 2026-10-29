@@ -9,12 +9,15 @@ import {
   buildPluginArchive,
   validatePackage,
   validateManifest,
-  sourceIndex,
+  localPackages,
   prepareIndex,
 } from '../packages/tools/packages.mjs';
 import { loadContract, checkBindings, rangeContains } from '../packages/tools/contract.mjs';
 import { packPluginArchive, unpackPluginArchive } from '../packages/tools/archives.mjs';
 import { dependencyOrder } from '../packages/tools/dependencies.mjs';
+import { readIndex, indexEntry, parseEntry, checkPublished } from '../packages/tools/index.mjs';
+import { createServer } from 'node:http';
+import { once } from 'node:events';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 async function author(t) {
@@ -41,7 +44,7 @@ test('bindings follow actual Qt properties, signals, methods, readonly state and
 });
 
 test('manifest compatibility, source-only index and comparator intersections', async () => {
-  assert.equal((await sourceIndex(root)).length, 1);
+  assert.equal((await localPackages(root)).length, 1);
   assert.equal(rangeContains('>=0.1.0 <1.0.0', '0.1.0'), true);
   assert.equal(rangeContains('>=1.0.0', '0.1.0'), false);
   assert.equal(rangeContains('^1.0.0', '1.0.0'), false);
@@ -76,7 +79,11 @@ test('published index points to plugin archives under artifacts and verifies the
   const repository = path.dirname(source);
   await writeFile(
     path.join(repository, 'echo-plugins.json'),
-    JSON.stringify({ schemaVersion: 2, plugins: [{ path: 'source' }] }),
+    JSON.stringify({ schemaVersion: 2, plugins: [] }),
+  );
+  await writeFile(
+    path.join(repository, 'echo-plugin.build.json'),
+    JSON.stringify({ repository: 'https://github.com/test/official', plugins: ['source'] }),
   );
   await prepareIndex(repository);
   const index = JSON.parse(await readFile(path.join(repository, 'echo-plugins.json'), 'utf8'));
@@ -90,7 +97,53 @@ test('published index points to plugin archives under artifacts and verifies the
     (await validatePackage(path.join(repository, published.artifact))).id,
     'spectrum-visualizer',
   );
-  await prepareIndex(repository, true);
+  const server = createServer(async (req, res) => {
+    const url = new URL(decodeURIComponent(req.url.slice(1)));
+    const resource = url.pathname.endsWith('manifest.json')
+      ? path.join(source, 'manifest.json')
+      : path.join(repository, published.artifact);
+    res.end(await readFile(resource));
+  });
+  server.listen(0, '127.0.0.1');
+  await once(server, 'listening');
+  t.after(() => {
+    server.closeAllConnections();
+    server.close();
+  });
+  const fetcher = (url, options) =>
+    fetch(`http://127.0.0.1:${server.address().port}/${encodeURIComponent(url)}`, options);
+  assert.equal((await checkPublished(repository, { fetcher })).length, 1);
+  const third = await indexEntry(path.join(repository, published.artifact), {
+    repo: 'https://github.com/another/independent.git/',
+    ref: 'release/v1',
+    path: '',
+    artifact: 'https://github.com/another/independent/releases/download/v1/plugin.echomod',
+  });
+  third.id = 'second-plugin';
+  index.plugins.push(third);
+  await writeFile(path.join(repository, 'echo-plugins.json'), JSON.stringify(index));
+  await prepareIndex(repository);
+  assert.deepEqual((await readIndex(repository)).original.plugins[1], third);
+  const parsed = parseEntry(third);
+  assert.equal(parsed.repository, 'another/independent');
+  assert.match(parsed.manifestUrl, /release%2Fv1\/manifest.json$/);
+  assert.equal(parsed.artifactUrl, third.artifact);
+  for (const change of [
+    { repo: 'http://github.com/a/b' },
+    { path: '../x' },
+    { artifact: 'https://user:secret@example.org/a.echomod' },
+    { artifact: 'https://example.org/a.zip?x=.echomod' },
+    { sha256: 'a'.repeat(63) },
+    { id: 'con.txt' },
+    { id: 'tail.' },
+    { ref: '../escape' },
+  ])
+    assert.throws(() => parseEntry({ ...third, ...change }));
+  await writeFile(
+    path.join(repository, 'echo-plugins.json'),
+    JSON.stringify({ schemaVersion: 2, plugins: [{ ...published, sha256: '0'.repeat(64) }] }),
+  );
+  await assert.rejects(checkPublished(repository, { fetcher }), /SHA-256/);
 });
 
 test('plugin dependency closure has deterministic order and rejects missing/version/cycle/conflict errors', () => {
