@@ -4,7 +4,7 @@
 
 ## 业务与验证
 
-`ctx.kugou.request(method, arguments)` 调用宿主类型化业务服务。编辑器按 method 提示准确的参数和结果字段；方法目录见 `KugouMethods`。目前提供 97 个正式命令，覆盖搜索、推荐/榜单、专辑/歌手、歌单、收藏、云盘、社交、评论/弹幕、音效、歌词、媒体和一起听。结果使用宿主已经转换的领域数据，字段保留其真实单位和可空性。业务 ID 使用十进制字符串，避免 JavaScript 大整数精度损失。
+`ctx.kugou.request(method, arguments)` 调用宿主类型化业务服务。编辑器按 method 提示准确的参数和结果字段；方法目录见 `KugouMethods`。目前提供 98 个正式命令，覆盖搜索、推荐/榜单、专辑/歌手、歌单、收藏、云盘、社交、评论/弹幕、音效、歌词、媒体和一起听。结果使用宿主已经转换的领域数据，字段保留其真实单位和可空性。业务 ID 使用十进制字符串，避免 JavaScript 大整数精度损失。
 
 ```ts
 const result = await awaitOperation(
@@ -25,6 +25,37 @@ if (result.kind === 'songs') {
 请求绑定发起时的当前账号。切换账号、停用、退出呈现作用域或调用 operation.cancel() 会取消实际请求，不向旧界面交付结果。`ctx.kugou.account` 提供 userId、loggedIn、revision；`accountChanged` 在宿主完成账号切换后通知。插件应在此清空自己的账号视图/缓存，再请求新账号数据。请求不接受 userid、token、设备身份或任意 FFI 路由覆盖。登录入口继续由宿主账号界面管理。
 
 需要人机验证的业务请求自动进入宿主现有验证界面。已有 eventId 时调用 `ctx.kugou.verify(eventId)`，等待 `{eventId, verified:true}`。验证 proof、浏览器回调和一次重放仍由宿主管理。取消插件的验证操作只取消自己的队列项，不关闭其他请求持有的验证。写操作沿用宿主各端点的重放策略，无法确定是否已提交时不会自动重复写入。
+
+### 歌曲关联歌手写真
+
+`audioImages` 使用公开图片接口，声明 `kugouApi` 即可调用。`resources` 为 1–100 首歌曲；每项必须有 32 位十六进制 `hash`，可附 `audioId`、`albumAudioId` 十进制字符串与 `filename`。`count` 默认 5，范围 1–50，是上游各图片类别的请求数量，不保证返回数量。
+
+```ts
+const groups = await awaitOperation(
+  ctx.kugou.request('audioImages', {
+    resources: [{ hash: track.hash, albumAudioId: track.mixSongId, filename: track.title }],
+    count: 5,
+  }),
+);
+const artists = groups[0] || [];
+let urls: string[] = [];
+for (const kind of ['3', '4', '2']) {
+  const unique = new Set<string>();
+  for (const artist of artists) {
+    for (const image of artist.images[kind] || []) {
+      if (image.url) unique.add(image.url);
+    }
+  }
+  if (unique.size) {
+    urls = Array.from(unique).slice(0, 5);
+    break;
+  }
+}
+```
+
+结果的外层数组对应请求歌曲，内层为关联歌手；查无歌手仍保留空组，歌手无写真时 `images` 为空。各分类的顺序、图片 ID、哈希、文件名、发布日期与来源码均保留，未知可选资料为 `null`。`url`、`avatar_url` 使用 HTTPS；头像的 `{size}` 模板由调用者按显示尺寸替换。接口不下载/解码图片或启动轮播。
+
+切歌时取消旧 operation 并清空旧图片，交付前比较当前曲目身份；只在可见皮肤中加载图片并按实际显示尺寸解码。请求随账号、作用域或停用取消；接口自身不缓存，插件如需缓存应设置容量与有效期。
 
 ## 侧栏、快捷卡片与歌曲菜单
 
