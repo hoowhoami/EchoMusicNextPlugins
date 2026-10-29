@@ -269,3 +269,32 @@ test('echomod archives preserve executable resources without setuid or writable 
   if (process.platform !== 'win32')
     assert.equal((await stat(path.join(extracted, 'helper'))).mode & 0o7777, 0o755);
 });
+
+test('GPU shaders compile all backends and invalid changes preserve the published package', async t => {
+  const {source,output}=await author(t);
+  const first=await buildPluginArchive(source,output);
+  const original=await readFile(first.file);
+  const qsb=path.join(output,'spectrum-visualizer','shaders/gpu/profile.comp.qsb');
+  assert.ok((await stat(qsb)).size>100);
+  await writeFile(path.join(source,'shaders/gpu/profile.comp'),'invalid compute shader');
+  await assert.rejects(buildPluginArchive(source,output));
+  assert.deepEqual(await readFile(first.file),original);
+  const config=JSON.parse(await readFile(path.join(source,'plugin.config.json'),'utf8'));
+  config.shaders=[{source:'shaders/gpu/spectrum.vert',output:'../escape.qsb'}];
+  await writeFile(path.join(source,'plugin.config.json'),JSON.stringify(config));
+  await assert.rejects(buildPackage(source,output),/contained relative path/);
+  config.shaders=[{source:'shaders/gpu/spectrum.vert',output:'shaders/gpu/spectrum.vert'}];
+  await writeFile(path.join(source,'plugin.config.json'),JSON.stringify(config));
+  await assert.rejects(buildPackage(source,output),/shader output/);
+  config.shaders=[{source:'shaders/gpu/spectrum.vert',output:'shaders/gpu/escaped.vert.qsb'}];
+  await writeFile(path.join(source,'plugin.config.json'),JSON.stringify(config));
+  await writeFile(path.join(source,'shaders/gpu/spectrum.vert'),'#version 440\n#include "../../../../outside.glsl"\nvoid main(){}');
+  await assert.rejects(buildPackage(source,output),/contained relative path/);
+});
+
+test('prebaked shader assets must be real portable QSB packs',async t=>{
+  const {source,output}=await author(t);
+  const directory=await buildPackage(source,output);
+  await writeFile(path.join(directory,'shaders/gpu/spectrum.vert.qsb'),'not a shader');
+  await assert.rejects(validatePackage(directory));
+});

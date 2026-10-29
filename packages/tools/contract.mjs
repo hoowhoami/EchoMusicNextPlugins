@@ -46,6 +46,7 @@ export function rangeContains(range, version) {
 }
 
 const nativeScriptDefinitions = new Set([
+  'GpuData',
   'HostActionDefinition',
   'HostTitlebarActionDefinition',
   'HostPlayerbarActionDefinition',
@@ -104,7 +105,7 @@ function compatibleType(qtType, type, depth = 0) {
   if (native === 'State' || native === 'EchoPluginOperation::State')
     return text === 'OperationState';
   if (native === 'AppearanceConfiguration') return text === native || text === `${native} | null`;
-  if (native.startsWith('EchoPlugin') || native.startsWith('EchoUi'))
+  if (native.startsWith('EchoPlugin') || native.startsWith('EchoUi') || native.startsWith('EchoGpu'))
     return text.startsWith(native);
   if (native === 'QFont') return text === 'QtFont';
   if (native === 'QColor') return text === 'QtColor';

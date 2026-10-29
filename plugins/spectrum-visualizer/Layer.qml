@@ -27,6 +27,8 @@ Item {
             values: []
         })
     property real time: 0
+    property bool gpuFailed: false
+    readonly property bool gpuEnabled: !gpuFailed && plugin.graphics.capabilities.state!=="unavailable"
     property bool centerSettled: false
     readonly property string subscriptionKey: JSON.stringify([settings.fps, settings.binCount, settings.fftSize, settings.smoothing, settings.scale, settings.mode])
     opacity: Number(settings.opacity || 56) / 100
@@ -72,7 +74,7 @@ Item {
         objectName: "spectrumRenderClock"
         interval: Math.max(16, 1000 / (visualizer.settings.mode === "mist" ? Math.min(visualizer.settings.fps || 15, 24) : visualizer.settings.fps || 15))
         repeat: true
-        running: visualizer.live && (visualizer.settings.mode === "centered" ? !visualizer.centerSettled : visualizer.settings.mode === "mist" || !visualizer.frame || visualizer.frame.state === "idle")
+        running: visualizer.live && !visualizer.gpuEnabled && (visualizer.settings.mode === "centered" ? !visualizer.centerSettled : visualizer.settings.mode === "mist" || !visualizer.frame || visualizer.frame.state === "idle")
         onTriggered: {
             visualizer.time = Date.now();
             if (drawing.item)
@@ -83,7 +85,20 @@ Item {
         id: drawing
         anchors.fill: parent
         active: visualizer.live
-        sourceComponent: visualizer.settings.mode === "mist" ? fog : ordinary
+        sourceComponent: visualizer.gpuEnabled ? gpuDrawing : visualizer.settings.mode === "mist" ? fog : ordinary
+    }
+    Component {
+        id: gpuDrawing
+        GpuLayer {
+            plugin: visualizer.plugin
+            settings: visualizer.renderSettings
+            frame: visualizer.frame
+            colors: visualizer.colors
+            kind: visualizer.kind
+            live: visualizer.live
+            onFailureChanged: {if(failure)visualizer.gpuFailed=true;}
+            onStatusChanged: {if(status.state==="error" || status.state==="unavailable")visualizer.gpuFailed=true;}
+        }
     }
     Component {
         id: ordinary

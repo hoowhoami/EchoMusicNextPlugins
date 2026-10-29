@@ -386,7 +386,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     visible: true
                     title: "HDR 峰值高光"
-                    hint: "当前宿主未提供 HDR 绘图能力，保留普通频谱"
+                    hint: settingsRoot.plugin.graphics.capabilities.hdr ? "当前窗口支持 HDR，峰值可超过普通白色亮度" : "HDR 显示器输出峰值高光；SDR 屏幕自动映射亮度"
                     switchRow: true
                     editor: Component {
                         EchoSwitch {

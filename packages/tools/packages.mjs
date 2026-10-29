@@ -20,6 +20,7 @@ import ts from 'typescript';
 import { sdkRoot, readJson, loadContract, rangeContains } from './contract.mjs';
 import { packPluginArchive, unpackPluginArchive } from './archives.mjs';
 import { dependencyOrder } from './dependencies.mjs';
+import { bakeShaders, validateShader } from './shaders.mjs';
 import { readIndex, indexEntry, parseEntry } from './index.mjs';
 
 const maximumBytes = 128 * 1024 * 1024;
@@ -152,6 +153,7 @@ export async function validatePackage(root) {
   const files = await inventory(root);
   const entries = new Map();
   for (const file of files) {
+    if(file.endsWith('.qsb'))await validateShader(path.join(root,file),await loadContract());
     if (
       path.basename(file) === 'qmldir' &&
       /^\s*(optional\s+)?plugin\s+/m.test(await readFile(path.join(root, file), 'utf8'))
@@ -227,10 +229,10 @@ export async function buildPackage(source, outputRoot) {
   const config = await readJson(path.join(source, 'plugin.config.json'));
   if (
     !config ||
-    Object.keys(config).some((key) => !['entry', 'assets'].includes(key)) ||
+    Object.keys(config).some((key) => !['entry', 'assets', 'shaders'].includes(key)) ||
     !Array.isArray(config.assets)
   )
-    throw new Error('plugin.config.json requires only entry and assets');
+    throw new Error('plugin.config.json requires entry, assets and optional shaders');
   if (relativePath(config.entry) === manifest.entry)
     throw new Error('Author entry must differ from the published entry');
   const entry = await containedFile(source, config.entry);
@@ -288,6 +290,7 @@ export async function buildPackage(source, outputRoot) {
       } else throw new Error(`Unsupported asset: ${relative}`);
     };
     for (const asset of config.assets) await copy(relativePath(asset));
+    await bakeShaders(source, staging, config.shaders, containedFile, relativePath, await loadContract());
     await validatePackage(staging);
     if (await exists(destination)) {
       backup = `${destination}.previous-${randomUUID()}`;
