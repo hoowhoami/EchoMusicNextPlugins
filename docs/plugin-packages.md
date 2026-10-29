@@ -23,7 +23,6 @@ npm run sdk:check -- --host /absolute/path/to/echomusicnext
 npx echo-plugin build plugins/spectrum-visualizer --out dist
 npx echo-plugin validate dist/spectrum-visualizer-1.0.0.echomod
 npm run prepare:source
-npm run check:published
 ```
 
 跨仓库收录使用 schema2：`id` 为预期插件 ID，`repo` 为作者 GitHub 仓库（省略为当前源），`ref` 默认为 HEAD，`path` 为 manifest 目录（空字符串表示根），`artifact` 为仓库根的相对 .echomod 路径或 HTTPS 下载地址，`sha256` 绑定包字节。名称、描述、版本和能力来自 manifest；下载后同时核对哈希与完整清单。官方收录源与作者仓库分别记录，仓库按钮打开作者地址。
@@ -32,7 +31,9 @@ npm run check:published
 
 本地构建清单在 `echo-plugin.build.json`，与公开索引分开。`build-index` 构建其中明确列出的本地插件；`prepare-index` 更新同仓插件的 artifacts 与索引，保留第三方条目；`check-index` 不读取第三方本地源码；`check-published` 联网校验每条作者清单和实际包。频谱仍在本仓库维护，第三方可独立维护仓库。生成入口只需放在 .echomod 内。
 
-manifest支持dependencies/optionalDependencies/conflicts（ID到版本范围）及loadAfter/loadBefore（ID数组）。范围使用`>=1.0.0 <2.0.0`等比较交集；拒绝自依赖和矛盾声明。完整源索引构建验证依赖闭包、版本、冲突与循环；单独build允许声明由其它可信来源提供的依赖，最终由宿主基于实际安装集合检查。
+`prepare:source` 只生成本地产物，不发布文件。提交并推送清单与包之后，再运行 `npm run check:published` 校验索引所指的远端字节；尚未推送的候选可能因 404 或摘要不符而失败，不能用离线构建成功代替。验证贡献分支时，条目的 `ref` 必须指向实际已推送的分支或提交，由 `index-entry --ref` 或本地构建清单的 `ref` 生成；`check-published --repo` 只选择未显式声明作者仓库的条目来源，不覆盖条目的 `ref` 或第三方作者仓库。
+
+manifest支持dependencies/optionalDependencies/conflicts（ID到版本范围）及loadAfter/loadBefore（ID数组）。范围使用`>=1.0.0 <2.0.0`等比较交集；拒绝自依赖和矛盾声明。本地构建允许声明由其它可信来源提供的依赖，公开索引的离线校验不下载第三方源码或验证完整安装集合；依赖闭包、版本、冲突与循环最终由宿主按实际安装集合检查。
 
 依赖安装并启用、成功activate及提交贡献后，消费者才执行；可选依赖不存在时自行降级。缺失时宿主保留安装和启用偏好、明确显示“依赖未就绪”，补齐后自动协调。不静默下载另一来源、强制启用用户关闭的插件或取消版本要求。停用/卸载/更新先排空消费者，更新失败恢复代码/私有数据，消费者随提供者恢复。
 

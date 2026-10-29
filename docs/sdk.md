@@ -89,6 +89,12 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 
 可用功能以宿主导出的 feature/capability 为准，平台验证边界见各 API 说明。
 
+## 只读歌曲转场
+
+`playback.transitionPresentation` 提供只读 `ctx.player.transition`：真实输出消费对应的 phase、精确字符串 epoch/generation、A/B 元数据与宿主已解析歌词模型、成对源位置，以及同一实际增益计划推导的 cue。`overlapProgress` 是已消费帧比例，不能代替视觉交点；仅 `cueReady` 为真时使用 `cueElapsedMs`/`cueDurationMs`/`crossover`。缺少成对增益的模板明确不给 cue。A/B 不暴露解码地址、可写原模型或独立 transport；继续使用唯一 player 的控制和原生呈现时钟。这些只读投影用于歌词、背景与和声显示，不提供额外选源、分析或播放状态写入口。精简后的真实宿主导出、安装和性能验收由统一构建验证，记录见 [验证记录](folia/verification.md)。
+
+各领域的实际可用入口以当前宿主导出和精确 feature 协商为准，文件/媒体与网络见[对应文档](files-and-network.md)。单项接口或测试通过不能推广为所有业务、平台及性能均已验收。
+
 ## SDK1.0.0 插件依赖与服务
 
 新增`EchoPluginContext.plugins` / `EchoPluginRegistry`，正式`.echomod`包、依赖图、版本化服务、可用性、异步JSON调用与取消/账号/停用语义见[插件指南](plugin-packages.md)。声明唯一在index.d.ts；运行时成员仍以真实宿主导出为准。
@@ -135,3 +141,29 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 ## 宿主界面与设置
 
 导航、分域设置、动态工具栏操作与全局封面 API 的使用和生命周期见[宿主扩展](host-access.md)。
+
+## ShaderEffect 点图元
+
+声明 `graphics.pointMesh` 后可把 QML `PointMesh { pointCount: 150 }` 赋给 `ShaderEffect.mesh`。点数0..4096，默认1；每点16字节，`vertexBytes` 仅统计有界顶点数据，最大64 KiB，不含离屏目标或驱动内存。无效点数保留之前几何并设置 `errorString`，有效请求清除错误。
+
+顶点输入必须是 location0 `qt_Vertex` 和 location1 `qt_MultiTexCoord0`；前者在 item 中心，后者 x 为精确的0起点索引、y为0，顶点 shader 据此计算位置。网格无索引、使用点图元，场景图持有并复用几何。点尺寸及点坐标仍依赖实际 RHI shader 支持；固定 Qt6.12 / Metal 已验证，其他后端须独立验收并保留适用替代路径。
+
+## GlyphRun 画布采样契约
+
+`graphics.glyphRun.canvas` 已完成正式 C 版 post-format Release 的 81 步增量构建；真实程序及搬迁后的已签名分发程序均通过 `sdk:check`。插件仍须协商该 feature，不能据作者类型或属性声明判断任意安装支持。
+
+正式 `GlyphRunCanvasRenderingTest` 在 DPR 1、DPR 2 主进程各 7/7：DPR 1 运行包含原固定语料的 528 帧（两种 DPR 各 264 帧），DPR 2 主进程另验 264 帧，原能量、二阶矩及重心门槛未放宽。40 代同窗口共享池回归中，DPR 2 有两次既定预算拒绝；实际排空至保留同一 pin 的账本后，完全相同输入各显式重交一次并恢复。128 MiB 上限未增加，不能把该结果写成 40 代零拒绝。
+
+真实 80 行场景的 DPR 1/2 资源检查已通过；这些锁屏、time=0 的准备及低 alpha 画面不替代活动正文、Fume↔Monet 双模式过渡或前台连续视觉。正文与双模式验收仍在补齐，前台连续视觉和安静 Release 性能须解锁后完成。正式模块、来源、日志及历史失败的边界见 [Fume 参考](folia/fume-reference.md)。
+
+`haloSampling` 为 `"static" | "canvas"`，默认 `"static"`，保留既有预采样正文 blur、legacy glow 与 halo 行为。canvas 提供清晰原生 ink 和最多三层独立 halos，非零 pose.blur / pose.glow 显式拒绝。`maximumRasterScale` 是父变换与 pose 合并后的逻辑最大采样缩放，有限范围 `(0,32]`，默认 32，窗口 DPR 另计。应按场景实际变换声明上界；超出上界或固定目标容量会报错，不会静默夹小效果。
+
+canvas 在 GUI 入口拒绝未知 run 字段、非标量 payload 和非有限数值，再把完整 QFont 序列化到串行 worker。worker 保留完整字体链与上下文排版，QTextLayout / QRawFont 在同一 worker 内创建、使用和销毁。完成结果只提交到当前 generation，先更新数据再通知；替换、隐藏或销毁取消旧 generation，迟到结果不能覆盖新输入。取消后旧 worker 的实际排空仍可能继续。
+
+`preparing` 只表示当前 generation 的排队或 CPU 准备，通过 `preparationChanged` 观察。`ready` 要求当前 generation 不在准备中、未释放、无错误，并完成渲染节点资源准备，通过 `renderingChanged` 观察；CPU 完成不等于 GPU 就绪。合法空 runs、空白或透明结果可以 `ready=true` 且 `renderBatches=0`，不能据此证明非空像素或整页首帧。`measurementOnly=true` 仍只执行 CPU 测量。
+
+canvas 的 `cacheBytes` 统计 item 独占 CPU 描述符；`gpuCacheBytes` 只统计 item 独占动态 UBO。`sharedCacheKey` 标识当前窗口共享池，`sharedCacheBytes` 包含共享 CPU ink/outline、atlas、四个采样目标、curve 和相关元数据，汇总时每个非空 key 只计一次。它们均为软件分配账本，不是进程 RSS、驱动驻留量或物理 GPU 内存；对象销毁、`cacheBytes=0` 或租约排空均不证明驱动缓存归零。
+
+所有仍存活的 canvas 准备与渲染租约共用 128 MiB native 软件账本；只有唯一正在运行的准备任务保留 40 MiB scratch 租约，排队任务不各自预留这 40 MiB。取消不能提前扣除旧 worker 仍在使用的租约。渲染另受 32 MiB ink 和 32 MiB effects 预算约束，窗口共享页复用退休容量。
+
+GUI 结构与字段预检拒绝不替换已接收的 runs/metrics，并设置 `errorString`；后台准备、预算、RHI 能力或资源创建失败同样显式报错，使 `ready=false` 并回收相应资源，不能以空白假成功。修正输入后显式提交有效 runs 可重新准备，仍须检查错误和就绪状态。永久 CPU 回归只验证字体、代际、取消及账本行为，不能替代实际宿主导出、安装或 GPU 验收。

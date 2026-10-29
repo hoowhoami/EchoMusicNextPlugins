@@ -9,7 +9,10 @@ QtObject {
     // Keep the full host QFont, including its fallback chain. Override only the
     // Folia style's metrics on this local value, never the host preference.
     property font value
+    property bool _completed: false
     function refresh(): void {
+        if (!_completed)
+            return;
         value = base;
         value.pixelSize = pixelSize;
         value.weight = weight;
@@ -19,5 +22,8 @@ QtObject {
     onPixelSizeChanged: refresh()
     onWeightChanged: refresh()
     onLetterSpacingChanged: refresh()
-    Component.onCompleted: refresh()
+    Component.onCompleted: {
+        _completed = true;
+        refresh();
+    }
 }

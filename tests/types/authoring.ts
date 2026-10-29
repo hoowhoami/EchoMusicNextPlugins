@@ -1,5 +1,6 @@
 import { awaitOperation, pluginService } from 'echo:plugin-sdk';
 import type { EchoPluginContext } from 'echo:plugin-sdk';
+import type { GlyphPose } from 'echo:plugin-sdk';
 
 export function activate(ctx: EchoPluginContext): Promise<void> {
   ctx.registerCommand('answer', () => Promise.resolve({ value: 42 }));
@@ -16,6 +17,24 @@ function checkReadonlyContract(ctx: EchoPluginContext): void {
   ctx.player.seek('/song/url');
   // @ts-expect-error The application database/credentials are not SDK fields.
   ctx.account;
+  const line = ctx.player.lyrics.row(0);
+  const theme = ctx.appearance.snapshot.themeMetadata;
+  if (theme) {
+    theme.title.toUpperCase();
+    // @ts-expect-error Effective theme metadata is owned by the host.
+    theme.description = 'replacement';
+  }
+  line.backgroundVocals.forEach((vocal) => {
+    vocal.words.forEach((word) => word.start_ms.toFixed());
+    vocal.startMs.toFixed();
+    // @ts-expect-error A source voice identifier is a string when present.
+    const numericVoice: number = vocal.agentId;
+    void numericVoice;
+  });
+  // @ts-expect-error Source section metadata belongs to the read-only host model.
+  line.isChorus = true;
+  // @ts-expect-error Public word timestamps are numeric raw milliseconds.
+  line.words[0].start_ms = '1000';
 }
 void checkReadonlyContract;
 function artistImageTypes(ctx: EchoPluginContext): void {
@@ -35,6 +54,132 @@ function artistImageTypes(ctx: EchoPluginContext): void {
   ctx.kugou.request('audioImages', { count: 5 });
 }
 void artistImageTypes;
+
+export function songTransitionTypes(ctx: EchoPluginContext): void {
+  const transition = ctx.player.transition;
+  transition.epoch.toUpperCase();
+  transition.outgoing.lyrics.row(0).startMs.toFixed();
+  transition.incoming.coverUrl.toUpperCase();
+  // @ts-expect-error Exact native identities remain strings beyond 2**53.
+  const numericEpoch: number = transition.epoch;
+  void numericEpoch;
+  // @ts-expect-error A/B presentations are read-only and have no transport commands.
+  transition.incoming.seek(5000);
+  // @ts-expect-error A presentation cannot publish its own measured crossover.
+  transition.crossover = 0.5;
+  // @ts-expect-error Decoder locations are never public track fields.
+  transition.outgoing.locator;
+}
+
+export function presentationClosingTypes(
+  page: import('echo:plugin-sdk').EchoPluginViewContext,
+): void {
+  page.command('volume', { value: 120 });
+  page.closeSkinSettings();
+  // @ts-expect-error Presentation commands are a closed host protocol.
+  page.command('privateRoute');
+  const flush = () => {};
+  page.aboutToClose.connect(flush);
+  page.aboutToClose.disconnect(flush);
+  // @ts-expect-error The lifecycle signal belongs to the host.
+  page.aboutToClose = { connect() {}, disconnect() {} };
+  // @ts-expect-error Closing does not expose a raw QObject/window payload.
+  page.aboutToClose.connect((owner: object) => {
+    void owner;
+  });
+}
+
+export function nativeGraphicsTypes(
+  texture: import('echo:plugin-sdk').FloatTexture,
+  points: import('echo:plugin-sdk').PointMesh,
+  capture: import('echo:plugin-sdk').ImageCapture,
+  item: import('echo:plugin-sdk').QtQuickItem,
+  ctx: EchoPluginContext,
+): void {
+  points.pointCount = 150;
+  points.vertexBytes.toFixed();
+  // @ts-expect-error The scene graph owns uploaded vertex byte accounting.
+  points.vertexBytes = 2400;
+  texture.upload(1, 1, new ArrayBuffer(16));
+  texture.uploadPacked(1, 1, '\0'.repeat(8));
+  // @ts-expect-error Direct upload accepts only a real ArrayBuffer.
+  texture.upload(1, 1, [0, 0, 0, 0]);
+  const lease = capture.encode(item, 1920, 1080, 'jpeg', 92);
+  // @ts-expect-error Result publication belongs to the native capture owner.
+  lease.status = 'ready';
+  // @ts-expect-error Capture supports JPEG/PNG only.
+  capture.encode(item, 100, 100, 'gif');
+  lease.dispose();
+}
+
+export function presentationVisibilityTypes(
+  scope: import('echo:plugin-sdk').PresentationScope,
+): void {
+  scope.presented.valueOf();
+  scope.presentedChanged.connect(() => {});
+  // @ts-expect-error Effective visibility belongs to the native scene.
+  scope.presented = true;
+  // @ts-expect-error The container never exposes private ancestors.
+  scope.ancestors();
+}
+
+export function canvasGlyphTypes(glyph: import('echo:plugin-sdk').GlyphRun): void {
+  glyph.haloSampling = 'canvas';
+  glyph.maximumRasterScale = 2.24;
+  glyph.sharedCacheKey.toUpperCase();
+  glyph.gpuCacheBytes.toFixed();
+  glyph.sharedCacheBytes.toFixed();
+  glyph.preparationChanged.connect(() => glyph.preparing.valueOf());
+  // @ts-expect-error Sampling uses the native finite mode set.
+  glyph.haloSampling = 'automatic';
+  // @ts-expect-error Raster scale is a native number.
+  glyph.maximumRasterScale = '2.24';
+  // @ts-expect-error Native upload and presentation own readiness.
+  glyph.ready = true;
+  // @ts-expect-error Native shared allocations are read-only.
+  glyph.sharedCacheBytes = 0;
+}
+
+export function textTypes(ctx: EchoPluginContext): void {
+  awaitOperation(ctx.text.segmentWords(['你好 café 👩‍👩‍👧‍👦'], 'und')).then((result) => {
+    result.lines[0]?.forEach((word) => word.index.toFixed(0));
+  });
+  // @ts-expect-error A text list is required, not a single string.
+  ctx.text.segmentWords('hello');
+  // @ts-expect-error Capabilities and Unicode versions belong to the host.
+  ctx.text.available = true;
+}
+
+export function assetAndGlyphTypes(ctx: EchoPluginContext): void {
+  awaitOperation(ctx.assets.list('images')).then(({ assets }) => {
+    for (const asset of assets) {
+      ctx.assets.sampleImage(asset.url, 16, 16);
+      asset.url.toString();
+      // @ts-expect-error Qt URL values are not browser/JavaScript strings.
+      asset.url.startsWith('file:');
+    }
+  });
+  ctx.assets.sampleImage(ctx.player.coverUrl, 32, 32);
+  ctx.assets.importFonts('fonts');
+  // @ts-expect-error Import requires a collection, never an arbitrary input path list.
+  ctx.assets.importImages(['file:///private/file.png']);
+  const pose: GlyphPose = {
+    tint: ctx.accent,
+    key: 'word',
+    instance: 'active',
+    clip: { x: 0, y: -30, width: 20, height: 40 },
+  };
+  // @ts-expect-error Clipping coordinates are numeric.
+  pose.clip = { x: 0, y: 0, width: '20', height: 40 };
+  const outlinedRun: import('echo:plugin-sdk').GlyphRunInput = {
+    key: 'outline',
+    text: 'ffi العربية',
+    size: 616,
+    strokeWidth: 3.696,
+  };
+  // @ts-expect-error Outline width remains a native numeric property.
+  outlinedRun.strokeWidth = '3.696';
+}
 
 function checkPluginServiceContract(ctx: EchoPluginContext): void {
   ctx.plugins.isAvailable('audio-library');
@@ -66,6 +211,10 @@ export function spectrumTypes(ctx: EchoPluginContext) {
     includeWaveform: true,
   });
   sub?.setPaused(true);
+  const bins: number[] | undefined = sub?.frame?.bins;
+  const waveform: number[] | undefined = sub?.frame?.waveform;
+  void bins;
+  void waveform;
   // @ts-expect-error unknown frequency scale must not silently enter the API
   ctx.audio.spectrum.subscribe({ scale: 'custom' });
   // @ts-expect-error fixed native presentation targets
@@ -96,7 +245,7 @@ export function appearanceTypes(ctx: EchoPluginContext): void {
     tools: 'custom',
   });
   // @ts-expect-error Configuration is host-owned and changes only through patch/reset.
-  if (skin) skin.configuration.values = {};
+  if (skin?.configuration) skin.configuration.values = {};
   // @ts-expect-error The font chain is a string list, not a CSS stack.
   ctx.fonts.build('Arial, sans-serif');
 }
@@ -200,6 +349,19 @@ function sourceAndQueues(ctx: EchoPluginContext): void {
 void sourceAndQueues;
 
 export function lyricAuthoring(ctx: import('echo:plugin-sdk').EchoPluginContext) {
+  ctx.lyrics.write(ctx.lyrics.snapshot.revision, {
+    format: 'ttml',
+    encoding: 'text',
+    content: '<tt xmlns="http://www.w3.org/ns/ttml"><body/></tt>',
+  });
+  ctx.lyrics.registerResolver('timed-voices', {
+    resolve: () => ({
+      format: 'ttml',
+      content: '<tt xmlns="http://www.w3.org/ns/ttml"><body/></tt>',
+    }),
+  });
+  // @ts-expect-error TTML accepts XML text, not the KRC binary encoding.
+  ctx.lyrics.write('1', { format: 'ttml', encoding: 'base64', content: '...' });
   ctx.lyrics.registerResolver('lyrics', {
     order: 10,
     match: async ({ track }) => !!track.id,

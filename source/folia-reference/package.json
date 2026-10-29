@@ -1,0 +1,24 @@
+{
+  "name": "folia-reference-inputs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "dependencies": {
+    "@chenglou/pretext": "0.0.9",
+    "@paper-design/shaders": "0.0.80",
+    "@paper-design/shaders-react": "0.0.80",
+    "budoux": "0.9.3",
+    "opencc-js": "1.4.2",
+    "pixi.js": "8.21.0",
+    "earcut": "3.2.3",
+    "three": "0.185.1",
+    "lucide-react": "1.48.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "twgl.js": "7.0.0",
+    "fflate": "0.8.3"
+  }
+}

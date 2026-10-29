@@ -1,0 +1,20 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "pixi": "8.21.0",
+  "sha256": {
+    "src/components/visualizer/sonnet/sonnetLensFilter.ts": "c9557cdbfc2d85a32b919d0107ea0b6ae9906ad87f200c76250acec174ef474b",
+    "src/components/visualizer/sonnet/sonnetPrintFilters.ts": "f04b60aef792fb6cccad1af35e5476a118d20e4e4be940b5480a113245eac34e",
+    "src/components/visualizer/sonnet/sonnetGlitchFilter.ts": "f49f33f8649e5251e0ad1ed12f14b743a225934c1943f070fa68e102404f6078",
+    "node_modules/pixi.js/lib/filters/defaults/noise/noise.frag.mjs": "bceca1319d3e4db6f2641de2814c3b99366dd2af04c7ddfa224bcea20f7fcf44",
+    "node_modules/pixi.js/lib/filters/defaults/color-matrix/colorMatrixFilter.frag.mjs": "eb0e7b40bb1c4334996ec7a97d3d284f9eb70d0d55afb4607d36884dfc242ce4",
+    "node_modules/pixi.js/lib/filters/defaults/color-matrix/ColorMatrixFilter.mjs": "046948ca8b63ad09610f04439484db5c2e6cc0c67a6d2f573faaf1319d35d455",
+    "node_modules/pixi.js/lib/filters/defaults/blur/BlurFilterPass.mjs": "3feb2f01ecf08c526b1f2e95cd9b5ec8405b37eff9fe972b202226a955c9fa63",
+    "node_modules/pixi.js/lib/filters/defaults/blur/const.mjs": "a732fec7ff35ff762001da3538f23c6cac9f21283e720ed4708cf2b8ce3ec5f4",
+    "src/components/visualizer/sonnet/sonnetPostProcess.ts": "f4b29607b9547cff4b328c886494675bab4cb2e749ccec3a6d4ac9305a8c2d1f",
+    "src/components/visualizer/pixiFilterVertex.ts": "62e5153c73c290fc9431189ac05317ee040726f6901507d57e7f85a41b29e727",
+    "node_modules/pixi.js/lib/rendering/renderers/gl/state/mapWebGLBlendModesToPixi.mjs": "614033f0cf1244d118d20343f07bef9126f136b85017555fcac4dc50d548fc24",
+    "node_modules/pixi.js/lib/rendering/renderers/shared/texture/TexturePool.mjs": "931f9b18ff6c5005bcee787d8cbbc7d38caa8902b2b72c98b7ef208e0ab0b67b",
+    "node_modules/pixi.js/lib/rendering/renderers/shared/texture/utils/ScreenSizeRegistry.mjs": "4403e4a710e58fdfeecd84bc8408694334333352e1dbab414f98cc81bda21138",
+    "node_modules/pixi.js/lib/rendering/renderers/shared/view/ViewSystem.mjs": "215e8ccf77bc583c6ae209e6465b8e18fbeddea4e79c5bafab8e8f18fc5d89a6"
+  }
+}

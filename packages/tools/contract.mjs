@@ -62,91 +62,104 @@ const nativeScriptDefinitions = new Set([
   'SongMenuDefinition',
   'LyricEffectDefinition',
 ]);
-let declaredTypes = new Map();
-function compatibleType(qtType, type, depth = 0) {
-  if (depth > 16) return false;
+
+export function compatibleType(qtType, type, bindings, depth = 0, seen = new Set()) {
+  if (!type || depth > 16) return false;
   const native = qtType.replace('EchoMusic::', '').replace(/\s*\*$/, '');
+  const text = type.getText();
+  if (native === 'State' || native === 'EchoPluginOperation::State')
+    return text === 'OperationState';
+  // Callback-bearing definitions are explicitly native-validated QJSValue contracts.
+  // Keep these names before expanding aliases such as Partial<Omit<...>>.
   if (
     native === 'QJSValue' &&
-    type &&
     ts.isTypeReferenceNode(type) &&
     nativeScriptDefinitions.has(type.typeName.getText())
   )
     return true;
-  if (
-    (qtType === 'EchoMusic::EchoPluginOperation::State' || qtType === 'State') &&
-    type?.getText() === 'OperationState'
-  )
-    return true;
-  if (type && ts.isTypeReferenceNode(type)) {
+  const nested = (part, aliases = seen) =>
+    compatibleType(qtType, part, bindings, depth + 1, aliases);
+  if (ts.isParenthesizedTypeNode(type)) return nested(type.type);
+  if (ts.isTypeReferenceNode(type)) {
     if (
       ['Readonly', 'Partial'].includes(type.typeName.getText()) &&
       type.typeArguments?.length === 1
     )
-      return compatibleType(qtType, type.typeArguments[0], depth + 1);
-    const declaration = declaredTypes.get(type.typeName.getText());
-    if (declaration && ts.isTypeAliasDeclaration(declaration))
-      return compatibleType(qtType, declaration.type, depth + 1);
+      return nested(type.typeArguments[0]);
+    const name = type.typeName.getText();
+    const declaration = bindings.declaredTypes.get(name);
+    if (declaration && ts.isTypeAliasDeclaration(declaration) && !type.typeArguments?.length) {
+      if (seen.has(name)) return false;
+      return nested(declaration.type, new Set([...seen, name]));
+    }
   }
-
-  const text = type?.getText() ?? '';
   if (native === 'QString')
     return (
       text === 'string' ||
-      (type && ts.isLiteralTypeNode(type) && ts.isStringLiteral(type.literal)) ||
-      (type &&
-        ts.isUnionTypeNode(type) &&
-        type.types.every((part) => compatibleType(qtType, part, depth + 1)))
+      (ts.isLiteralTypeNode(type) && ts.isStringLiteral(type.literal)) ||
+      (ts.isUnionTypeNode(type) && type.types.every((part) => nested(part)))
     );
   if (native === 'bool') return text === 'boolean';
-  if (['int', 'qint64', 'qlonglong', 'double'].includes(native)) return text === 'number';
+  if (['int', 'qint64', 'qlonglong', 'quint64', 'qulonglong', 'double', 'qreal'].includes(native))
+    return text === 'number';
   if (native === 'void') return text === 'void';
-  if (native === 'State' || native === 'EchoPluginOperation::State')
-    return text === 'OperationState';
-  if (native === 'AppearanceConfiguration') return text === native || text === `${native} | null`;
-  if (native.startsWith('EchoPlugin') || native.startsWith('EchoUi'))
-    return text.startsWith(native);
+  if (bindings.nativeTypes.has(native)) {
+    const exact = (part) => ts.isTypeReferenceNode(part) && part.typeName.getText() === native;
+    return (
+      exact(type) ||
+      (ts.isUnionTypeNode(type) &&
+        type.types.some(exact) &&
+        type.types.every(
+          (part) =>
+            exact(part) ||
+            (ts.isLiteralTypeNode(part) && part.literal.kind === ts.SyntaxKind.NullKeyword),
+        ))
+    );
+  }
   if (native === 'QFont') return text === 'QtFont';
   if (native === 'QColor') return text === 'QtColor';
+  if (native === 'QRectF') return text === 'QtRect';
+  if (native === 'QQuickItem') return text === 'QtQuickItem';
   const record =
-    type &&
     ts.isTypeReferenceNode(type) &&
     type.typeName.getText() === 'Record' &&
     type.typeArguments?.[0]?.kind === ts.SyntaxKind.StringKeyword;
   if (native === 'QStringList') {
-    const array = type && ts.isTypeOperatorNode(type) ? type.type : type;
-    return (
-      !!array && ts.isArrayTypeNode(array) && array.elementType.kind === ts.SyntaxKind.StringKeyword
-    );
+    const array = ts.isTypeOperatorNode(type) ? type.type : type;
+    return ts.isArrayTypeNode(array) && array.elementType.kind === ts.SyntaxKind.StringKeyword;
   }
-  if (native === 'QVariantList') return !!type && ts.isArrayTypeNode(type);
-  if (native === 'QRectF') return text === 'QtRect';
-  if (native === 'QVariantMap' && type && ts.isUnionTypeNode(type))
-    return type.types.every((part) => compatibleType(qtType, part, depth + 1));
-  if (native === 'QVariantMap')
+  if (native === 'QVariantList') {
+    const array = ts.isTypeOperatorNode(type) ? type.type : type;
+    return ts.isArrayTypeNode(array);
+  }
+  if (native === 'QVariantMap') {
+    if (ts.isUnionTypeNode(type)) return type.types.every((part) => nested(part));
+    const declaration = ts.isTypeReferenceNode(type)
+      ? bindings.declaredTypes.get(type.typeName.getText())
+      : undefined;
     return (
-      (type &&
-        ts.isTypeLiteralNode(type) &&
+      (ts.isTypeLiteralNode(type) &&
         type.members.every((member) => ts.isPropertySignature(member))) ||
       record ||
-      (type &&
-        ts.isTypeReferenceNode(type) &&
-        ts.isInterfaceDeclaration(declaredTypes.get(type.typeName.getText()) ?? {}) &&
-        declaredTypes
-          .get(type.typeName.getText())
-          .members.every((member) => ts.isPropertySignature(member))) ||
-      (ts.isIntersectionTypeNode(type) && type.types.some((part) => compatibleType(qtType, part)))
+      (declaration &&
+        ts.isInterfaceDeclaration(declaration) &&
+        declaration.members.every((member) => ts.isPropertySignature(member))) ||
+      (ts.isIntersectionTypeNode(type) && type.types.some((part) => nested(part)))
     );
+  }
   if (native === 'QByteArray') return text.includes('ArrayBuffer');
   if (native === 'QUrl') return text === 'string' || text.includes('toString');
   if (native === 'QJSValue')
     return (
       ts.isFunctionTypeNode(type) ||
       (record && ts.isFunctionTypeNode(type.typeArguments[1])) ||
-      nativeScriptDefinitions.has(text)
+      nativeScriptDefinitions.has(text) ||
+      // FloatTexture validates these two concrete data transports natively.
+      text === 'ArrayBuffer' ||
+      text === 'string'
     );
   // QVariant carries API-specific JSON or operation generic results.
-  if (native === 'QVariant') return !!type;
+  if (native === 'QVariant') return true;
   return false;
 }
 
@@ -167,7 +180,10 @@ export async function checkBindings(contract) {
     ts.forEachChild(node, visit);
   };
   visit(source);
-  declaredTypes = new Map([...interfaces, ...aliases]);
+  const bindings = {
+    nativeTypes: new Set(Object.keys(contract.types)),
+    declaredTypes: new Map([...interfaces, ...aliases]),
+  };
   const pkg = await readJson(`${sdkRoot}package.json`);
   if (pkg.version !== contract.sdkVersion) throw new Error('SDK package/host version mismatch');
   for (const [name, native] of Object.entries(contract.types)) {
@@ -178,7 +194,11 @@ export async function checkBindings(contract) {
     for (const property of native.properties) {
       names.add(property.name);
       const member = members.get(property.name);
-      if (!member || !ts.isPropertySignature(member) || !compatibleType(property.type, member.type))
+      if (
+        !member ||
+        !ts.isPropertySignature(member) ||
+        !compatibleType(property.type, member.type, bindings)
+      )
         throw new Error(`SDK property type differs: ${name}.${property.name} (${property.type})`);
       const readonly = member.modifiers?.some(
         (modifier) => modifier.kind === ts.SyntaxKind.ReadonlyKeyword,
@@ -207,6 +227,7 @@ export async function checkBindings(contract) {
               !compatibleType(
                 method.parameters[index],
                 ts.isNamedTupleMember(parameter) ? parameter.type : parameter,
+                bindings,
               ),
           )
         )
@@ -216,9 +237,10 @@ export async function checkBindings(contract) {
           !member ||
           !ts.isMethodSignature(member) ||
           member.parameters.length !== method.parameters.length ||
-          !compatibleType(method.returnType, member.type) ||
+          !compatibleType(method.returnType, member.type, bindings) ||
           member.parameters.some(
-            (parameter, index) => !compatibleType(method.parameters[index], parameter.type),
+            (parameter, index) =>
+              !compatibleType(method.parameters[index], parameter.type, bindings),
           )
         )
           throw new Error(`SDK method differs: ${name}.${methodName}`);

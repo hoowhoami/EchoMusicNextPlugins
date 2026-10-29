@@ -25,3 +25,9 @@ QT_QPA_PLATFORM=cocoa /absolute/Qt/bin/qml tests/qml/PreviewStill.qml -- \
 ```
 
 浏览器截图已在当前任务中直接查看；浏览器连接器拒绝写入本任务目录，因此没有声称本地保存成功，也没有写入其他项目。完整共享页和其余 13 种样式的源运行对照仍待执行。
+
+## 纳入共享十四样式过渡（2026-10-23）
+
+`StillPresentation.qml`只适配公开readmodel的三行、原source effectiveIndex和四个完整QFont；原Still字形/行高/颜色/阴影实现保持独立。Page不再用单独Loader硬切Still。VisualizerStage对十四种模式共享首帧、softFocus和至多两个actor，BackgroundPresentation对Still创建不绘制内容的空状态并真实退役旧背景；静止后无背景renderer、无过渡FBO。动态模式的资产/PCM/准备只保留到其离场actor退休；Still稳定后不跑全文准备与连续帧投影。后续真实Harmony若存在活跃声部可复用同一宿主投影，不产生第二个时钟。
+
+新增Stage与无背景专项均先RED再GREEN；DPR2完整Stage13/13、背景8/8，Page/Dynamic/Stage/StillAdapter/Background的qmllint退出0。中途返回测试先暂停真实partial enter再发延迟切换，避免繁忙线程在两次采样间正常推进引起误判。新的生产包与软件后端仍待统一新SDK宿主验证，不能用之前独立Still的生产页记录替代。

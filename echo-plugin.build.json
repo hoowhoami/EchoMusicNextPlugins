@@ -1,4 +1,4 @@
 {
   "repository": "https://github.com/hoowhoami/EchoMusicNextPlugins",
-  "plugins": ["plugins/spectrum-visualizer"]
+  "plugins": ["plugins/spectrum-visualizer", "plugins/folia-lyrics-skin"]
 }

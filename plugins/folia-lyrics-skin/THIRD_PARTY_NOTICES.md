@@ -6,6 +6,20 @@
 - `qml/styles/still/Still.qml` 是 `src/components/visualizer/still/VisualizerStill.tsx` 的 Qt Quick 移植，保留三行、字号/字重、行距、译文、暗角和关闭动态背景的行为。
 - `qml/shared/timing.mjs` 将 `src/utils/lyrics/renderHints.ts`、`glowWordTiming.ts` 和 `GlowWord.tsx` 的呈现时序转换为毫秒，保留短行/微行阈值、显示时长、前瞻和结束边界，不修改源时间戳。
 - `qml/shared/ChromeVisibility.qml` 移植 `src/hooks/usePlayerChromeAutoHide.ts` 的三种显隐策略及指针/失焦计时；`qml/FoliaPage.qml` 的控件显隐过渡来自 `src/components/FloatingPlayerControls.tsx`。持久设置仍由宿主皮肤 configuration 管理，不复制上游 localStorage。
+- `qml/shared/renderHints.mjs` 与 `qml/shared/text/` 保留 Folia 的呈现提示、字素计时、词语/语义布局和 ICU→jieba/BudouX 管线；`PlayerCapsule*.qml` 移植共享播放胶囊。源文件与行为对照见作者仓库 `docs/folia/`。
+- `qml/shared/text/` 中 jieba 词典/HMM（`fxsjy/jieba@67fa2e36e72f69d9134b8a1037b83fbb070b9775`）采用 MIT，附 `JIEBA-LICENSE.txt`；BudouX 0.9.3 parser/jaModel（Copyright 2021 Google LLC）采用 Apache-2.0，附 `BUDOUX-LICENSE.txt` 和 `BUDOUX-NOTICE.txt`。
+- OpenCC-JS 1.4.2 代码采用 MIT，保留 `qml/shared/text/OPENCC-JS-LICENSE.txt`；逐字符繁简映射来自其 Apache-2.0 的 opencc-data 字典，另附原始 `OPENCC-THIRD-PARTY-LICENSES.txt` 和 `OPENCC-DATA-LICENSE.txt`。Unicode 17.0.0 属性数据附 `UNICODE-LICENSE.txt`，来源 URL 与固定摘要见同目录 `unicode-sources.json`；构建前校验缓存与下载字节，许可证使用已随包保留的 Unicode License V3 固定原件。
+- 原生 ICU 78.x 与通用 GPU 字形组件由宿主提供；插件不捆绑原生动态库，宿主保留其对应许可与构建材料。
 - 字体来自当前操作系统与宿主字体链，插件不分发字体文件。宿主提供的 Qt 与共享控件沿用宿主自身许可材料。
-- `assets/previews/still.png` 由实际 Still QML 组件生成，使用本仓库编写的测试文字；仅证明组件预览，不是实际音频播放或 Folia 视觉一致性验收。
-- 本阶段不分发上游头像、表情包、模型、照片、音乐、歌词文件或账号数据；将来引入这些资源时分别核验并保留许可。
+- `assets/previews/` 的 14 张 PNG 由各模式的实际 QML 组件生成；默认卡片为 Classic。使用本仓库创作的测试文字、SVG 封面和明确标注的模拟音频，来源与采集条件见 `source.json`；仅证明组件预览，不是实际音频播放、性能或 Folia 全画面视觉一致性验收。
+- `qml/styles/cappella/assets/` 的 15 张头像与 9 张表情 PNG 按固定提交逐字节复制；两个子目录 README 保留源作者独立的使用、修改和分发授权。作者将这些图像排除于代码 AGPL 之外，README 中关于 AI/版权的判断仅为作者原文。
+- `qml/backgrounds/latent/` 的 Paper Shaders 0.0.80 着色器采用 Apache-2.0，保留 `PAPER-LICENSE.txt` 与 `PAPER-NOTICE.txt`；Qt 适配和 Folia 组合逻辑采用 AGPL-3.0-only。源文件、版本及摘要见同目录 `sources.json`。
+- `qml/backgrounds/sora/` 保留 Folia 的150粒子顶点/片段公式，在Metal使用Qt原生PointMesh点图元，其他后端保留Qt RHI展开路径，采用AGPL-3.0-only；参考摘要见同目录`source.json`。TWGL仅用于构建目录中的浏览器对照，不是插件运行时依赖。
+- 插件不分发上游音乐、歌词文件或账号数据；模型、视频等资源将按实际引入逐项核验许可。用户导入的图片/字体保存在宿主 installation 私有数据目录，不写入插件包。
+- `styles/` 各模式的 Folia 布局、动画、shader 与共享背景模块按固定提交移植；各自 `sources.json`、`source.json` 或说明记录原文件摘要与生成器。源码通过本作者仓库及贡献 PR 提供，随包保留完整 AGPL 文本。
+- `@chenglou/pretext` 0.0.9 的 MIT 排版代码用于 Cadenza、Fume、Pendolo、Monet、Sonnet、Tempera；每个分发副本保留 `PRETEXT-LICENSE.txt`。Qt 原生测量、Unicode17 与 ICU 适配没有替换其排版算法。
+- Classic/Claddagh 中移植的 Motion 插值/弹簧逻辑保留各目录 `MOTION-LICENSE.txt`（MIT）；Monet 主题装饰复用 Classic 的 cubic-bezier 插值。Lucide 1.48.0 的实际矢量数据用于 Monet、Sonnet、Lumiere、Pendolo；共享 `ThemeIcon.qml` 复用 Sonnet 的固定完整数据，保留各现有目录 `LUCIDE-LICENSE.txt`（ISC，含 Feather 派生图标的 MIT 原文）。没有新增图标包或 React 运行依赖。
+- PixiJS 8.21.0 的文本 tokenization/word-wrap、原始滤镜及纹理预算对应代码采用 MIT；`styles/sonnet/PIXI-TEXT-LICENSE.txt` 与 `styles/sonnet/filters/PIXI-LICENSE.txt` 保留全文。共享 scene graph 内联 earcut 3.2.3（ISC），完整版权许可直接保留在生成代码中。
+- Diorama 的 Three.js 0.185.1 数学代码采用 MIT，全文在 `styles/diorama/THREE-LICENSE.txt`；运行时没有 Three renderer、React、浏览器或 Node。
+- Nomand 使用的 Paper Shaders 0.0.80 副本保留 `backgrounds/nomand/PAPER-LICENSE.txt`、`PAPER-NOTICE.txt`（Apache-2.0）。TypeScript 的降级 async/iterator helper 保留其 Apache-2.0 版权许可；Fume 已附 `TYPESCRIPT-LICENSE.txt`，Monet背景保留 `backgrounds/monet/LICENSE.TypeScript.txt` 及生成器指纹。
+- 共享字体链 `shared/typography.mjs` 与共享两层切换 `shared/transitions/layers.mjs` / `source.json` 对应固定上游的 `utils/fontStacks.ts`、`styleTransition/layerTransition.ts` 和 `softFocus.ts`，按 Folia AGPL-3.0-only 保留源行为及来源。

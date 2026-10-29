@@ -43,7 +43,7 @@
 - `EchoPluginIo.h` 当前仅公开 HTTP 和私有 JSON 键值，没有本地文件选择、图片池导入或字节资源托管协议。Cappella/Tempera 等源码中的自定义资产操作必须作为具体缺口核实，不能用裸路径/私有 DB 实现。
 - `PluginPackage::supportedFeatures()` 公开频谱，但没有鼓点、人声分离或 beat_this 分析。`pendolo/usePendoloBeatFx.ts` 实际消费 htdemucs 鼓点，并明确禁用旧 beat-list 特效；不能拿普通 FFT 峰值冒充鼓点数据。
 
-作者接口滞后已通过真实导出闭环；模型类型不兼容、资源导入与分析能力仍有静态缺口证据。新增 API 的最终范围尚未确认，不能先造一套 Folia 专用宿主类型。宿主已有公开 QML 元素 LyricClock，可复用其只读呈现投影，不能因此重复建立播放源状态或全局时钟。
+作者接口滞后已通过真实导出闭环；模型类型不兼容、资源导入与分析能力仍有静态缺口证据。最终范围已收敛为歌词/背景与必要的只读呈现、文本和资产能力；不新增分析、队列墙或额外播放控制协议。宿主已有公开 QML 元素 LyricClock，可复用其只读呈现投影，不能因此重复建立播放源状态或全局时钟。
 
 ## 已确认：Folia 入口与样式清单
 
@@ -60,7 +60,7 @@
 | claddagh | `claddagh/VisualizerCladdagh.tsx`、`CladdaghRingLine.tsx`                           | 倾斜环形轨道、实测间距与专属时序                                                         |
 | cappella | `cappella/VisualizerCappella.tsx`、`CappellaMessageRow.tsx`                         | 聊天气泡、发送者、揭示布局、头像和表情包                                                 |
 | monet    | `monet/VisualizerMonet.tsx`、`MonetLyricsRail.tsx`                                  | 关键词、立绘、拖动与音频覆盖层、song handoff                                             |
-| pendolo  | `pendolo/VisualizerPendolo.tsx`、`PendoloClockworkCanvas.tsx`                       | 表盘/齿轮、弧形歌词、WebGL/2D 绘制、可选鼓点路径                                         |
+| pendolo  | `pendolo/VisualizerPendolo.tsx`、`PendoloClockworkCanvas.tsx`                       | 表盘/齿轮、弧形歌词与原生绘制；专用鼓点路径不交付                                        |
 | fume     | `fume/VisualizerFume.tsx`、`fumeArticleLayout.ts`、`useFumeCanvasStage.ts`          | 文章大字、淡化上下文、相机和分片布局                                                     |
 | sonnet   | `sonnet/VisualizerSonnet.tsx`、`createSonnetPixiRuntime.ts`、`sonnetProgram.ts`     | 确定性 PV 编排、Pixi 场景/镜头/后处理/图形、词语义                                       |
 | tempera  | `tempera/VisualizerTempera.tsx`、`createTemperaPixiRuntime.ts`、`temperaProgram.ts` | 色块构图、反色、图片层与后处理；Pixi 纹理预算                                            |

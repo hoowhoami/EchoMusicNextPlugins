@@ -43,8 +43,11 @@ test('bindings follow actual Qt properties, signals, methods, readonly state and
   await assert.rejects(checkBindings(method), /method differs/);
 });
 
-test('manifest compatibility, source-only index and comparator intersections', async () => {
-  assert.equal((await localPackages(root)).length, 1);
+test('manifest compatibility, explicit local build sources and comparator intersections', async () => {
+  assert.deepEqual((await localPackages(root)).map(({ manifest }) => manifest.id).sort(), [
+    'folia-lyrics-skin',
+    'spectrum-visualizer',
+  ]);
   assert.equal(rangeContains('>=0.1.0 <1.0.0', '0.1.0'), true);
   assert.equal(rangeContains('>=1.0.0', '0.1.0'), false);
   assert.equal(rangeContains('^1.0.0', '1.0.0'), false);

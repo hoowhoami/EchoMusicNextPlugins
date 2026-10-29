@@ -15,7 +15,11 @@ jobs:
         with:
           node-version: '24'
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            source/folia-reference/package-lock.json
       - run: npm ci --ignore-scripts
+      - run: npm ci --prefix source/folia-reference --ignore-scripts --no-audit --no-fund
       - run: npm run check
       - run: npm test
       - run: npm run build

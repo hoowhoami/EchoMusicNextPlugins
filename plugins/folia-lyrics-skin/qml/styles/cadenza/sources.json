@@ -1,0 +1,28 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "pretext": "0.0.9",
+  "unicode": "17.0.0",
+  "sha256": {
+    "src/components/visualizer/cadenza/VisualizerCadenza.tsx": "5d91e0def0023db1761dc160fc6a4ffccc0b0d4925a3b1f723e6cd04cdfc9559",
+    "src/components/visualizer/cadenza/entry.tsx": "a1cda54cd37552f2de6abab46ca73ee915dbb30a5697040b7c76766389f9a0d1",
+    "src/components/visualizer/cadenza/tuning.ts": "b3ccb2a4656920546a1933da93cc2cbc48841415934fdc9c26cb4050598fc9d3",
+    "src/types.ts": "27e9dafb319bbdcf6b518cc7aaae06ef932f54c315742fa1c82cb612b79b8625",
+    "src/components/visualizer/cadenza/cadenzaEnvelopes.ts": "fe9341a7ab03fc83dd930adf23ffa3420f1ab6f34a0b57831ba4f7b1672a60c8",
+    "src/components/visualizer/cadenza/cadenzaFragments.ts": "0a0b966147f5250d09cef42a2586803f44bd12ca71d95b4c77470c50f6548472",
+    "src/components/visualizer/cadenza/cadenzaPlacements.ts": "b94b37f196cd74f934dd08c4b3b6bddc79a8f65541c92e9c5f2b60ff8a79e4d7",
+    "src/components/visualizer/cadenza/cadenzaPreparedState.ts": "cd08554c3b9a1b72b2d0a2b2b130714e77833e0b13751ebedc14711edc3d9f2f",
+    "src/components/visualizer/wordColoring.ts": "8264e518c1278a63759f9ebd7a6e172da4fd908de1aaaa0510c1031cc12415e9",
+    "src/components/visualizer/colorMix.ts": "8267b4a6f525c0305048eac42a88316069a58623da1b85bd5858d2f61782997e",
+    "src/utils/fontStacks.ts": "2f7e3f0a97e73fdc57e9a76a14f06a2cf94648737ae4b14670b00ff1282c702f",
+    "node_modules/@chenglou/pretext/package.json": "c41866a0619a1dc2fcdcdc4057543858f1373182fa69b200db0e034540621acc",
+    "node_modules/@chenglou/pretext/dist/layout.js": "4b773aaa002d4294068bdc907ca82d1a437fa1a01b78eec17e93ff8808ac6090",
+    "node_modules/@chenglou/pretext/dist/measurement.js": "6a9207f89020365bc62f659106788b444a57198d37615a15ca368d4cc88576db",
+    "node_modules/@chenglou/pretext/dist/line-text.js": "c7ac6fe3a4a04a47c8c81b62abfd718573f096d6ae1fe60b280a8d034db1a628",
+    "node_modules/@chenglou/pretext/dist/bidi.js": "67d0dac0c3c492e012ea033948a602125ce1e4f22a97752d6e8beb6fcae75d25",
+    "node_modules/@chenglou/pretext/dist/analysis.js": "24137314dc660628cee996ab9bab9b0f8124eec26128c6425baa84d5ddfcbd38",
+    "node_modules/@chenglou/pretext/dist/line-break.js": "b8f69dfa0f7260187a7d7875ea1b032b16f99d4b1c7242be9a2ff9c39a329bd0",
+    "node_modules/@chenglou/pretext/dist/generated/bidi-data.js": "6785c8f40c107a6d0402e6511d6ca0874b8af82fa67d982669f1c8ecfb76b3be",
+    "unicode17/Scripts.txt": "9f5e50d3abaee7d6ce09480f325c706f485ae3240912527e651954d2d6b035bf",
+    "unicode17/emoji-data.txt": "2cb2bb9455cda83e8481541ecf5b6dfda66a3bb89efa3fa7c5297eccf607b72b"
+  }
+}

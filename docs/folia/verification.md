@@ -1,74 +1,71 @@
-# Folia 任务验证记录
+# Folia 精简版验证记录
 
-日期：2026-10-22。以下记录区分开发前基线、环境检查与本次功能验收。
+更新日期：2026-10-29。对应宿主 PR #23 的收敛范围。本轮重新验证，不沿用删减前的包、截图或性能计数。
 
-## 仓库基线
+## 输入与产物
 
-三个既有仓库最初均为 `main`、工作树干净、无未跟踪文件，默认远端分支为 `origin/main`。未发现贡献指南或 PR 模板。EchoMusicNextPlugins 已新建 `codex/folia-lyrics-skin`；EchoMusicNext 与 EchoMusic 没有切换分支或修改受版本控制文件。
+- 宿主主线：`817e6745f48cfc1ac0aa190e4d3af5cc1cadbb67`；插件主线：`28f756a9bc2b7637f73dbe5cd9088e649f8e6e85`。收尾再次正常 TLS fetch，两个提交均未变化。
+- macOS arm64，Qt 6.12.0、ICU 78.3、Rust 1.99.0、Node.js 24；Release。宿主工作树证据：`build/folia-scope-trim-20261029/`；插件证据：`build/folia-scope-trim/`。
+- 正式包：`artifacts/folia-lyrics-skin-1.0.0.echomod`，20,019,107 字节，857 项。SHA-256：`fa506ebe10a5d6623252c3c8be05027f9456278e0418701e40f34935667ef19b`。
+- Release FFI SHA-256：`5acdd53c1a373f70f3e6e737e71c2751b1428c9f48fa05f2c5a486d88c6f4d0d`。无 AI ABI；资产归档 ABI 保留。
+- 新验收程序由当前 Release 静态模块重新编译，逐项记录程序、源码、包及链接输入 SHA；原生程序串行执行，所有自有进程组退出后才交接下一项。
+- 原宿主工作区两份用户文件未改；删减前源码、暂存区及部署材料有独立检查点。
 
-Folia 从用户指定的 `https://github.com/chthollyphile/folia-major.git` 浅克隆至同级 `folia-major`，固定 `a8da4437cf19723555bd75e4685ca20815fe5b82`。初始调查没有安装依赖；后续源组件运行按锁文件安装 npm 依赖，始终未改动其受版本控制文件。
+## 本轮检查
 
-## 开发前命令结果
+| 检查                                      | 结果                           | 边界                                                                          |
+| ----------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------- |
+| `cargo test --locked -p echo-audio --lib` | 373 通过，4 项既有忽略，0 失败 | 包含主线频谱/DSP、只读投影及两个竞态回归                                      |
+| `cargo test --locked -p echo-ffi --lib`   | 17 通过，1 项既有忽略，0 失败  | 资产归档 7 项通过                                                             |
+| 只读投影专项                              | 8 项通过                       | 记录失败不改变主线增益与切歌边界；新增两项先失败后通过                        |
+| 官方 FFI 头生成与校验                     | 通过                           | 由官方工具生成，未手改                                                        |
+| Release 应用及相关 Qt 目标                | 通过                           | `release-build-current.json`                                                  |
+| 实际 `sdk:sync`、`sdk:check -- --host …`  | 通过                           | 新程序真实导出；未伪造契约 JSON                                               |
+| Qt 资源、绘制、歌词、关闭设置等 CTest     | 20 组通过                      | 资产 38、归档 11、文本 18、TTML 30、GlyphRun 34；不重复统计子进程             |
+| 原生文件选择器字体/取消专项               | 3 项通过                       | 真实选择、字体过滤、初始文件和 owner 取消                                     |
+| 现有 Spectrum 实际 PCM/频谱专项           | 4 项通过                       | 48 kHz PCM、8192 FFT、订阅及退休；无第二套 FFT                                |
+| 官方 `npm run test:host` Spectrum         | 21 项通过，无跳过              | 新宿主、新 runtime-test、正式 Spectrum 包                                     |
+| 宿主格式、架构及架构工具测试              | 通过，工具测试 9 项            | 包含最终 SDK 收敛后的格式检查                                                 |
+| 插件 `npm run check`、实际 SDK 检查       | 通过                           | 类型、索引、格式均包含                                                        |
+| `npm test -- --test-concurrency=4`        | 330/330                        | 未更改测试、时限或断言                                                        |
+| `npm run build`、`npm run prepare:source` | 通过                           | 工具生成正式包和索引；未发布                                                  |
+| 无 Git/禁网络源码重建                     | 21 生成器、154 测试通过        | 364 个参考原件、45 个锁定依赖包字节不变                                       |
+| 实际 Folia 安装/生产播放页                | 3/3                            | 单皮肤、14 样式、真实 PCM、设置、停用卸载                                     |
+| 实际 Folia 生命周期                       | 5/5                            | 全 14 模式、隐藏重建、图形与 worker 释放、清队列的真实在途任务取消和迟到隔离  |
+| 实际 Folia 设置                           | 首轮 3/4；原样两轮各 4/4       | 真实鼠标、预览像素、按住交互、一次写入和 reload 恢复                          |
+| 只读 A/B 原生 QML                         | 6/6                            | 曲目、歌词、原生 cue、前后景及隐藏退役                                        |
+| 原生呈现时钟退休 QML                      | 5/5                            | inactive、native view 销毁、已排队 seek 退休                                  |
+| 现有音量接口 QML                          | 4/4                            | 真实滑块与持久化；隐藏不引入额外回滚协议                                      |
+| Capsule 原生生命周期 QML                  | 6/6                            | 先真实建立 200 首队列/current 100，再创建现有投影；原标题、循环与退休断言保留 |
+| TTML 双声部 A/B QML                       | 首轮 2/3；随后 5 轮各 3/3      | 原 5 秒绘制门、120 秒总时限不变；未确认偶发准备超时根因                       |
+| `npm run check:published`                 | 网络失败                       | `ECONNRESET`，未取到远端内容，不声称已验证发布                                |
 
-插件命令使用本机已存在的 Node.js `24.15.0`，遵守 `>=24 <25`，不使用 shell 默认的 Node.js 22。
+Qt 的计数包含各组 init/cleanup；它们不等于独立用户场景数。原生截图与资源测试也不等于完整视觉认可或安静性能测量。
 
-| 命令                                                                              | 工作目录             | 结果与边界                                                                 |
-| --------------------------------------------------------------------------------- | -------------------- | -------------------------------------------------------------------------- |
-| `npm ci --ignore-scripts`                                                         | EchoMusicNextPlugins | 通过，按锁文件安装；没有更新应用依赖或 lockfile                            |
-| `npm run check`                                                                   | EchoMusicNextPlugins | 通过；1 个既有 manifest、保存的 SDK 快照、tsc 和格式检查；未调用实际宿主   |
-| `npm test`                                                                        | EchoMusicNextPlugins | 通过，12 项测试；没有 Folia 原生或视觉覆盖                                 |
-| `npm run build`                                                                   | EchoMusicNextPlugins | 通过，仅生成既有 `dist/spectrum-visualizer-1.0.0.echomod`；不是 Folia 产物 |
-| `python3 scripts/install-qt.py --check`                                           | EchoMusicNext        | 失败，默认 Python 低于 3.12；随后改用已有 `/opt/homebrew/bin/python3.12`   |
-| `/opt/homebrew/bin/python3.12 scripts/install-qt.py --check`（安装前）            | EchoMusicNext        | 失败，指定 Qt 6.12 SDK 缺失                                                |
-| `/opt/homebrew/bin/python3.12 scripts/install-qt.py`                              | EchoMusicNext        | 通过；使用仓库锁定安装器，SDK 位于 `build/qt-official/6.12.0/macos`        |
-| `/opt/homebrew/bin/python3.12 scripts/install-qt.py --check`（安装后）            | EchoMusicNext        | 通过，SDK 模块完整、qmake 版本为 6.12.0                                    |
-| `/opt/homebrew/bin/python3.12 scripts/build.py --preset release --configure-only` | EchoMusicNext        | 失败，`cmake/Rust.cmake:1` 找不到 `CARGO_EXECUTABLE`；尚无实际宿主二进制   |
-| `gh auth status`                                                                  | EchoMusicNextPlugins | 未登录任何 GitHub host；尚不能推送/创建贡献 PR                             |
+## 失败记录与修复
 
-SDK 安装前磁盘可用约 24 GiB，安装后约 21 GiB；宿主 `build/` 约 2.4 GiB，包含后续可复用 SDK 和安装材料。没有创建第二套完整应用构建树，没有清理用户数据、SDK 或其他项目。
+首轮 21 组 CTest 中，GlyphRun 因启动环境误设 offscreen 失败，按既有 Cocoa/Metal 要求复跑后 34 项通过。能力测试组因缺失主线私有统计样本 `docs/internal/verification/plugin-source-samples/stats.body` 失败；未伪造样本，其频谱用例和正式 Spectrum 包能力已独立验证。播放、队列和解析组的真实账号/私有捕获用例仍有既有跳过，不计为在线场景通过。
 
-## 当前实现与原生验证（同日后续）
+初版精简包 `8aac2a66…` 揭示清队列通知窗口中的空行标题、退休 readmodel 回调访问已销毁 QML owner。修复先取得真实函数回归 10/17，再达到 17/17，保留 failOnWarning。设置原布局中预览与字号滑块联合高度 864.6px，大于实际视口 773px；整组排版控制前移后为 336.6px，保留可见性、真实鼠标、像素及持久化检查。
 
-用户已明确授权安装 Cargo，并要求中断任务登记后跳过。Rust/Cargo 1.99.0（含 rustfmt/clippy）已安装并验证，原有 1.87/1.89 工具链保留。自己的 `scripts/build.py --preset release --jobs 4` 构建 Rust 阶段完成，Qt 阶段发现其他构建同时写相同目录，只停止本任务 Ninja，命令退出 130。未停止他人构建；随后复用该唯一构建树实际产出的程序和库。
+生命周期崩溃由系统 IPS、atos 和 LLDB 定位为验收程序对已按需销毁舞台的空指针访问；测试现用 QPointer 验证真实退役、取消、代际和资源不复活，原 20 秒 drain 门与 1200ms 稳定观察保留。暂停验收原本错误要求原生连续投影精确等于低频遥测，现先要求同一实例在播放时多次更新，再分别严格验证暂停投影及最终原生位置稳定；未改业务时钟，也未增加容差。
 
-实际宿主：`EchoMusicNext/build/release/app/echomusicnext.app/Contents/MacOS/echomusicnext`；会话报告 0.1.0 / Release / arm64 / Qt 6.12.0，build `20261022T093906Z-432e63230d0f-dirty`。宿主当前 `cmake/Rust.cmake`、`tests/tooling/test_rust_cmake.py` 属于他人工作，未修改、覆盖或提交。旧 EchoMusic 与参考 Folia 保持只读。
+默认并发的 Node 首跑为 329/330，既有自有进程测试在前置 ready 阶段超时。原测试独立重跑通过，显式并发数 4 的完整 330 项通过；失败日志保留，没有延长门槛。TTML 双声部首轮异步准备未在 5 秒内达到绘制门，后续阶段观测和两轮逐字节原测试全部通过；产品与原测试均未因此修改，CPU 因果未证实，仍列偶发边界。
 
-| 检查                                                                                                | 当前结果及边界                                                                                                   |
-| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `--export-plugin-sdk`、`npm run sdk:sync -- --host <实际宿主>`                                      | 通过；快照来自可执行文件，补齐唯一作者声明后同步，没有头文件伪造契约                                             |
-| `npm run test:host -- --host <实际宿主> --runtime-test <Release/tests/qt/echo-plugin-runtime-test>` | 通过；现有正式源的 spectrum 包真实加载、PCM/设置/挂载验收，原生用例 3 passed。此命令不自动覆盖未入正式源的 Folia |
-| `echo-plugin build plugins/folia-lyrics-skin --out dist`                                            | 通过，产出 `dist/folia-lyrics-skin-1.0.0.echomod`；开发包不等于正式发布                                          |
-| 实际宿主 `--smoke-test --plugin-dir <Folia包>`                                                      | 首次因 Qt sequence 字体列表校验失败；加入 JSON 边界规范化后通过，临时存储正常退出                                |
-| `npm run test:folia:qml -- --qt-bin <Qt SDK/bin>`                                                   | 20 passed；三行、译文、长句重排、缩放几何、隐藏几何、字体复制、原生序列及显隐计时。包含先失败再修复的用例        |
-| `qmllint -I <Release/qml> -I <Qt SDK/qml> <Folia QML>`                                              | 通过；使用真实模块/qmltypes，未绕过类型错误                                                                      |
-| `scripts/test-folia-host.py --host-build <Release> --qt-bin <Qt SDK/bin> --package <Folia包>`       | offscreen 3 passed；读取现有编译/Ninja元数据，独立链接真实宿主库，不改宿主构建树                                 |
-| 同上增加 `--platform cocoa`                                                                         | Cocoa/Metal 3 passed；原生 backend=6（Metal），与 offscreen 分开记录                                             |
+## 竞态与最终范围
 
-Folia 专项原生用例覆盖：安装实际工具产物、只出现一个 Folia 候选且不自动选中、正式 PlaybackPage 与换肤抽屉、独立设置保存和 reload 恢复、拒绝未实现 mode、完整歌词字体链、关闭后代理失效、重新打开、停用回退 cover、卸载。实际本地 PCM 经生产解码/输出，宿主位置驱动三行切换；通过真实共享按钮暂停/恢复，页面命令 seek 到 5 秒，没有手动注入播放位置。测试 PCM/歌词为本仓库创作的夹具，未声称商业歌曲或外部歌词来源已验收。
+seek 先发布 decode interrupt 再投递命令；回归使用真实 decoder worker 强制快速确认，并保留后续 PCM 解码断言。输出线程提前注册，持久化 park/unpark 令牌；分别覆盖消费、停止和通知恰好处于容量检查与等待之间的情况。
 
-初期音频夹具曾有一次加载超时，增加错误状态输出后未再次复现；后续 offscreen 与 Cocoa 分跑通过，冷启动可靠性仍保留复核项。暂停的 playing 标记表示命令接受，最后一块音频位置可随后到达；用例在原生确认稳定后检查暂停位置不再推进。另修复了父级隐藏触发译文有效 visible 变化而改变行高的问题，正常销毁不再产生该绑定告警。offscreen 的 Sans Serif 别名提示来自测试环境默认字体，不是页面 QML 失败。
+只读 A/B 不重新取源、不控制 decoder。主线队列、音量及 180 分钟原生睡眠行为保留；删除额外队列命令/墙/定位、AI、第二 FFT、音量预览、插件睡眠及选源控制。保留 asset worker、归档 FFI、QtSvg、offscreen 和 ICU。Spectrum 的源码、入口及原正式包字节不变。
 
-日志/截图保存在 `build/folia-native/<platform>/`；`still-native-playback.png` 为 1100×820，`still-native-narrow.png` 为 620×820。Metal 截图确认暗角和共享浮动材质可绘制；它们是实际插件输出。随后已运行上游 Still 源组件作字号/行盒/缩放对照，见 still-reference.md，尚不代表完整页面或像素一致性。`assets/previews/still.png` 是实际 Still 组件的独立预览夹具。
+## 未覆盖与限制
 
-本轮再次运行 `npm run format:write`、`npm run check`、`npm test`、`npm run build` 均通过：Node 测试 17 项；正式源构建仍仅输出 spectrum，Folia 通过单包命令独立生成。真实 `npm run sdk:check -- --host <实际宿主>` 通过。`qsb` 编译暗角 shader 和 Cocoa 生成组件预览均成功。测试原有 Menlo 硬依赖已改为选择实际安装且不同于应用字体的字体。后续只读复审发现静止鼠标相同位置重入不会恢复的边界；原生回归先失败，再独立处理 hovered=true 恢复。
+- 完整源画面连续对照、全 14 样式主题/DPI/材质视觉矩阵与安静 Release 性能基线尚未重做，不沿用旧截图或数值。
+- Windows、Linux、其他 macOS 架构、真实在线账号和完整前台播放矩阵未实测。
+- 缺失内部约束及私有统计样本尚未补齐；发布网络校验未通过。
+- 主线既有 SDK 队列投影绑定在 scope 创建时的模型；之后更换活动来源的重绑定行为未在此 PR 扩展。夹具已真实确认旧顺序 native 200/SDK 0，新顺序 native 200/SDK 200，不伪造队列角色或新增控制。
+- 13 份上游原件及 9 份精确许可证/确定性生成输出保留既有空白，均有逐项 SHA 和生成证明；仅对这 22 条精确路径排除空白检查，作者维护文件的格式及差异检查通过。
+- 宿主验证的是 Release 开发构建，未完成独立签名分发包及跨平台部署实测。
+- Qt 仍有字体别名、生成模块声明顺序及连接/销毁警告；QML lint 虽退出 0，也有警告，不声称 warning-free。
 
-当前实际包大小 181261 字节，SHA-256：`fa61fe4322aeb70078f730b609e297b7e6fb48cc958ada9cb0b924c6ad211ff2`。工具 `echo-plugin validate` 通过；Metal 与 offscreen 日志分别落在对应平台目录。
-
-## 未完成与跳过项
-
-- 已实现开发用 Still 和单一 Folia 页面基础；其余 13 种样式未实现，classic 仅有逐字时序内核，未登记占位模式。上游默认 classic 的最终行为尚未接入，开发默认暂为 Still。
-- 六种共享背景、完整播放胶囊的展开/折叠、拖动和自定义槽位、共享字幕与全部面板交互仍待移植；控件显隐已接入，当前使用宿主正式共享控件和命令。
-- 缺失的内部约束仍未核对；LyricTimeline 模型类型、文件资产导入和鼓点/人声分析缺口分别保留，不能用私有 QObject、裸文件或 FFT 峰值代替。
-- 上游 Still 源组件已运行，字号/行盒/缩放完成一组夹具对照；完整 App、其余样式的同条件连续动画、逐字/音译/重叠/间奏和迟到结果专项仍未验收。
-- 深浅色、透明/材质、减少动效、DPI/缩放尚无完整矩阵；已有 Metal 与 offscreen 页面截图不能推广为全矩阵通过。
-- CPU/墙钟、RSS/physical footprint/峰值、帧/GPU、反复操作资源增长、隐藏/最小化后台占用尚无合格对照，不作低占用承诺。
-- Windows/Linux 及其他 macOS 架构未实机验证。
-- 正式 source/artifacts 索引保持原状，未发布 Folia。origin 推送曾返回 403；通过现有 Git 认证确认 huanggenji 的有效 fork 后，成功推送并创建 Draft PR #1：https://github.com/hoowhoami/EchoMusicNextPlugins/pull/1。GitHub CLI 登录状态没有改动，未在日志或文件保存认证秘密。
-
-本轮 Native 独立测试目录约 49 MiB；宿主共享 Release 树约 5.7 GiB、Rust target 约 3.1 GiB，剩余磁盘约 14 GiB。后续参考运行按 Folia lockfile 安装了 npm 依赖（ignore-scripts，约 886 MiB），未下载 Electron 桌面二进制；使用其已有 Vite 探针，本机参考仓库受版本控制文件仍干净。参考运行后已关闭本任务创建的浏览器页及 3001 服务，未触碰其他项目的 3000 服务。没有创建另一套完整宿主产物，也没有清理用户数据或唯一证据。
-
-共享呈现模块 PresentationClock.qml 复用宿主公开 LyricClock。专项原生用例先因模块缺失失败，再验证实际音频期间呈现信号显著多于引擎 positionChanged（本次 Metal 为 204 次呈现 / 10 次引擎观测）；音量元数据变更不回退呈现位置，暂停后冻结，暂停 seek 到 5 秒，播放中分别 seek 到 8 秒和 1 秒，并在公开 seek 事件交付时检查投影已复位。宿主在同一原生 seeked 分支依次发出 timelineReset 和 seekCompleted，后者已被公开适配器转发，无须另加 Folia 特例 API。该模块供后续动态样式使用，当前 Still 正式页面无需持续帧动画，不提前实例化它。
-
-隐藏窗口验收最初因测试继续访问已销毁的 QPointer 触发崩溃；调用栈指向测试的 QObject::property。真实宿主会卸载整个皮肤 scope，测试现按契约断言页面/时钟销毁、订阅不再回调、音频继续播放，恢复后重新获取新页面和时钟并同步当前播放位置。修正后 Metal 验收 3 passed；这不等于动态样式或后台占用性能已经验收。
-
-共享控件显隐另有真实输入验收：始终隐藏会卸载共享控件；自动模式按住鼠标时停止计时，松开后空闲隐藏，静止指针下不自动弹回，滚轮/移动或同坐标重新进入恢复。Qt 的 pointChanged 包含场景重算，初版误把它当鼠标活动；记录实际位置并单独处理重入后修复。原生测试也开启动效检查 260 ms 淡出中实例保留且禁止输入、中途恢复沿用同一实例、完整退场销毁，并检查显隐模式经 reload 持久化。真正窗口失焦、触控及完整胶囊拖动仍未做平台专项验收。
+最终包另清理了 9 个未引用的 Pendolo 鼓面 shader/QSB/mesh。与前一包相比，仅删除这 9 项，其余 857 项内容与元数据完全相同；新 `fa506ebe…` 已重新运行实际安装与十四样式生命周期，分别 3/3、5/5。新包设置组首轮为 3/4（一次 pressed 未命中），固定同包、同二进制及全部原断言的两轮完整复验均 4/4；没有证据确认首次偶发输入失败原因，未添加延迟、重试或业务补丁，仍列 Draft 风险。
