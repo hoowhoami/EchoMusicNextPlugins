@@ -9,7 +9,7 @@ manifest 声明 capability `graphics`，按使用情况声明 `graphics.rhi`、`
 - `createBuffer({size, usage, format?}, data?)`：uniform、vertex、index、storage 缓冲区。size 按 4 字节对齐；uniform 不与其它 usage 混用。format 为 float32/float16/uint8/uint16/uint32，默认 float32。
 - `createTexture({width,height,format?,usage}, data?)`：rgba8、rgba16f、rgba32f、r32f 的二维纹理；usage 为 sampled、render-target、storage、readback。上传必须覆盖完整尺寸；初始空内容清零。
 - `createSampler({minFilter?,magFilter?,u?,v?})`：nearest/linear，clamp/repeat/mirror。
-- `createRenderPipeline({vertexShader,fragmentShader,vertexLayout?,topology?,blend?,cull?,depthTest?,depthWrite?})`：顶点/片元 `.qsb`、单顶点流的 float/float2/float3/float4 属性、索引/实例绘制、深度、剔除和混合。blend 为 none/alpha/add，alpha 使用预乘颜色。
+- `createRenderPipeline({vertexShader,fragmentShader,vertexLayout?,topology?,blend?,cull?,depthTest?,depthWrite?})`：顶点/片元 `.qsb`、多顶点流、逐实例属性、浮点/整数/半精度/normalized颜色及矩阵列、索引/实例绘制、深度、剔除和混合。blend 为 none/alpha/add，alpha 使用预乘颜色。
 - `createComputePipeline({computeShader})`：`.comp.qsb` 计算管线。
 - `writeBuffer(handle,data,byteOffset?)`、`writeTexture(handle,data)` 更新 CPU 镜像，下一次绘制上传。
 
@@ -90,3 +90,7 @@ Qt 官方说明普通场景不是逐资产色彩管理管线，并建议用专�
 默认 rhi 目标生成 GLSL 300es/330（compute 310es/430）、HLSL 5.0、MSL 1.2 和 SPIR-V；quick 保留 Qt Quick ShaderEffect 的旧 GLSL 目标，不用于 compute。源码和 include 必须留在包内，输出不能覆盖资产。编译/验证失败保留上一次完整产物。正式包仍为 `.echomod`，索引和宿主继续校验 SHA-256。
 
 宿主封装层使用固定 Qt 构建的 GuiPrivate；发布时 Qt 库与宿主来自同一 SDK。作者插件不包含这些 C++ 头文件或本机 ABI。
+
+资源分享、同RHI设备边界及多流布局见[gpu-submissions](gpu-submissions.md)。
+
+Qt组件layer/texture provider的只读GPU借用见[纹理源](gpu-texture-sources.md)，与字形图集导出和持久图像捕获分别处理。

@@ -129,6 +129,7 @@ function compatibleType(qtType, type, depth = 0) {
     const array = type && ts.isTypeOperatorNode(type) ? type.type : type;
     return !!array && ts.isArrayTypeNode(array);
   }
+  if (native === 'QQuickItem') return text === 'QtQuickItem';
   if (native === 'QRectF') return text === 'QtRect';
   if (native === 'QVariantMap' && type && ts.isUnionTypeNode(type))
     return type.types.every((part) => compatibleType(qtType, part, depth + 1));

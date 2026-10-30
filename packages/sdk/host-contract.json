@@ -139,6 +139,9 @@
     "graphics.textureViews",
     "graphics.textureArrays",
     "graphics.textureDimensions",
+    "graphics.sharedResources",
+    "graphics.vertexStreams",
+    "graphics.textureSources",
     "graphics.compute",
     "graphics.readback",
     "ui.navigation",
@@ -322,6 +325,30 @@
           "name": "active",
           "type": "bool",
           "writable": false
+        },
+        {
+          "constant": false,
+          "name": "shared",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "readOnly",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "generation",
+          "type": "qlonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "ready",
+          "type": "bool",
+          "writable": false
         }
       ]
     },
@@ -350,6 +377,12 @@
           "name": "submit",
           "parameters": ["QVariantMap"],
           "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "importTextureSource",
+          "parameters": ["QQuickItem*"],
+          "returnType": "EchoMusic::EchoGpuResource*",
           "signal": false
         },
         {
@@ -1721,6 +1754,36 @@
         {
           "name": "writeTexture",
           "parameters": ["EchoMusic::EchoGpuResource*", "QJSValue"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "shareResource",
+          "parameters": ["EchoMusic::EchoGpuResource*", "QString"],
+          "returnType": "QString",
+          "signal": false
+        },
+        {
+          "name": "shareResource",
+          "parameters": ["EchoMusic::EchoGpuResource*"],
+          "returnType": "QString",
+          "signal": false
+        },
+        {
+          "name": "importResource",
+          "parameters": ["QString", "QString"],
+          "returnType": "EchoMusic::EchoGpuResource*",
+          "signal": false
+        },
+        {
+          "name": "importResource",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoGpuResource*",
+          "signal": false
+        },
+        {
+          "name": "revokeSharing",
+          "parameters": ["EchoMusic::EchoGpuResource*"],
           "returnType": "bool",
           "signal": false
         }
