@@ -6,6 +6,12 @@
       "path": "plugins/spectrum-visualizer",
       "artifact": "artifacts/spectrum-visualizer-1.0.0.echomod",
       "sha256": "7721fcf9edfcda1a16b4caf7b25229fc6a9709f70a232b2a9e5ab73ae9b35f7a"
+    },
+    {
+      "id": "cloud-priority",
+      "path": "plugins/cloud-priority",
+      "artifact": "artifacts/cloud-priority-1.0.2.echomod",
+      "sha256": "0bd6697efc68b4bb06431f7a9d8d71c9cc3fc50318230d7a7386dd309f944b01"
     }
   ]
 }
