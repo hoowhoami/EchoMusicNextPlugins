@@ -303,3 +303,24 @@ test('prebaked shader assets must be real portable QSB packs', async (t) => {
   await writeFile(path.join(directory, 'shaders/gpu/spectrum.vert.qsb'), 'not a shader');
   await assert.rejects(validatePackage(directory));
 });
+
+test('glyph atlas bindings retain native producer, readonly pages and unsigned generations', async () => {
+  const contract = await loadContract();
+  await checkBindings(contract);
+  const method = contract.types.EchoGpuSurface.methods.find(
+    (value) => value.name === 'importGlyphAtlas',
+  );
+  assert.deepEqual(method.parameters, ['EchoMusic::GlyphRun*']);
+  assert.equal(
+    contract.types.EchoGpuGlyphAtlas.properties.find((value) => value.name === 'generation').type,
+    'qulonglong',
+  );
+  const wrong = structuredClone(contract);
+  wrong.types.EchoGpuSurface.methods.find((value) => value.name === 'importGlyphAtlas').parameters =
+    ['QString'];
+  await assert.rejects(checkBindings(wrong), /method differs/);
+  const badCounter = structuredClone(contract);
+  badCounter.types.EchoGpuGlyphAtlas.properties.find((value) => value.name === 'generation').type =
+    'QString';
+  await assert.rejects(checkBindings(badCounter), /property type differs/);
+});

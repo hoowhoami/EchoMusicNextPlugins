@@ -101,7 +101,8 @@ function compatibleType(qtType, type, depth = 0) {
         type.types.every((part) => compatibleType(qtType, part, depth + 1)))
     );
   if (native === 'bool') return text === 'boolean';
-  if (['int', 'qint64', 'qlonglong', 'double'].includes(native)) return text === 'number';
+  if (['int', 'qint64', 'qlonglong', 'quint64', 'qulonglong', 'double'].includes(native))
+    return text === 'number';
   if (native === 'void') return text === 'void';
   if (native === 'State' || native === 'EchoPluginOperation::State')
     return text === 'OperationState';
@@ -129,6 +130,7 @@ function compatibleType(qtType, type, depth = 0) {
     const array = type && ts.isTypeOperatorNode(type) ? type.type : type;
     return !!array && ts.isArrayTypeNode(array);
   }
+  if (native === 'GlyphRun') return text === 'GlyphRun';
   if (native === 'QQuickItem') return text === 'QtQuickItem';
   if (native === 'QRectF') return text === 'QtRect';
   if (native === 'QVariantMap' && type && ts.isUnionTypeNode(type))

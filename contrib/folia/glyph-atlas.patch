@@ -1,0 +1,46 @@
+--- a/plugins/folia-lyrics-skin/qml/styles/fume/FumeBatch.qml
++++ b/plugins/folia-lyrics-skin/qml/styles/fume/FumeBatch.qml
+@@ -5,6 +5,12 @@
+ 
+ Item {
+     id: root
++    // Native drawing remains available until a GPU client owns the complete
++    // ordered body/halo/clip composition.
++    property bool atlasOnly: false
++    function importAtlas(surface) {
++        return surface ? surface.importGlyphAtlas(nativeGlyph) : null;
++    }
+     property bool _completed: false
+     required property var commands
+     required property font baseFont
+@@ -121,6 +127,7 @@
+     }
+     GlyphRun {
+         id: nativeGlyph
++        atlasOnly: root.atlasOnly
+         objectName: "fumeGlyph"
+         font: renderFont.value
+         haloSampling: "canvas"
+--- a/plugins/folia-lyrics-skin/manifest.json
++++ b/plugins/folia-lyrics-skin/manifest.json
+@@ -42,9 +42,17 @@
+       "graphics.glyphRun.canvas",
+       "graphics.pointMesh",
+       "graphics.shaderComposition",
+-      "graphics.imageCapture"
++      "graphics.imageCapture",
++      "graphics.rhi",
++      "graphics.glyphAtlases"
+     ]
+   },
+-  "capabilities": ["lyricsPage", "audioSpectrum"],
+-  "contexts": ["main"]
++  "capabilities": [
++    "lyricsPage",
++    "audioSpectrum",
++    "graphics"
++  ],
++  "contexts": [
++    "main"
++  ]
+ }

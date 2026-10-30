@@ -142,6 +142,9 @@
     "graphics.sharedResources",
     "graphics.vertexStreams",
     "graphics.textureSources",
+    "text.glyphs",
+    "graphics.glyphRun.canvas",
+    "graphics.glyphAtlases",
     "graphics.compute",
     "graphics.readback",
     "ui.navigation",
@@ -291,6 +294,85 @@
         }
       ]
     },
+    "EchoGpuGlyphAtlas": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "dispose",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "ready",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "revision",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "generation",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "pages",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "fragments",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "metrics",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "pixelRatio",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "textureUploads",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorString",
+          "type": "QString",
+          "writable": false
+        }
+      ]
+    },
     "EchoGpuResource": {
       "enums": [],
       "methods": [
@@ -383,6 +465,12 @@
           "name": "importTextureSource",
           "parameters": ["QQuickItem*"],
           "returnType": "EchoMusic::EchoGpuResource*",
+          "signal": false
+        },
+        {
+          "name": "importGlyphAtlas",
+          "parameters": ["EchoMusic::GlyphRun*"],
+          "returnType": "EchoMusic::EchoGpuGlyphAtlas*",
           "signal": false
         },
         {
@@ -4268,6 +4356,181 @@
           "constant": false,
           "name": "values",
           "type": "QVariantMap",
+          "writable": false
+        }
+      ]
+    },
+    "GlyphRun": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "layoutChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "posesChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "errorChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "renderingChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "compositionChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "preparationChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "atlasChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "atlasOnly",
+          "type": "bool",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "font",
+          "type": "QFont",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "measurementOnly",
+          "type": "bool",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "runs",
+          "type": "QVariantList",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "poses",
+          "type": "QVariantList",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "composition",
+          "type": "QString",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "metrics",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorString",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "maskRevision",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "textureUploads",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "renderBatches",
+          "type": "int",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "supportedMaxHaloRadius",
+          "type": "int",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "supportedMaxBlur",
+          "type": "int",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "cacheBytes",
+          "type": "qlonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "haloSampling",
+          "type": "QString",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "maximumRasterScale",
+          "type": "double",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "preparing",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "ready",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "gpuCacheBytes",
+          "type": "qlonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "sharedCacheKey",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "sharedCacheBytes",
+          "type": "qlonglong",
           "writable": false
         }
       ]

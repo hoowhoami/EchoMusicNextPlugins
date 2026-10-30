@@ -126,6 +126,7 @@ try {
           'graphicsCubeVolumeSlicesAndRecovery',
           'graphicsSharedResourcesScopesDevicesAndRecovery',
           'graphicsQtTextureSourcesLifecycle',
+          'graphicsNativeGlyphAtlasLifecycle',
           'graphicsMultipleStreamsInstancesAndReflection',
           'appearancePreviewCatalogAndFloatingIsolation',
           'appearanceMaterialsAndRouteLifecycle',

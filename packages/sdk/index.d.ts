@@ -1625,9 +1625,133 @@ declare module 'echo:plugin-sdk' {
     readonly height: number;
     readonly visible: boolean;
   }
+  /** Full native shaping context; positions and ranges use UTF-16 source indices. */
+  export interface GlyphRunDefinition {
+    key: string;
+    text: string;
+    size?: number;
+    weight?: number;
+    spacing?: number;
+    maxWidth?: number;
+    lineHeight?: number;
+    maxBlur?: 0 | 8 | 16 | 32;
+    maxHaloRadius?: 0 | 40 | 80 | 160 | 512 | 1024;
+    strokeWidth?: number;
+    strokeBitmap?: 'reject' | 'fill';
+  }
+  export interface GlyphPose {
+    key: string;
+    start?: number;
+    instance?: string;
+    x?: number;
+    y?: number;
+    scale?: number;
+    rotation?: number;
+    opacity?: number;
+    color?: QtColor;
+    tint?: QtColor;
+    blur?: number;
+    glow?: number;
+    halos?: { radius: number; opacity?: number; color: QtColor }[];
+    clip?: { x: number; y: number; width: number; height: number };
+  }
+  export interface GlyphRunMetric {
+    key: string;
+    width: number;
+    advance: number;
+    height: number;
+    lineCount: number;
+    baseline: number;
+    emAscent: number;
+    emDescent: number;
+    inkLeft: number;
+    inkRight: number;
+    inkTop: number;
+    inkBottom: number;
+    graphemes: {
+      start: number;
+      length: number;
+      x: number;
+      y: number;
+      advance: number;
+      clusterStart: number;
+    }[];
+  }
+  /** QML native producer. atlasOnly retains preparation/metrics and delegates drawing. */
+  export interface GlyphRun extends QtQuickItem {
+    atlasOnly: boolean;
+    font: QtFont;
+    measurementOnly: boolean;
+    runs: GlyphRunDefinition[];
+    poses: GlyphPose[];
+    composition: 'source-over' | 'screen';
+    readonly metrics: GlyphRunMetric[];
+    readonly errorString: string;
+    readonly maskRevision: number;
+    readonly textureUploads: number;
+    readonly renderBatches: number;
+    readonly supportedMaxHaloRadius: number;
+    readonly supportedMaxBlur: number;
+    readonly cacheBytes: number;
+    haloSampling: 'static' | 'canvas';
+    maximumRasterScale: number;
+    readonly preparing: boolean;
+    readonly ready: boolean;
+    readonly gpuCacheBytes: number;
+    readonly sharedCacheKey: string;
+    readonly sharedCacheBytes: number;
+    readonly layoutChanged: QtSignal;
+    readonly posesChanged: QtSignal;
+    readonly errorChanged: QtSignal;
+    readonly renderingChanged: QtSignal;
+    readonly compositionChanged: QtSignal;
+    readonly preparationChanged: QtSignal;
+    readonly atlasChanged: QtSignal;
+  }
+  export interface GlyphAtlasLevel {
+    /** Index into this lease's pages, never a native handle. */
+    page: number;
+    /** Normalized x, y, width, height; no implicit Y flip. */
+    uv: [number, number, number, number];
+    /** Local ink x, y, width, height, including raster rounding/padding. */
+    rect: [number, number, number, number];
+    /** Linear coverage channel. Other mask channels may contain opaque/internal data. */
+    coverage: 'r' | 'a';
+    /** Preserve native premultiplied encoded color; false means tintable linear coverage. */
+    color: boolean;
+  }
+  export interface GlyphAtlasFragment {
+    key: string;
+    start: number;
+    length: number;
+    anchor: [number, number];
+    baseline: number;
+    /** canvas: DPR, DPR/2, DPR/4, DPR/8; static: one full-DPR level. */
+    levels: GlyphAtlasLevel[];
+  }
+  /** Read-only, plugin/account/window-bound GPU sampling lease.
+   * changed publishes pages, UVs and metrics atomically; regenerate draws on revision/generation.
+   * Hiding releases native allocations; dispose does not destroy the native font producer.
+   */
+  export interface EchoGpuGlyphAtlas {
+    readonly active: boolean;
+    readonly ready: boolean;
+    readonly revision: number;
+    readonly generation: number;
+    readonly pages: EchoGpuResource[];
+    readonly fragments: GlyphAtlasFragment[];
+    readonly metrics: GlyphRunMetric[];
+    readonly pixelRatio: number;
+    readonly textureUploads: number;
+    readonly errorString: string;
+    readonly changed: QtSignal;
+    dispose(): void;
+  }
   export interface EchoGpuSurface {
     /** Borrow a full, non-atlas texture provider/layer from this plugin and window. */
     importTextureSource(source: QtQuickItem): EchoGpuResource | null;
+    /** Import this plugin's native glyph ink atlas on this window/RHI, with coherent UVs. */
+    importGlyphAtlas(source: GlyphRun): EchoGpuGlyphAtlas | null;
     graphics: EchoPluginGraphics | null;
     paused: boolean;
     continuous: boolean;

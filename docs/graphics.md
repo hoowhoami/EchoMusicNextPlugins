@@ -93,4 +93,4 @@ Qt 官方说明普通场景不是逐资产色彩管理管线，并建议用专�
 
 资源分享、同RHI设备边界及多流布局见[gpu-submissions](gpu-submissions.md)。
 
-Qt组件layer/texture provider的只读GPU借用见[纹理源](gpu-texture-sources.md)，与字形图集导出和持久图像捕获分别处理。
+Qt组件layer/texture provider的只读GPU借用见[纹理源](gpu-texture-sources.md)；原生字体 ink/UV/指标直导见[字形图集](gpu-glyph-atlases.md)。持久图像捕获继续归图像导出路径。

@@ -46,4 +46,4 @@ color = vec4(linear * p.a, p.a);
 
 ## 与 GlyphRun / ImageCapture 的关系
 
-GlyphRun 仍负责字体回退、连字、原生指标、准备和绘制。组件纹理导入不提供字形 atlas、UV 或字形实例表，也不替代它。启用原生文字层后可在此基础上增加 RHI 后处理；应同时等文字组件与借用纹理就绪。ImageCapture 的编码文件用于持久资产/导出，职责也继续保留。
+GlyphRun 仍负责字体回退、连字、原生指标、准备和绘制。组件纹理导入不提供字形 atlas、UV 或字形实例表；需要直接采样字形时使用 [字形图集 API](gpu-glyph-atlases.md)，两者不互相替代。启用原生文字层后可在此基础上增加 RHI 后处理；应同时等文字组件与借用纹理就绪。ImageCapture 的编码文件用于持久资产/导出，职责也继续保留。
