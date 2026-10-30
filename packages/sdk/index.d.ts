@@ -55,8 +55,64 @@ declare module 'echo:plugin-sdk' {
     serviceId: string,
     versionRange: string,
   ): PluginServiceClient<Contract>;
+  export interface PublicPluginService {
+    readonly id: string;
+    readonly version: string;
+    readonly revision: string;
+    readonly methods: readonly string[];
+  }
+  export interface PublicPluginCommand {
+    readonly id: string;
+    readonly version: string;
+    readonly revision: string;
+    readonly title: string;
+    readonly description: string;
+  }
+  export interface PublicPluginEntry {
+    readonly id: string;
+    readonly name: string;
+    readonly version: string;
+    readonly generation: string;
+    readonly available: boolean;
+    readonly services: readonly PublicPluginService[];
+    readonly commands: readonly PublicPluginCommand[];
+  }
+  export interface PluginDependencyEntry extends PublicPluginEntry {
+    readonly required: boolean;
+    readonly range: string;
+  }
+  export interface PluginDirectorySnapshot {
+    readonly self: PublicPluginEntry | null;
+    readonly dependencies: readonly PluginDependencyEntry[];
+    readonly accountEpoch: string;
+  }
+  export interface PublicCommandMetadata {
+    title?: string;
+    description?: string;
+  }
   export interface EchoPluginRegistry {
+    readonly snapshot: PluginDirectorySnapshot;
     readonly availabilityChanged: QtSignal;
+    readonly exportsChanged: QtSignal;
+    onChanged(
+      id: string,
+      callback: (snapshot: PluginDirectorySnapshot) => void,
+      immediate?: boolean,
+    ): EchoPluginRegistration | null;
+    registerCommand(
+      id: string,
+      version: string,
+      callback: (
+        arguments: Record<string, JsonValue>,
+      ) => JsonValue | void | Promise<JsonValue | void>,
+      metadata?: PublicCommandMetadata,
+    ): EchoPluginRegistration | null;
+    callCommand<Result = JsonValue | void>(
+      pluginId: string,
+      commandId: string,
+      versionRange: string,
+      arguments?: Record<string, JsonValue>,
+    ): EchoPluginOperation<Result>;
     isAvailable(pluginId: string): boolean;
     version(pluginId: string): string;
     serviceVersion(pluginId: string, serviceId: string): string;
@@ -137,7 +193,30 @@ declare module 'echo:plugin-sdk' {
     readonly lines: LyricLineSnapshot[];
     readonly revision: string;
   }
+  export type PlaybackDisplayState =
+    'idle' | 'loading' | 'playing' | 'paused' | 'seeking' | 'buffering' | 'error';
+  /** Shared service anchor. Reading never refreshes sampledAt. Use samplePosition()
+   * for monotonic interpolation in this process; do not extrapolate while stalled. */
+  export interface PlaybackClockSnapshot {
+    readonly trackId: string;
+    readonly trackSeq: string;
+    readonly sourceRevision: string;
+    readonly positionMs: number;
+    readonly durationMs: number;
+    readonly playbackRate: number;
+    readonly isPlaying: boolean;
+    readonly isAdvancing: boolean;
+    readonly displayState: PlaybackDisplayState;
+    readonly busyReason: '' | 'seek' | 'buffering';
+    readonly generation: number;
+    readonly sampledAt: number;
+    readonly seekTimestamp: number;
+    readonly reason: string;
+  }
   export interface PlaybackSnapshot {
+    readonly clock: PlaybackClockSnapshot;
+    readonly displayState: PlaybackDisplayState;
+    readonly busyReason: '' | 'seek' | 'buffering';
     readonly revision: string;
     readonly track: PluginTrack;
     readonly title: string;
@@ -178,7 +257,15 @@ declare module 'echo:plugin-sdk' {
     readonly lyrics: LyricsInfo;
   }
   export type PlaybackEvent =
-    'trackchange' | 'statechange' | 'play' | 'pause' | 'ended' | 'seek' | 'error' | 'timeupdate';
+    | 'trackchange'
+    | 'statechange'
+    | 'play'
+    | 'pause'
+    | 'ended'
+    | 'seek'
+    | 'error'
+    | 'timeupdate'
+    | 'clock';
   export type PresentationCommand =
     | 'play'
     | 'pause'
@@ -237,47 +324,49 @@ declare module 'echo:plugin-sdk' {
     reset(): boolean;
   }
   export interface ThemePalette {
-    shell?: string;
-    sidebar?: string;
-    main?: string;
-    player?: string;
-    card?: string;
-    elevated?: string;
-    text?: string;
-    secondaryText?: string;
-    border?: string;
-    accent?: string;
+    shell?: string | QtColor;
+    sidebar?: string | QtColor;
+    main?: string | QtColor;
+    player?: string | QtColor;
+    card?: string | QtColor;
+    elevated?: string | QtColor;
+    text?: string | QtColor;
+    secondaryText?: string | QtColor;
+    border?: string | QtColor;
+    accent?: string | QtColor;
   }
   export interface SurfacePalette {
-    background?: string;
-    text?: string;
-    secondaryText?: string;
-    card?: string;
-    border?: string;
-    accent?: string;
-    accentText?: string;
+    background?: string | QtColor;
+    text?: string | QtColor;
+    secondaryText?: string | QtColor;
+    card?: string | QtColor;
+    border?: string | QtColor;
+    accent?: string | QtColor;
+    accentText?: string | QtColor;
   }
   export interface GradientDefinition {
-    color?: string;
-    stops?: { position: number; color: string }[];
+    color?: string | QtColor;
+    stops?: { position: number; color: string | QtColor }[];
     angle?: number;
     opacity?: number;
     height?: number;
   }
   export interface BackgroundDefinition {
     kind: 'color' | 'gradient' | 'image' | 'video';
-    color?: string;
-    stops?: { position: number; color: string }[];
+    color?: string | QtColor;
+    stops?: { position: number; color: string | QtColor }[];
     angle?: number;
     /** Package-relative asset; never a signed stream URL or application path. */
     source?: string;
     fit?: 'cover' | 'contain';
     opacity?: number;
     shade?: number;
-    shadeColor?: string;
+    shadeColor?: string | QtColor;
   }
   export interface PageTransitionDefinition {
     enabled?: boolean;
+    appear?: boolean;
+    easing?: readonly [number, number, number, number];
     mode?: 'parallel' | 'out-in' | 'in-out';
     durationMs?: number;
     enterOpacity?: number;
@@ -295,10 +384,23 @@ declare module 'echo:plugin-sdk' {
     mini?: SurfacePalette;
     background?: BackgroundDefinition;
     surface?: Partial<
-      Record<'shell' | 'main' | 'sidebar' | 'player' | 'card' | 'elevated', number>
+      Record<
+        'shell' | 'main' | 'sidebar' | 'player' | 'card' | 'elevated' | 'floating' | 'dialog',
+        number
+      >
     >;
+    material?: {
+      windowFrosted?: boolean;
+      floatingFrosted?: boolean;
+      blurSigma?: number;
+      backdropFillOpacity?: number;
+    };
     accentGradient?: GradientDefinition;
     pageTransition?: PageTransitionDefinition;
+  }
+  export interface ThemeOverrideDefinition {
+    light?: ThemeVariant;
+    dark?: ThemeVariant;
   }
   export interface ThemeDefinition {
     type?: 'default' | 'solid' | 'dynamic';
@@ -338,6 +440,16 @@ declare module 'echo:plugin-sdk' {
     defaults?: Record<string, JsonValue>;
     validate?: (values: Record<string, JsonValue>) => boolean | { errors?: string[] };
   }
+  export interface AppearanceChoice {
+    readonly key: string;
+    readonly title: string;
+    readonly description: string;
+    readonly preview: { toString(): string };
+    readonly selected: boolean;
+    readonly builtin: boolean;
+    readonly type: 'default' | 'solid' | 'dynamic';
+    readonly error: string;
+  }
   export interface AppearanceSnapshot {
     readonly dark: boolean;
     readonly font: QtFont;
@@ -359,6 +471,11 @@ declare module 'echo:plugin-sdk' {
     readonly transparency: number;
     readonly windowFrosted: boolean;
     readonly floatingFrosted: boolean;
+    readonly mode: 'system' | 'light' | 'dark' | 'theme';
+    readonly themeKey: string;
+    readonly previewing: boolean;
+    readonly previewTheme: string;
+    readonly mini: Readonly<Record<string, QtColor>>;
     readonly selectedTheme: string;
     readonly selectedSkin: string;
     readonly surfaces: ThemeVariant;
@@ -375,6 +492,20 @@ declare module 'echo:plugin-sdk' {
     readonly snapshot: AppearanceSnapshot;
     readonly errorMessage: string;
     readonly changed: QtSignal;
+    /** Explicit appearance permission. Per-property priority, latest publication wins ties.
+     * Selection/preferences are untouched; dispose restores current underlying values. */
+    setOverride(
+      id: string,
+      definition: ThemeOverrideDefinition,
+      priority?: number,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+    themes(): readonly AppearanceChoice[];
+    skins(): readonly AppearanceChoice[];
+    onSnapshot(
+      id: string,
+      callback: (snapshot: AppearanceSnapshot) => void,
+      immediate?: boolean,
+    ): EchoPluginRegistration | null;
     registerTheme(definition: ThemeDefinition): EchoPluginAppearanceHandle | null;
     registerSkin(definition: SkinDefinition): EchoPluginAppearanceHandle | null;
     useTheme(id: string): boolean;
@@ -404,11 +535,17 @@ declare module 'echo:plugin-sdk' {
   export interface FloatingWindowsSnapshot {
     readonly available: boolean;
     readonly miniActive?: boolean;
+    readonly miniVisible?: boolean;
+    readonly desktopVisible?: boolean;
+    readonly positionSupported?: boolean;
+    readonly miniScale?: number;
+    readonly unlockAvailable?: boolean;
+    readonly unlockVisible?: boolean;
     readonly desktopEnabled?: boolean;
     readonly locked?: boolean;
     readonly panel?: string;
-    readonly mini?: Record<string, JsonValue>;
-    readonly desktop?: Record<string, JsonValue>;
+    readonly mini?: Readonly<Required<FloatingWindowSettings>>;
+    readonly desktop?: Readonly<Required<FloatingWindowSettings>>;
     readonly miniBounds?: Partial<QtRect>;
     readonly desktopBounds?: Partial<QtRect>;
   }
@@ -420,7 +557,9 @@ declare module 'echo:plugin-sdk' {
     | 'serverIntercept'
     | 'navigation'
     | 'hostSettings'
-    | 'cover';
+    | 'cover'
+    | 'appearance'
+    | 'appIcons';
   export interface ResourcePermission {
     readonly id: string;
     readonly installationId: string;
@@ -576,6 +715,12 @@ declare module 'echo:plugin-sdk' {
       id: string;
       visible: boolean;
       loading: boolean;
+      active: boolean;
+      minimized: boolean;
+      opacity: number;
+      opacitySupported: boolean;
+      opacityMode: 'native' | 'content' | 'unsupported';
+      title: string;
       bounds: QtRect;
       ignoreMouseEvents: boolean;
       alwaysOnTop: boolean;
@@ -593,6 +738,11 @@ declare module 'echo:plugin-sdk' {
     }): EchoPluginOperation;
     setIgnoreMouseEvents(ignore: boolean): EchoPluginOperation;
     showOnTop(focus?: boolean): EchoPluginOperation;
+    setAlwaysOnTop(value: boolean): EchoPluginOperation;
+    setOpacity(value: number): EchoPluginOperation;
+    setTitle(value: string): EchoPluginOperation;
+    minimize(): EchoPluginOperation;
+    restore(focus?: boolean): EchoPluginOperation;
     startMove(): EchoPluginOperation;
     startResize(direction: WindowResizeDirection): EchoPluginOperation;
     beginMove(globalX: number, globalY: number): EchoPluginOperation;
@@ -604,17 +754,54 @@ declare module 'echo:plugin-sdk' {
     updatePointer(globalX: number, globalY: number): void;
     endPointer(): void;
   }
+  export interface FloatingWindowSettings {
+    alwaysOnTop?: boolean;
+    showUnlockButton?: boolean;
+    layout?: 'horizontal' | 'vertical';
+    alignment?: 'left' | 'center' | 'right' | 'both';
+    shadowStrength?: 'none' | 'soft' | 'normal' | 'strong';
+    bold?: boolean;
+    showNextLinePreview?: boolean;
+    playedColor?: string;
+    unplayedColor?: string;
+    followCoverColor?: boolean;
+    unplayedFollowCoverColor?: boolean;
+    fontSize?: number;
+    secondaryFontSize?: number;
+    lineGap?: number;
+    fontWeight?: 400 | 600 | 780;
+    backgroundBlur?: boolean;
+  }
   export interface EchoPluginWindows {
     list(): PluginWindowDefinition[];
     get(id: string): EchoPluginWindow | null;
     show(id: string, options?: PluginWindowShowOptions): EchoPluginOperation<EchoPluginWindow>;
     readonly snapshot: FloatingWindowsSnapshot;
+    onSnapshot(
+      id: string,
+      callback: (snapshot: FloatingWindowsSnapshot) => void,
+      immediate?: boolean,
+    ): EchoPluginRegistration | null;
     readonly changed: QtSignal;
     command(
       target: 'mini' | 'desktop',
-      action:
-        'show' | 'hide' | 'toggle' | 'showMain' | 'panel' | 'lock' | 'settings' | 'bounds' | 'move',
-      arguments?: Record<string, JsonValue>,
+      action: 'show' | 'hide' | 'toggle' | 'showMain' | 'move',
+    ): EchoPluginOperation;
+    command(
+      target: 'mini',
+      action: 'panel',
+      arguments: { value: '' | 'lyric' | 'queue' },
+    ): EchoPluginOperation;
+    command(target: 'desktop', action: 'lock', arguments: { value: boolean }): EchoPluginOperation;
+    command(
+      target: 'mini' | 'desktop',
+      action: 'settings',
+      arguments: FloatingWindowSettings,
+    ): EchoPluginOperation;
+    command(
+      target: 'mini' | 'desktop',
+      action: 'bounds',
+      arguments: Partial<QtRect>,
     ): EchoPluginOperation;
   }
   export interface EchoPluginReadModel<Row = Record<string, JsonValue>> {
@@ -806,6 +993,11 @@ declare module 'echo:plugin-sdk' {
     readonly queuedNext: boolean;
   }
   export interface EchoPluginPlayer {
+    readonly clock: PlaybackClockSnapshot;
+    readonly clockChanged: QtSignal;
+    readonly snapshotChanged: QtSignal;
+    /** Projects the shared anchor with a monotonic clock, clamped at 1s without telemetry. */
+    samplePosition(): number;
     readonly audioSource: EchoPluginAudioSource;
     readonly snapshot: PlaybackSnapshot;
     readonly lyricsInfo: LyricsInfo;
@@ -1139,6 +1331,280 @@ declare module 'echo:plugin-sdk' {
       options?: Record<string, JsonValue> & SpectrumOptions,
     ): EchoPluginSpectrumSubscription | null;
     getStatus(): SpectrumStatus;
+  }
+  /** Numeric arrays use dataFormat; ArrayBuffer contains already packed bytes. */
+  export type GpuData = readonly number[] | ArrayBuffer | ArrayBufferView;
+  export type GpuDataFormat = 'float32' | 'float16' | 'uint8' | 'uint16' | 'uint32';
+  export interface GpuBufferDefinition {
+    size: number;
+    usage: readonly ('uniform' | 'vertex' | 'index' | 'storage' | 'indirect')[];
+    format?: GpuDataFormat;
+  }
+  export interface GpuTextureExtent {
+    width: number;
+    height: number;
+    format?: 'rgba8' | 'rgba16f' | 'rgba32f' | 'r32f';
+    usage: readonly ('sampled' | 'storage' | 'render-target' | 'readback')[];
+    /** QRhi mip chain based on width/height. Volume depth shrinks at each level. */
+    mipmaps?: boolean;
+  }
+  export type GpuTextureDefinition =
+    | (GpuTextureExtent &
+        (
+          | { dimension?: '2d'; layers?: never; depth?: never }
+          | {
+              dimension: '2d-array';
+              /** 1..256, subject to device/memory limits. */ layers: number;
+              depth?: never;
+            }
+          | {
+              dimension: '3d';
+              /** Each volume axis is at most 2048. */ depth: number;
+              layers?: never;
+            }
+        ))
+    | (Omit<GpuTextureExtent, 'usage'> & {
+        dimension: 'cube';
+        layers?: never;
+        depth?: never;
+        usage: readonly ('sampled' | 'render-target' | 'readback')[];
+      });
+  export interface GpuSamplerDefinition {
+    minFilter?: 'linear' | 'nearest';
+    magFilter?: 'linear' | 'nearest';
+    mipFilter?: 'none' | 'linear' | 'nearest';
+    u?: 'clamp' | 'repeat' | 'mirror';
+    v?: 'clamp' | 'repeat' | 'mirror';
+    w?: 'clamp' | 'repeat' | 'mirror';
+  }
+  export interface GpuRenderPipelineDefinition {
+    vertexShader: string;
+    fragmentShader: string;
+    topology?: 'triangles' | 'triangle-strip' | 'lines' | 'line-strip' | 'points';
+    blend?: 'none' | 'alpha' | 'add';
+    /** One entry per color target; distinct modes require independentBlend. */
+    blends?: readonly ('none' | 'alpha' | 'add')[];
+    cull?: 'none' | 'back' | 'front';
+    depthTest?: boolean;
+    depthWrite?: boolean;
+    vertexLayout?: {
+      stride: number;
+      attributes: readonly {
+        location: number;
+        offset: number;
+        format: 'float' | 'float2' | 'float3' | 'float4';
+      }[];
+    };
+  }
+  export interface GpuComputePipelineDefinition {
+    computeShader: string;
+  }
+  export interface GpuBinding {
+    kind: 'uniform' | 'texture' | 'storage-buffer' | 'storage-image';
+    binding: number;
+    resource: string;
+    sampler?: string;
+    access?: 'read' | 'write' | 'read-write';
+    /** Mip level for storage-image bindings only. */
+    level?: number;
+    /** Uniform byte range. Offset must satisfy capabilities.uniformBufferAlignment. */
+    offset?: number;
+    size?: number;
+  }
+  export interface GpuDrawBuffers {
+    vertexBuffer?: string;
+    vertexOffset?: number;
+    indexBuffer?: string;
+    indexFormat?: 'uint16' | 'uint32';
+  }
+  /** Packed uint32 arguments; indexed vertexOffset is int32. GPU-written arguments are
+   * consumed directly, without CPU readback. Authors own their vertex/index ranges. */
+  export type GpuDraw = GpuDrawBuffers &
+    (
+      | {
+          count: number;
+          first?: number;
+          instances?: number;
+          baseVertex?: number;
+          firstInstance?: number;
+          indirect?: never;
+        }
+      | {
+          indirect: { buffer: string; offset?: number; drawCount?: number; stride?: number };
+          count?: never;
+          first?: never;
+          instances?: never;
+          baseVertex?: never;
+          firstInstance?: never;
+        }
+    );
+  export interface GpuRenderPass {
+    type: 'render';
+    pipeline: string;
+    target?: string;
+    /** Mutually exclusive with target; distinct textures with matching mip extents. */
+    colorTargets?: readonly { texture: string; level?: number; layer?: number }[];
+    loadOp?: 'clear' | 'load';
+    /** Physical framebuffer pixels, top-left origin. */
+    viewport?: readonly [number, number, number, number];
+    scissor?: readonly [number, number, number, number];
+    clear?: readonly [number, number, number, number];
+    bindings: readonly GpuBinding[];
+    draws: readonly GpuDraw[];
+  }
+  export interface GpuComputePass {
+    type: 'compute';
+    pipeline: string;
+    bindings: readonly GpuBinding[];
+    groups: readonly [number, number, number];
+  }
+  export interface GpuFrame {
+    passes: readonly (GpuRenderPass | GpuComputePass)[];
+  }
+  export type GpuTransferCommand =
+    | { type: 'upload-buffer'; destination: string; offset?: number; data: GpuData }
+    | {
+        type: 'copy-buffer';
+        source: string;
+        destination: string;
+        sourceOffset?: number;
+        destinationOffset?: number;
+        size: number;
+      }
+    | {
+        type: 'upload-texture';
+        destination: string;
+        layer?: number;
+        level?: number;
+        origin?: readonly [number, number];
+        size: readonly [number, number];
+        bytesPerRow?: number;
+        data: GpuData;
+      }
+    | {
+        type: 'copy-texture';
+        source: string;
+        destination: string;
+        sourceLayer?: number;
+        destinationLayer?: number;
+        sourceLevel?: number;
+        destinationLevel?: number;
+        sourceOrigin?: readonly [number, number];
+        destinationOrigin?: readonly [number, number];
+        size: readonly [number, number];
+      }
+    | { type: 'generate-mips'; texture: string };
+  export interface GpuCommandList {
+    passes: readonly (GpuRenderPass | GpuComputePass | GpuTransferCommand)[];
+  }
+  export interface GpuSubmissionResult {
+    readonly serial: number;
+    readonly generation: number;
+    readonly frame: number;
+    readonly backend: string;
+  }
+  export type GpuReadbackOptions =
+    | { offset?: number; size?: number }
+    | { level?: number; layer?: number; x?: number; y?: number; width?: number; height?: number };
+  export interface GpuCapabilities {
+    readonly available: boolean;
+    readonly limits?: Readonly<Record<string, number>>;
+    readonly nativeBudgetUsed?: number;
+    readonly targetBudgetUsed?: number;
+    readonly state?: 'ready' | 'error' | 'suspended' | 'unavailable' | 'waiting';
+    readonly reason?: string;
+    readonly backend?: string;
+    readonly compute: boolean;
+    readonly multipleRenderTargets?: boolean;
+    readonly independentBlend?: boolean;
+    readonly renderMipmaps?: boolean;
+    readonly indirectDraw?: boolean;
+    /** False still supports drawCount via individual native indirect draws. */
+    readonly nativeMultiDrawIndirect?: boolean;
+    readonly textureArrays?: boolean;
+    readonly cubeTextures?: boolean;
+    readonly volumeTextures?: boolean;
+    readonly volumeMipmaps?: boolean;
+    readonly renderVolumeSlices?: boolean;
+    readonly baseVertex?: boolean;
+    readonly baseInstance?: boolean;
+    readonly readbackMipmaps?: boolean;
+    readonly uniformBufferAlignment?: number;
+    readonly pendingSubmissions?: number;
+    readonly submissionBytes?: number;
+    readonly hdr: boolean;
+    readonly floatTextures?: boolean;
+    /** A local HDR request is distinct from actual HDR presentation. */
+    readonly hdrRequested?: boolean;
+    readonly localHdrSupported: boolean;
+    readonly dynamicRange: 'sdr' | 'hdr';
+    readonly headroom?: number;
+    readonly sdrWhiteLevel?: number;
+    readonly generation?: number;
+    readonly frames?: number;
+    readonly nativeResources?: number;
+    readonly pipelineBuilds?: number;
+    readonly copyPipelineBuilds?: number;
+    readonly deviceLimits?: Readonly<Record<string, number>>;
+    readonly logicalResources?: number;
+    readonly logicalBytes?: number;
+  }
+  export interface GpuReadback {
+    layer?: number;
+    data: ArrayBuffer;
+    width?: number;
+    height?: number;
+    format?: string;
+    level?: number;
+    offset?: number;
+    /** Raw native framebuffer row order. */
+    yUp?: boolean;
+  }
+  /** Logical CPU definition; each canvas owns its native instance and GPU-only contents. */
+  export interface EchoGpuResource {
+    readonly id: string;
+    readonly kind: string;
+    readonly active: boolean;
+    readonly changed: QtSignal;
+    dispose(): void;
+  }
+  /** Handles are scoped to this presentation, account and activation. */
+  export interface EchoPluginGraphics {
+    readonly capabilities: GpuCapabilities;
+    readonly errorMessage: string;
+    readonly changed: QtSignal;
+    readonly resourcesChanged: QtSignal;
+    readonly drainedChanged: QtSignal;
+    createBuffer(definition: GpuBufferDefinition, data?: GpuData): EchoGpuResource | null;
+    createTexture(definition: GpuTextureDefinition, data?: GpuData): EchoGpuResource | null;
+    createSampler(definition?: GpuSamplerDefinition): EchoGpuResource | null;
+    createRenderPipeline(definition: GpuRenderPipelineDefinition): EchoGpuResource | null;
+    createComputePipeline(definition: GpuComputePipelineDefinition): EchoGpuResource | null;
+    writeBuffer(resource: EchoGpuResource, data: GpuData, offset?: number): boolean;
+    writeTexture(resource: EchoGpuResource, data: GpuData): boolean;
+  }
+  /** Plugin-local GPU item. Default dynamicRange is sdr; requests never change its host window.
+   * Shaders output linear premultiplied RGBA; unsupported local HDR is tone mapped to SDR.
+   */
+  export interface EchoGpuSurface {
+    graphics: EchoPluginGraphics | null;
+    paused: boolean;
+    continuous: boolean;
+    fps: number;
+    dynamicRange: 'auto' | 'sdr' | 'hdr';
+    readonly status: GpuCapabilities;
+    readonly graphicsChanged: QtSignal;
+    readonly configurationChanged: QtSignal;
+    readonly statusChanged: QtSignal;
+    submit(frame: GpuFrame): boolean;
+    /** Immutable, once-only ordered graph. Success follows GPU readback completion.
+     * At most one graph per native frame; shared logical/native/snapshot budgets apply. */
+    enqueue(commands: GpuCommandList): EchoPluginOperation<GpuSubmissionResult> | null;
+    requestFrame(): void;
+    readback(
+      resource?: EchoGpuResource | null,
+      options?: GpuReadbackOptions,
+    ): EchoPluginOperation<GpuReadback> | null;
   }
   export interface EchoPluginAudio {
     readonly spectrum: EchoPluginSpectrum;
@@ -1644,6 +2110,10 @@ declare module 'echo:plugin-sdk' {
       readonly artist: string | null;
       readonly album: string | null;
       readonly durationMs: number | null;
+      readonly year: number | null;
+      readonly track: number | null;
+      readonly disk: number | null;
+      readonly genre: readonly string[] | null;
     };
   }
   export interface FileListOptions extends FileOperationOptions {
@@ -4499,7 +4969,51 @@ declare module 'echo:plugin-sdk' {
     verify(eventId: string): EchoPluginOperation<{ eventId: string; verified: true }>;
   }
 
+  export type AppIconTarget = 'window' | 'tray' | 'desktop' | 'taskbar';
+  export interface AppIconDefinition {
+    window?: string | ArrayBuffer;
+    tray?: string | ArrayBuffer;
+    desktop?: string | ArrayBuffer;
+    taskbar?: string | ArrayBuffer;
+  }
+  export interface AppIconSnapshot {
+    readonly contributions: readonly {
+      readonly id: string;
+      readonly pluginId: string;
+      readonly pluginName: string;
+      readonly priority: number;
+      readonly targets: readonly AppIconTarget[];
+    }[];
+    readonly busy: boolean;
+    readonly error: string;
+    readonly window: boolean;
+    readonly tray: boolean;
+    readonly desktop: boolean;
+    readonly taskbar: boolean;
+  }
+  export interface EchoPluginAppIcons {
+    readonly snapshot: AppIconSnapshot;
+    readonly changed: QtSignal;
+    readonly drainedChanged: QtSignal;
+    /** Package-relative images. Explicit appIcons permission, target-wise priority.
+     * Native shortcut presentation may complete later; observe busy/error. */
+    set(
+      id: string,
+      icons: AppIconDefinition,
+      priority?: number,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+    setRuntimeWindowIcon(
+      path: string,
+      priority?: number,
+    ): EchoPluginOperation<EchoPluginRegistration>;
+    /** Withdraw this scope's window contributions; another plugin can still win. */
+    restoreDefaultWindowIcon(): EchoPluginOperation<{ applied: boolean }>;
+    restoreDefaultDesktopIcon(): EchoPluginOperation<{ applied: boolean }>;
+    restoreDefaultTaskbarIcon(): EchoPluginOperation<{ applied: boolean }>;
+    refresh(): EchoPluginOperation<AppIconSnapshot>;
+  }
   export interface EchoPluginContext {
+    readonly appIcons: EchoPluginAppIcons;
     readonly settings: EchoPluginSettings;
     readonly cover: EchoPluginCover;
     readonly sessionInvalidated: QtSignal;
@@ -4513,6 +5027,7 @@ declare module 'echo:plugin-sdk' {
     readonly contextId: string;
     readonly active: boolean;
     readonly audio: EchoPluginAudio;
+    readonly graphics: EchoPluginGraphics;
     readonly player: EchoPluginPlayer;
     readonly playlist: EchoPluginPlaylist;
     readonly lyrics: EchoPluginLyrics;

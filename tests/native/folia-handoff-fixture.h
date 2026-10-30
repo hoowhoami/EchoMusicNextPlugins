@@ -3,6 +3,7 @@
 #include "PluginRuntimeTestFixture.h"
 #include "../../services/settings/SettingsKeys.h"
 #include <QBuffer>
+#include <QDirIterator>
 #include <QImage>
 #include <QQmlPropertyMap>
 #include <algorithm>
@@ -82,7 +83,22 @@ class FoliaHandoffFixture {
     explicit Active(QQmlPropertyMap &state) {
       originalVolume = host.playback.volume(); host.playback.setVolume(0);
       host.shell.attachPlayback(host.playback);
-      host.runtime.importDirectory(package(host.temporary.path(), "export function activate(ctx) {}\n"));
+      const auto testPackage = package(host.temporary.path(), "export function activate(ctx) {}\n",
+                                       {"lifecycle", "graphics.rhi"}, {"graphics"});
+      // RHI shader paths are package-relative; use the same actual baker output
+      // as the QML under test, including in this separately owned audio process.
+      const auto assetRoot = qEnvironmentVariable("FOLIA_GPU_ASSET_ROOT");
+      if (!assetRoot.isEmpty()) {
+        const QDir sourceRoot(assetRoot);
+        QDirIterator shaders(assetRoot, {"*.qsb"}, QDir::Files, QDirIterator::Subdirectories);
+        while (shaders.hasNext()) {
+          const auto source = shaders.next();
+          const auto destination = testPackage + '/' + sourceRoot.relativeFilePath(source);
+          QDir().mkpath(QFileInfo(destination).absolutePath());
+          if (!QFile::copy(source, destination)) qFatal("Cannot copy handoff fixture shader");
+        }
+      }
+      host.runtime.importDirectory(testPackage);
       QElapsedTimer deadline; deadline.start();
       while (deadline.elapsed() < 7000) {
         const auto installation = host.runtime.installationForId("test.runtime");

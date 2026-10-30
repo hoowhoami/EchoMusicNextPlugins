@@ -119,6 +119,27 @@ try {
         path.resolve(values['runtime-test']),
         [
           ...(spectrum ? ['builtAuthorPackageCommands'] : []),
+          'graphicsValidationOwnershipAndAccount',
+          'graphicsMultipleTargetsMipRenderingAndLifetime',
+          'graphicsIndirectGpuArgumentsAndRetirement',
+          'graphicsTextureArraysTransfersAndLifetime',
+          'graphicsCubeVolumeSlicesAndRecovery',
+          'appearancePreviewCatalogAndFloatingIsolation',
+          'appearanceMaterialsAndRouteLifecycle',
+          'floatingWindowsNativeStateAuthorizationAndObservation',
+          'publicPluginCatalogCommandsAndRetirement',
+          'publicPluginCatalogScopeAccountAndReplacement',
+          'playbackClockNativeSamplesAndPluginLifetime',
+          'temporaryAppearancePriorityLiveBaseAndRevocation',
+          'applicationIconsPriorityNativeOwnersAndCancellation',
+          'completeAudioMetadataRealFilesAndCancellation',
+          'shortcutIconTransactionPreservesCurrentFields',
+          ...(process.env.ECHO_TEST_NATIVE_GPU
+            ? [
+                'graphicsNativePixelsComputeAndRecovery',
+                'graphicsOrderedTransfersMipmapsAndCompletion',
+              ]
+            : []),
           'hostNavigationRoutesHistoryCancellationAndAccount',
           'hostSettingsPersistenceSubscriptionsAndRevocation',
           'hostActionsDynamicAsyncAndLifecycle',

@@ -24,6 +24,7 @@ Item {
     property var coverColors: []
     property var customBackgroundImages: []
     property EchoPluginAssets assetsService: null
+    property EchoPluginGraphics graphics: null
     property url coverUrl
     property string seed: "default"
     property color backgroundColor: "#111111"
@@ -421,6 +422,8 @@ Item {
                             keys = keys.concat(actor.modeKey === "common" ? ["coverUrl", "seed"] : ["coverColors"]);
                         }
                     }
+                    if (actor.modeKey === "latent")
+                        values.graphics = Qt.binding(() => root.graphics);
                     if (actor.modeKey === "sora" || actor.modeKey === "latent")
                         values.colorBlendMs = Qt.binding(() => root.colorBlendMs);
                     for (const key of keys)

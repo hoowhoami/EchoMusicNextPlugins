@@ -95,6 +95,9 @@ Item {
     }
     function receive(reply: var): void {
         if (!live || reply.generation !== _generation || reply.trackRevision !== trackRevision) return;
+        // Worker reset reserves -1 for whole-program replies; scene replies,
+        // including failures, belong only to the token that requested them.
+        if (reply.sceneToken >= 0 && reply.sceneToken !== _sceneToken) return;
         if (reply.error) { fail(reply.error); return; }
         if (reply.phase === "read") readStep.restart();
         else if(reply.phase==="watch"){_reading=false;watching=true;busy=false;}

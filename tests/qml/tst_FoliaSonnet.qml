@@ -160,6 +160,153 @@ TestCase {
         compare(layout.scene,null);
         compare(layout.errorString,"");
     }
+    function stressRows(revision) {
+        const rows = [];
+        for (let index = 0; index < 18; ++index) {
+            const text = "Native cancellation " + revision + " " + index + " 海边的风 office 👩‍🚀 é";
+            rows.push({text, start_ms: index * 3000, duration_ms: 2800, words: [{text, start_ms: index * 3000, duration_ms: 2800}]});
+        }
+        return rows;
+    }
+    function nativeLayout(scene) {
+        return scene.children.find(child => "measurementBatches" in child && "requestedIndex" in child);
+    }
+    function measurementGlyph(layout) {
+        return layout.children.find(child => "measurementOnly" in child && child.measurementOnly === true);
+    }
+    function verifyStressScene(scene) {
+        tryVerify(() => scene.renderReady || scene.errorString.length > 0, 45000);
+        compare(scene.errorString, "");
+        verify(scene.renderReady);
+        verify(scene.actorCount > 0);
+        verify(scene.renderers.some(renderer => renderer.metrics.length > 0), "Stress scene must retain actual native glyph layouts");
+        const pixels = grabImage(scene);
+        let ink = 0;
+        for (let y = 0; y < pixels.height; y += 8)
+            for (let x = 0; x < pixels.width; x += 8)
+                ink += pixels.red(x, y) + pixels.green(x, y) + pixels.blue(x, y);
+        verify(ink > 1000, "Actual native stress scene must draw nonzero RGB pixels");
+    }
+    function test_nativePreparationCancellationBoundariesAndSecondInstance() {
+        verify(foliaTestLyricFixture.replaceRows(stressRows("initial")));
+        const scene = createTemporaryObject(sceneComponent, testCase, {
+            trackRevision: "native-stress-initial", settings: ({}),
+            songTitle: "Native stress title", songArtist: "Actual native artist", songAlbum: "Native album"
+        });
+        verify(scene !== null);
+        const layout = nativeLayout(scene);
+        verify(layout);
+        const measure = measurementGlyph(layout);
+        verify(measure);
+        for (let cycle = 0; cycle < 5; ++cycle) {
+            const observed = {done: false, generation: -1, metrics: 0};
+            const cancelAtNativeResult = () => {
+                if (observed.done || !layout.busy || !layout._preparing || !layout._runs.length || measure.metrics.length !== layout._runs.length)
+                    return;
+                observed.done = true;
+                observed.generation = layout._generation;
+                observed.metrics = measure.metrics.length;
+                measure.layoutChanged.disconnect(cancelAtNativeResult);
+                // This signal is emitted by the real GlyphRun after native measurement,
+                // before Sonnet's queued acceptance of the batch. No fabricated replies.
+                if (cycle === 0) {
+                    scene.width = 1040;
+                    scene.height = 760;
+                } else if (cycle === 1) {
+                    scene.baseFont = Qt.font({family: "Times New Roman", pixelSize: 34, weight: Font.Medium});
+                } else if (cycle === 2) {
+                    scene.songTitle = "Replacement native metadata " + cycle;
+                    scene.songArtist = "Metadata changed during native work";
+                    scene.songAlbum = "Replacement album";
+                    scene.themeDisplayName = "Native stress theme";
+                } else if (cycle === 3) {
+                    scene.trackRevision = "native-stress-incoming";
+                    verify(foliaTestLyricFixture.replaceRows(stressRows("incoming")));
+                } else {
+                    scene.live = false;
+                    compare(scene.actorCount, 0);
+                    compare(scene.cachedSceneCount, 0);
+                    compare(scene.totalCacheBytes, 0);
+                    scene.live = true;
+                }
+            };
+            measure.layoutChanged.connect(cancelAtNativeResult);
+            // A content boundary starts a fresh real worker/native preparation each cycle.
+            scene.songTitle = "Pending native batch " + cycle;
+            try {
+                tryVerify(() => observed.done || scene.errorString.length > 0, 45000);
+                compare(scene.errorString, "");
+                verify(observed.done);
+                verify(observed.metrics > 0);
+                verify(layout._generation > observed.generation);
+                verifyStressScene(scene);
+                wait(40);
+                compare(scene.errorString, "");
+            } finally {
+                if (!observed.done)
+                    measure.layoutChanged.disconnect(cancelAtNativeResult);
+            }
+        }
+        scene.live = false;
+        compare(scene.actorCount, 0);
+        compare(scene.totalCacheBytes, 0);
+        compare(scene.cachedSceneCount, 0);
+        wait(40);
+        compare(scene.actorCount, 0);
+        const second = createTemporaryObject(sceneComponent, testCase, {
+            trackRevision: "native-stress-second", settings: ({}),
+            baseFont: scene.baseFont, songTitle: scene.songTitle,
+            songArtist: scene.songArtist, songAlbum: scene.songAlbum
+        });
+        verifyStressScene(second);
+        second.live = false;
+        compare(second.actorCount, 0);
+        compare(second.totalCacheBytes, 0);
+        compare(second.cachedSceneCount, 0);
+    }
+    function test_staleSceneErrorFromActualWorkerCannotRetireNewToken() {
+        verify(foliaTestLyricFixture.replaceRows(stressRows("worker-token")));
+        const layout = createTemporaryObject(layoutComponent, testCase);
+        verify(layout !== null);
+        tryVerify(() => layout.scene !== null && !layout.busy || layout.errorString.length > 0, 45000);
+        compare(layout.errorString, "");
+        const worker = layout._worker;
+        verify(worker && worker.ready);
+        const rejectedToken = layout._sceneToken + 1, acceptedToken = rejectedToken + 1;
+        const evidence = {error: "", accepted: false};
+        const capture = reply => {
+            if (reply.sceneToken === rejectedToken && reply.error)
+                evidence.error = reply.error;
+            if (reply.sceneToken === acceptedToken && reply.phase === "scene")
+                evidence.accepted = true;
+        };
+        worker.message.connect(capture);
+        try {
+            // Both replies come from the real WorkerScript. An invalid paragraph produces
+            // an actual older scene error; the following valid job must remain authoritative.
+            layout._sceneToken = rejectedToken;
+            layout.send({phase: "scene", index: -1, context: layout.geometry});
+            layout._sceneToken = acceptedToken;
+            layout._preparing = true;
+            layout.busy = true;
+            layout.send({phase: "scene", index: 0, context: layout.geometry});
+            tryVerify(() => evidence.error.length > 0, 45000);
+            verify(evidence.error.includes("Invalid Sonnet paragraph index"));
+            compare(layout.errorString, "", "A stale real worker error must not retire the newer scene token");
+            tryVerify(() => evidence.accepted && layout.sceneIndex === 0 && !layout.busy || layout.errorString.length > 0, 45000);
+            compare(layout.errorString, "");
+            verify(evidence.accepted);
+            compare(layout.sceneIndex, 0);
+            verify(layout.scene.layout.shots.length > 0);
+        } finally {
+            if (layout._worker === worker)
+                worker.message.disconnect(capture);
+            layout.live = false;
+        }
+        compare(layout.program, null);
+        compare(layout.scene, null);
+        compare(layout.cachedSceneCount, 0);
+    }
     function test_sourceTwoObjectBindingParameters():void {
         const state={sawPlaybackReset:false,playbackTime:0,elapsedMs:3001};
         verify(SongGate.isInstrumentalConfirmed(state,{instrumentalCommitSeconds:2,readyGraceMs:3000}));

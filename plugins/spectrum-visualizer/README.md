@@ -9,7 +9,7 @@
 - 雾状使用原三层云形路径、Qt MultiEffect模糊与screen合成；中心频谱保留镜像、升降插值与边缘渐隐。
 - 五种模式使用Qt Quick Shapes的CurveRenderer提交原有矢量路径，光晕/模糊及边缘遮罩在GPU合成，不使用Canvas.Image逐帧栅格位图。普通柱状/波形随新音频帧更新，雾状流动和中心攻防插值沿用设置帧率。
 
-HDR选项在宿主未提供graphics.hdr时禁用并说明原因，延续旧插件的SDR回退；不声称此版本提供HDR输出。
+HDR默认关闭，仅在宿主报告localHdrSupported时可用；当前嵌入式后端禁用该选项并说明原因。普通频谱继续使用GPU，不修改主窗口格式或透明、毛玻璃，不声称此版本已实现局部HDR实屏输出。
 
 构建：仓库根执行npm run build；生成dist/spectrum-visualizer-1.0.0.echomod。打开插件管理面板安装，点插件设置选择显示位置；无需安装其它示例依赖。SDK与插件版本保持1.0.0。
 

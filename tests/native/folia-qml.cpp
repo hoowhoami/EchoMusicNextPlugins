@@ -6,6 +6,7 @@
 #include "capsule-fixture.h"
 #include "folia-handoff-fixture.h"
 #include <QApplication>
+#include <QDirIterator>
 #include <QFileDialog>
 #include <QImage>
 #include <QLineEdit>
@@ -211,8 +212,9 @@ public slots:
         qEnvironmentVariableIntValue("FOLIA_CAPSULE_ONLY") == 1)
       return;
     textHost = std::make_unique<Host>();
-    const auto testPackage = package(textHost->temporary.path(),
-                                     "export function activate(ctx) {}\n");
+    const auto testPackage = package(
+        textHost->temporary.path(), "export function activate(ctx) {}\n",
+        {"lifecycle", "graphics.rhi"}, {"graphics"});
     // Original preview covers must pass the real package-image permission
     // check. Copy them before import; never whitelist the repository's external
     // paths.
@@ -224,6 +226,22 @@ public slots:
           QString("../../plugins/folia-lyrics-skin/qml/preview/") + name);
       if (!QFile::copy(source, testPackage + "/preview/" + name))
         qFatal("Cannot copy authored preview cover to actual package fixture");
+    }
+    // Only baked plugin shaders are imported into the real fixture package.
+    // Production resolves pipeline paths against this package, not the QML URL.
+    const auto gpuAssetRoot = qEnvironmentVariable("FOLIA_GPU_ASSET_ROOT");
+    if (!gpuAssetRoot.isEmpty()) {
+      const QDir gpuRoot(gpuAssetRoot);
+      QDirIterator files(gpuAssetRoot, {"*.qsb"}, QDir::Files,
+                         QDirIterator::Subdirectories);
+      while (files.hasNext()) {
+        const auto source = files.next();
+        const auto destination =
+            testPackage + "/" + gpuRoot.relativeFilePath(source);
+        QDir().mkpath(QFileInfo(destination).absolutePath());
+        if (!QFile::copy(source, destination))
+          qFatal("Cannot copy baked plugin shader to actual package fixture");
+      }
     }
     textHost->runtime.importDirectory(testPackage);
     QElapsedTimer deadline;

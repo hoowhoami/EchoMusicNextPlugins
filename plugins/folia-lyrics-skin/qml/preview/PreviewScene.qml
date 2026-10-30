@@ -125,6 +125,7 @@ Item {
                     z: 0
                     settings: root.settings
                     assetsService: root.plugin.assets
+                    graphics: root.plugin.graphics
                     coverUrl: Qt.resolvedUrl(root.sample.cover)
                     seed: 'vis-playground-' + root.sample.id
                     bands: sampleClock.levels

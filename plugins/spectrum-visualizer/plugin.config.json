@@ -10,9 +10,33 @@
     "SliderSetting.qml",
     "icon.svg",
     "LICENSE",
-    "shaders/mist.frag.qsb",
     "shaders/mist.frag",
     "shaders/edge-mask.frag",
-    "shaders/edge-mask.frag.qsb"
+    "GpuLayer.qml",
+    "shaders/gpu"
+  ],
+  "shaders": [
+    {
+      "source": "shaders/gpu/spectrum.vert",
+      "output": "shaders/gpu/spectrum.vert.qsb"
+    },
+    {
+      "source": "shaders/gpu/spectrum.frag",
+      "output": "shaders/gpu/spectrum.frag.qsb"
+    },
+    {
+      "source": "shaders/gpu/profile.comp",
+      "output": "shaders/gpu/profile.comp.qsb"
+    },
+    {
+      "source": "shaders/mist.frag",
+      "output": "shaders/mist.frag.qsb",
+      "target": "quick"
+    },
+    {
+      "source": "shaders/edge-mask.frag",
+      "output": "shaders/edge-mask.frag.qsb",
+      "target": "quick"
+    }
   ]
 }

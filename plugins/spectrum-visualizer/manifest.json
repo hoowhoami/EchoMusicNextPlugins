@@ -21,10 +21,13 @@
       "ui.settings",
       "ui.state",
       "ui.surfaces",
-      "audio.spectrum"
+      "audio.spectrum",
+      "playback.clock",
+      "graphics.rhi",
+      "graphics.compute"
     ]
   },
-  "capabilities": ["audioSpectrum"],
+  "capabilities": ["audioSpectrum", "graphics"],
   "contexts": ["main"],
   "tags": ["频谱", "可视化"]
 }

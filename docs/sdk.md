@@ -110,7 +110,7 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 
 `ctx.ui.setState(JSON object)`发布最多1MiB的只读ui.state/stateChanged，供同一插件的设置与绘制组件共享私有偏好，不保存另一套播放器状态。`registerSurface(id,target,packageRelativeQml)`只支持playerbar.background、mini.background、lyrics.aboveControls三个原生位置；注入plugin/placement，宿主隐藏、最小化和停用时销毁挂载实例，重新显示按需创建。这不是任意改写宿主UI的接口。
 
-官方频谱插件沿用旧插件的五种模式、配色、可见性、采样与设置。HDR开关在graphics.hdr未提供时禁用并说明原因，未将SDR渲染标为HDR。
+官方频谱插件沿用旧插件的五种模式、配色、可见性、采样与设置。高级绘图已接入 ctx.graphics / EchoGpuSurface；HDR 默认关闭，局部输出不可用时禁用开关；GPU 绘图不改变宿主窗口。参见[GPU绘图](graphics.md)。
 
 2026-10-19：官方频谱使用Qt Quick Shapes CurveRenderer与GPU光晕/模糊/遮罩，保留源五种模式路径与配色；不使用Canvas.Image逐帧CPU栅格。普通柱状/波形随新帧更新，中心频谱暂停后保留衰减至不可见再停掉插值时钟；公开SDK契约和版本不变。
 
@@ -150,11 +150,7 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 
 ## GlyphRun 画布采样契约
 
-`graphics.glyphRun.canvas` 已完成正式 C 版 post-format Release 的 81 步增量构建；真实程序及搬迁后的已签名分发程序均通过 `sdk:check`。插件仍须协商该 feature，不能据作者类型或属性声明判断任意安装支持。
-
-正式 `GlyphRunCanvasRenderingTest` 在 DPR 1、DPR 2 主进程各 7/7：DPR 1 运行包含原固定语料的 528 帧（两种 DPR 各 264 帧），DPR 2 主进程另验 264 帧，原能量、二阶矩及重心门槛未放宽。40 代同窗口共享池回归中，DPR 2 有两次既定预算拒绝；实际排空至保留同一 pin 的账本后，完全相同输入各显式重交一次并恢复。128 MiB 上限未增加，不能把该结果写成 40 代零拒绝。
-
-真实 80 行场景的 DPR 1/2 资源检查已通过；这些锁屏、time=0 的准备及低 alpha 画面不替代活动正文、Fume↔Monet 双模式过渡或前台连续视觉。正文与双模式验收仍在补齐，前台连续视觉和安静 Release 性能须解锁后完成。正式模块、来源、日志及历史失败的边界见 [Fume 参考](folia/fume-reference.md)。
+插件须协商 `graphics.glyphRun.canvas` feature，并检查实际后端、当前 generation 的错误和就绪状态；作者类型及属性声明不代表当前设备已经完成渲染。接口行为与资源账本见下文，最新构建、专项和未覆盖项见 [GPU 迁移验证](folia/gpu-migration.md)。历史的 Fume 像素及预算恢复记录保留在 [Fume 参考](folia/fume-reference.md)，不能直接作为更新后程序的验收结论。
 
 `haloSampling` 为 `"static" | "canvas"`，默认 `"static"`，保留既有预采样正文 blur、legacy glow 与 halo 行为。canvas 提供清晰原生 ink 和最多三层独立 halos，非零 pose.blur / pose.glow 显式拒绝。`maximumRasterScale` 是父变换与 pose 合并后的逻辑最大采样缩放，有限范围 `(0,32]`，默认 32，窗口 DPR 另计。应按场景实际变换声明上界；超出上界或固定目标容量会报错，不会静默夹小效果。
 
@@ -167,3 +163,10 @@ canvas 的 `cacheBytes` 统计 item 独占 CPU 描述符；`gpuCacheBytes` 只�
 所有仍存活的 canvas 准备与渲染租约共用 128 MiB native 软件账本；只有唯一正在运行的准备任务保留 40 MiB scratch 租约，排队任务不各自预留这 40 MiB。取消不能提前扣除旧 worker 仍在使用的租约。渲染另受 32 MiB ink 和 32 MiB effects 预算约束，窗口共享页复用退休容量。
 
 GUI 结构与字段预检拒绝不替换已接收的 runs/metrics，并设置 `errorString`；后台准备、预算、RHI 能力或资源创建失败同样显式报错，使 `ready=false` 并回收相应资源，不能以空白假成功。修正输入后显式提交有效 runs 可重新准备，仍须检查错误和就绪状态。永久 CPU 回归只验证字体、代际、取消及账本行为，不能替代实际宿主导出、安装或 GPU 验收。
+2026-10-29：频谱改由宿主RHI API执行GPU插值与绘制；旧Shapes保留为不支持GPU/compute时的回退。着色器由发布工具生成，版本保持1.0.0。
+
+公开依赖目录、服务方法发现、变化订阅及公开命令注册/互调见[插件协作](plugin-cooperation.md)。已有 context 私有命令不会自动公开。
+
+播放时钟、按优先级撤销的临时主题、应用图标与完整文件标签见[呈现与元数据 API](presentation-services.md)。
+
+GPU资源、命令与生命周期见 [GPU提交](gpu-submissions.md)；主题目录、材质和浮窗见 [呈现服务](presentation-services.md)。

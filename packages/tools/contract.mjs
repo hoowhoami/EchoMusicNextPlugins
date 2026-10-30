@@ -46,6 +46,7 @@ export function rangeContains(range, version) {
 }
 
 const nativeScriptDefinitions = new Set([
+  'GpuData',
   'HostActionDefinition',
   'HostTitlebarActionDefinition',
   'HostPlayerbarActionDefinition',

@@ -1,0 +1,80 @@
+#version 440
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout(rgba16f, binding = 2) uniform image2D profile;
+layout(binding = 3) uniform sampler2D waveform;
+layout(std140, binding = 0) uniform Frame {
+  vec4 viewport;
+  vec4 outputInfo;
+  mat4 correction;
+}
+frame;
+layout(std140, binding = 1) uniform Params {
+  vec4 info;
+  vec4 options;
+  vec4 mist;
+  vec4 paint;
+  vec4 color0;
+  vec4 color1;
+  vec4 color2;
+  vec4 signalInfo;
+  vec4 bins[128];
+}
+params;
+float binAt(float position) {
+  float p = clamp(position, 0.0, max(0.0, params.info.z - 1.0));
+  int a = int(floor(p));
+  int b = min(int(params.info.z) - 1, a + 1);
+  return mix(params.bins[a / 4][a % 4], params.bins[b / 4][b % 4], fract(p));
+}
+float mistPoint(int index, int count) {
+  float center = float(clamp(index, 0, count - 1)) / float(count - 1) *
+                 max(0.0, params.info.z - 1.0);
+  float radius = max(1.0, params.info.z / float(count) * 1.8);
+  float weighted = 0.0, total = 0.0;
+  for (int j = max(0, int(floor(center - radius)));
+       j <= min(int(params.info.z) - 1, int(ceil(center + radius))); ++j) {
+    float w = max(0.0, 1.0 - abs(float(j) - center) / radius * 0.72);
+    weighted += binAt(float(j)) * w;
+    total += w;
+  }
+  return pow(weighted / max(total, 1.0), 0.78);
+}
+void main() {
+  int i = int(gl_GlobalInvocationID.x);
+  if (i >= 4096)
+    return;
+  int count =
+      min(512, max(2, int(floor(params.info.x /
+                                (clamp(params.paint.y, 1.0, 8.0) + 3.0)))));
+  float p = abs(float(i) / float(count - 1) * 2.0 - 1.0) *
+            max(0.0, params.info.z - 1.0);
+  float target = clamp(
+      (binAt(p - 0.65) + 2.0 * binAt(p) + binAt(p + 0.65)) * 0.25, 0.0, 1.0);
+  float previous = i < 512 ? imageLoad(profile, ivec2(i, 0)).r : 0.0;
+  float next = target > previous ? mix(previous, target, 0.4)
+                                 : mix(target, previous, 0.88);
+
+  int points = int(round(clamp(params.info.x / 18.0, 18.0, 44.0)));
+  float cloud = 0.0;
+  if (i < points)
+    cloud = 0.2 * mistPoint(i - 1, points) + 0.6 * mistPoint(i, points) +
+            0.2 * mistPoint(i + 1, points);
+  float low = 0.0, high = 0.0;
+  float columns = min(frame.viewport.x, 4096.0);
+  if (params.info.w > 1.0 && float(i) < columns) {
+    int start =
+        max(0, int(floor((float(i) - 0.5) / columns * (params.info.w - 1.0))));
+    int end =
+        min(int(params.info.w) - 1,
+            int(ceil((float(i) + 0.5) / columns * (params.info.w - 1.0))));
+    low = 1.0;
+    high = -1.0;
+    for (int j = start; j <= end; ++j) {
+      float value = texelFetch(waveform, ivec2(j % 4096, j / 4096), 0).r;
+      low = min(low, value);
+      high = max(high, value);
+    }
+  }
+  imageStore(profile, ivec2(i, 0),
+             vec4(i < count ? next : 0.0, cloud, low, high));
+}

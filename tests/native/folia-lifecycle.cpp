@@ -1,6 +1,7 @@
 // Actual archive installation, PCM and production PlaybackPage. No replacement
 // player, renderer, clock, analysis provider or authored model result.
 #include "EchoPluginAppearance.h"
+#include "EchoPluginGraphics.h"
 #include "EchoPluginText.h"
 #include "EchoPluginViewContext.h"
 #include "ImageCapture.h"
@@ -55,6 +56,21 @@ bool gone(const QList<QPointer<QObject>> &values) {
   return std::all_of(values.begin(), values.end(),
                      [](const auto &value) { return value.isNull(); });
 }
+std::shared_ptr<EchoMusic::GpuMemoryBudget> gpuBudget(QObject *root) {
+  auto *scope =
+      root ? root->property("plugin").value<EchoMusic::EchoPluginContext *>()
+           : nullptr;
+  return scope && scope->graphics() ? scope->graphics()->memoryBudget()
+                                    : nullptr;
+}
+bool gpuDrained(const std::shared_ptr<EchoMusic::GpuMemoryBudget> &budget) {
+  return !budget ||
+         (budget->native.used.load() == 0 && budget->targets.used.load() == 0 &&
+          budget->readbacks.used.load() == 0 &&
+          budget->submissions.used.load() == 0 &&
+          budget->pendingSubmissions.load() == 0 &&
+          budget->objects.load() == 0 && budget->surfaces.load() == 0);
+}
 QJsonObject resources(QObject *root) {
   // QObject lifetimes and the capture allocator are observable here. These
   // counters do not assert that driver-wide GPU caches or memory are zero.
@@ -73,17 +89,26 @@ QJsonObject resources(QObject *root) {
       bytes += object->property("cacheBytes").toLongLong();
   }
   const auto capture = EchoMusic::ImageCapture::budgetSnapshot();
-  return {{"objects", objects(root).size()},
-          {"runningFrames", frames},
-          {"workers", workers},
-          {"glyphs", glyphs},
-          {"floatTextures", textures},
-          {"pointMeshes", meshes},
-          {"reportedCacheBytes", double(bytes)},
-          {"captureJobs", capture.pendingJobs},
-          {"captureLeases", capture.leaseCount},
-          {"captureReservedBytes", double(capture.reservedBytes)},
-          {"captureEncodedBytes", double(capture.encodedBytes)}};
+  const auto gpu = gpuBudget(root);
+  return {
+      {"objects", objects(root).size()},
+      {"runningFrames", frames},
+      {"workers", workers},
+      {"glyphs", glyphs},
+      {"floatTextures", textures},
+      {"pointMeshes", meshes},
+      {"reportedCacheBytes", double(bytes)},
+      {"gpuNativeBytes", gpu ? double(gpu->native.used.load()) : 0},
+      {"gpuTargetBytes", gpu ? double(gpu->targets.used.load()) : 0},
+      {"gpuReadbackBytes", gpu ? double(gpu->readbacks.used.load()) : 0},
+      {"gpuSubmissionBytes", gpu ? double(gpu->submissions.used.load()) : 0},
+      {"gpuPendingSubmissions", gpu ? gpu->pendingSubmissions.load() : 0},
+      {"gpuObjects", gpu ? gpu->objects.load() : 0},
+      {"gpuSurfaces", gpu ? gpu->surfaces.load() : 0},
+      {"captureJobs", capture.pendingJobs},
+      {"captureLeases", capture.leaseCount},
+      {"captureReservedBytes", double(capture.reservedBytes)},
+      {"captureEncodedBytes", double(capture.encodedBytes)}};
 }
 bool captureDrained() {
   const auto state = EchoMusic::ImageCapture::budgetSnapshot();
@@ -283,6 +308,25 @@ ApplicationWindow {
         !r->property("renderError").toString().isEmpty() ||
         r->property("busy").toBool())
       return false;
+    // Default background is Latent. Prove the actual new GPU sources rendered
+    // before accepting the lyric frame; a never-allocated all-zero budget is
+    // not evidence that close/drain works.
+    if (mode != "still") {
+      auto *background = visual(skin(), "foliaLatentBackground");
+      const auto gpu = gpuBudget(skin());
+      const auto reported =
+          background ? background->property("gpuStatus") : QVariant{};
+      const auto status = reported.metaType() == QMetaType::fromType<QJSValue>()
+                              ? reported.value<QJSValue>().toVariant().toMap()
+                              : reported.toMap();
+      if (!background || !background->property("renderReady").toBool() ||
+          !background->property("errorString").toString().isEmpty() ||
+          !status.value("available").toBool() ||
+          status.value("backend").toString().isEmpty() || !gpu ||
+          gpu->native.used.load() <= 0 || gpu->targets.used.load() <= 0 ||
+          gpu->objects.load() <= 0 || gpu->surfaces.load() <= 0)
+        return false;
+    }
     if (mode == "still") {
       auto *text = visual(qobject_cast<QQuickItem *>(r), "stillPrimary1");
       return text && text->isVisible() &&
@@ -395,13 +439,15 @@ private slots:
     QVERIFY2(f.awaitRendered("classic", 45000),
              qPrintable(f.status("classic")));
     auto retired = retained(f.skin());
+    auto oldGpu = gpuBudget(f.skin());
     QPointer<EchoMusic::EchoPluginContext> oldScope =
         f.skin()->property("plugin").value<EchoMusic::EchoPluginContext *>();
     QVERIFY(oldScope && oldScope->active());
     QVERIFY(f.host.theme.extensions()->chooseSkin("cover"));
     QTRY_VERIFY(!f.skin());
-    QTRY_VERIFY_WITH_TIMEOUT(
-        gone(retired) && oldScope.isNull() && captureDrained(), 10000);
+    QTRY_VERIFY_WITH_TIMEOUT(gone(retired) && oldScope.isNull() &&
+                                 captureDrained() && gpuDrained(oldGpu),
+                             10000);
     QCOMPARE(activation->findChildren<EchoMusic::EchoPluginContext *>().size(),
              0);
     QVERIFY2(f.awaitRendered("native", 15000),
@@ -414,12 +460,14 @@ private slots:
     QVERIFY2(f.awaitRendered("classic", 45000),
              qPrintable(f.status("classic")));
     retired = retained(f.skin());
+    oldGpu = gpuBudget(f.skin());
     oldScope =
         f.skin()->property("plugin").value<EchoMusic::EchoPluginContext *>();
     QVERIFY(f.host.runtime.setEnabled(f.installation, false));
     QTRY_COMPARE_WITH_TIMEOUT(f.host.runtime.state(f.installation),
                               PluginRuntime::Disabled, 15000);
-    QTRY_VERIFY(gone(retired) && oldScope.isNull() && captureDrained());
+    QTRY_VERIFY(gone(retired) && oldScope.isNull() && captureDrained() &&
+                gpuDrained(oldGpu));
     QCOMPARE(f.host.theme.extensions()->selectedSkin(), QString("cover"));
     QCOMPARE(f.host.theme.extensions()->entries("skin").size(), 0);
     QVERIFY2(f.awaitRendered("native", 15000),
@@ -497,13 +545,14 @@ private slots:
       }
       record(mode + ":visible", f.skin());
       const auto retired = retained(f.skin());
+      const auto retiredGpu = gpuBudget(f.skin());
       QPointer<EchoMusic::EchoPluginContext> scope =
           f.skin()->property("plugin").value<EchoMusic::EchoPluginContext *>();
       QVERIFY(QMetaObject::invokeMethod(f.root.get(), "closePlayback"));
       QVERIFY2(awaitEvent(
                    [&] {
                      return !f.skin() && gone(retired) && scope.isNull() &&
-                            captureDrained();
+                            captureDrained() && gpuDrained(retiredGpu);
                    },
                    10000),
                qPrintable(mode + " close/drain"));

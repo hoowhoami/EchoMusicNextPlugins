@@ -467,6 +467,24 @@ ApplicationWindow {
     if (!ready) {
       auto *renderer =
           stage ? nativeObject(stage->property("renderer")) : nullptr;
+      auto *actor = currentActor(stage);
+      auto *foreground =
+          skin ? visual(skin, "foliaDynamicPresentationHost") : nullptr;
+      auto *background = skin ? visual(skin, "foliaBackgroundHost") : nullptr;
+      qInfo()
+          << "Initial readiness predicates"
+          << QJsonObject{
+                 {"windowActive", window->isActive()},
+                 {"applicationState", int(QGuiApplication::applicationState())},
+                 {"layers", stage ? stage->property("layerCount").toInt() : -1},
+                 {"waits",
+                  stage && stage->property("transitionWaits").toBool()},
+                 {"actorHasFrame",
+                  actor && actor->property("hasFrame").toBool()},
+                 {"rendererReady",
+                  renderer && renderer->property("renderReady").toBool()},
+                 {"foregroundZ", foreground ? foreground->z() : -1},
+                 {"backgroundZ", background ? background->z() : -1}};
       qInfo() << "Initial readiness failure" << window->visibility()
               << window->isExposed()
               << (skin ? skin->property("presentationActive") : QVariant())

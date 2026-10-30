@@ -44,7 +44,12 @@ TestCase {
         const page = foliaTestHandoffFixture.page, player = page.player;
         compare(String(foliaTestHandoffFixture.originalBcover), "");
         command(player.seek(34000));
-        tryVerify(() => player.transition.valid && player.transition.phase === "queued", 10000);
+        try {
+            tryVerify(() => player.transition.valid && player.transition.phase === "queued", 10000);
+        } finally {
+            if (!(player.transition.valid && player.transition.phase === "queued"))
+                console.info("Native queued cue diagnostics", JSON.stringify({valid: player.transition.valid, phase: player.transition.phase, progress: player.transition.progress, positionMs: player.positionMs, title: player.title, playing: player.playing, loading: player.loading, observed: foliaTestHandoffFixture.observed}));
+        }
         const epoch = player.transition.epoch;
         compare(player.transition.outgoing.id, "Outgoing-A");
         compare(player.transition.incoming.id, "Incoming-B");
@@ -108,6 +113,7 @@ TestCase {
                 live: view.live
             }
             Backgrounds.BackgroundPresentation {
+                graphics: foliaTestHandoffFixture.plugin.graphics
                 id: backdrop
                 z: 0
                 anchors.fill: parent
@@ -235,7 +241,12 @@ TestCase {
         verify(backgroundA !== null);
         command(player.seek(34000));
         command(player.play());
-        tryVerify(() => player.transition.valid && player.transition.phase === "queued", 10000);
+        try {
+            tryVerify(() => player.transition.valid && player.transition.phase === "queued", 10000);
+        } finally {
+            if (!(player.transition.valid && player.transition.phase === "queued"))
+                console.info("Native queued cue diagnostics", JSON.stringify({valid: player.transition.valid, phase: player.transition.phase, progress: player.transition.progress, positionMs: player.positionMs, title: player.title, playing: player.playing, loading: player.loading, observed: foliaTestHandoffFixture.observed}));
+        }
         command(player.pause());
         tryCompare(player, "playing", false);
         verify(scene.dynamic.songHandoff !== null);

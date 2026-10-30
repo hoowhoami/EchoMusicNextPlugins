@@ -22,3 +22,5 @@ build先严格类型检查，再bundling/transpile，资源仅复制config.asset
 本地构建清单在 `echo-plugin.build.json`，与公开索引分开。`build-index` 构建其中明确列出的本地插件；`prepare-index` 更新同仓插件的 artifacts 与索引，保留第三方条目；`check-index` 不读取第三方本地源码；`check-published` 联网校验每条作者清单和实际包。频谱仍在本仓库维护，第三方可独立维护仓库。生成入口只需放在 .echomod 内。
 
 `test-host <package.echomod>` 直接验证独立作者的实际包，无需官方源或本地构建清单；省略包路径才批量构建本仓库插件。索引类型为 SDK 的 `PluginSourceIndex` / `PluginSourceEntry`。
+
+GPU 着色器可在 plugin.config.json 的 shaders 中声明 source/output/target（rhi 或 quick），由匹配宿主 Qt 版本的 qsb 编译并验证跨后端包。设置 ECHO_QSB 或将 qsb 放入 PATH。编译失败保留旧产物，包与索引仍执行哈希校验。详见[GPU 绘图](../../docs/graphics.md)。

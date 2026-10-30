@@ -10,7 +10,7 @@
 
 ## 本地验证
 
-在仓库根目录使用 Node.js 24：
+在仓库根目录使用 Node.js 24，并安装匹配宿主的 Qt 6.12.0 Shader Tools：将 qsb 加入 PATH，或设置 `ECHO_QSB=/absolute/Qt/bin/qsb`。Latent 的 shader 源码由正式构建烘焙，源码目录无需生成 QSB。
 
 ```sh
 npm run check
@@ -20,7 +20,7 @@ npx echo-plugin build plugins/folia-lyrics-skin --out dist
 
 仓库的 `echo-plugin.build.json` 明确列出频谱和 Folia 两个本地插件；`npm run build` 构建这两个来源。公开 `echo-plugins.json` 可另含独立作者仓库，不从其中推断本地构建集合。`prepare:source` 由工具生成本地包和索引字段，运行入口只须进入 `.echomod`；`check:published` 则读取索引所指的远端清单与包，未推送候选不能以本地构建代替这项检查。
 
-包需要宿主分支提供的 `text.segmentation`（ICU 78.3 / Unicode 17）和 `text.glyphs` 等能力。安装缺少能力的旧宿主会明确拒绝。动态样式需要硬件图形后端；软件场景图显示恢复提示，可在页内切换静止样式。作者契约须从本次真实宿主同步，不能删除 manifest 能力绕过检查。
+包需要宿主分支提供的 `text.segmentation`（ICU 78.3 / Unicode 17）、`text.glyphs` 和 `graphics.rhi` 等能力。安装缺少能力的旧宿主会明确拒绝。动态样式需要硬件图形后端；软件场景图显示恢复提示，可在页内切换静止样式。作者契约须从本次真实宿主同步，不能删除 manifest 能力绕过检查。
 
 组件测试使用 Qt 6.12 和真实宿主静态模块；macOS GPU 像素检查使用 Cocoa/Metal：
 
@@ -28,7 +28,7 @@ npx echo-plugin build plugins/folia-lyrics-skin --out dist
 npm run test:folia:qml -- --qt-bin /absolute/Qt/bin --host-build /absolute/host/build/release
 ```
 
-组件测试不代替原生验收。已有 Release 构建及 `echo-plugin-runtime-test` 链接依赖时，可复用它的实际库验证本插件包：
+该入口从实际构建包加载 QML 与 QSB；`--qt-bin` 也为未显式设置 ECHO_QSB 的测试提供匹配编译器。组件测试不代替原生验收。已有 Release 构建及 `echo-plugin-runtime-test` 链接依赖时，可复用它的实际库验证本插件包：
 
 ```sh
 python3 scripts/test-folia-host.py --host-build /absolute/EchoMusicNext/build/release \

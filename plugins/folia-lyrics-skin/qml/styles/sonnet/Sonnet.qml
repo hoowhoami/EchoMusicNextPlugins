@@ -174,7 +174,7 @@ Item {
             refresh();
         } catch (error) {
             release();
-            _error = String(error.message || error);
+            _error = "Sonnet receive: " + String(error.message || error) + (error.stack ? "\n" + String(error.stack) : "");
         }
     }
     function advanceHandover(): void {
@@ -238,7 +238,7 @@ Item {
                 throw Error('Sonnet native resources exceed 384 MiB');
         } catch (error) {
             release();
-            _error = String(error.message || error);
+            _error = "Sonnet frame: " + String(error.message || error) + (error.stack ? "\n" + String(error.stack) : "");
         }
     }
     function schedule(): void {

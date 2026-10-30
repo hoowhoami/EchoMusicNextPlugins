@@ -2,6 +2,8 @@ import { mkdir } from 'node:fs/promises';
 import { parseArgs } from 'node:util';
 import { spawnSync } from 'node:child_process';
 import { build } from 'esbuild';
+import path from 'node:path';
+import { buildPackage } from '../packages/tools/packages.mjs';
 
 const { values } = parseArgs({
   options: {
@@ -24,6 +26,16 @@ await build({
   format: 'esm',
   target: 'es2016',
 });
+// Quick shader URLs resolve beside the packaged QML. Use the actual baker
+// output, rather than copying generated binaries back into author sources.
+process.env.ECHO_QSB ??= path.resolve(
+  values['qt-bin'],
+  process.platform === 'win32' ? 'qsb.exe' : 'qsb',
+);
+const pluginRoot = await buildPackage(
+  path.resolve('plugins/folia-lyrics-skin'),
+  path.resolve('build/folia-qml/packages'),
+);
 const result = spawnSync(
   values.python,
   [
@@ -34,6 +46,8 @@ const result = spawnSync(
     values['host-build'],
     '--input',
     'tests/qml',
+    '--plugin-root',
+    pluginRoot,
     '--platform',
     values.platform,
   ],

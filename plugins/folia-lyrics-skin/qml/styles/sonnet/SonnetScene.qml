@@ -26,7 +26,7 @@ Item{
             if(items.length!==_actors.length){clear();const actors=[];for(const item of items){const component=item.kind==="glyph"?glyphComponent:vectorComponent;const actor=component.createObject(root,{descriptor:item});if(!actor)throw Error("Sonnet source actor creation failed");actors.push(actor);_actors=actors.slice();}}
             for(let index=0;index<items.length;++index){_actors[index].z=index;_actors[index].updateFrame(items[index]);}
             if(cacheBytes>128*1024*1024)throw Error("Sonnet native glyph caches exceed 128 MiB");
-        }catch(error){clear();_error=String(error.message||error);}
+        }catch(error){clear();_error="Sonnet scene actor: "+String(error.message||error)+(error.stack?"\n"+String(error.stack):"");}
     }
     onItemsChanged:sync()
     onEpochChanged:sync()

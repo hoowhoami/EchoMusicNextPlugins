@@ -7,6 +7,8 @@ import math
 import os
 from pathlib import Path
 import shlex
+import shutil
+import tempfile
 import subprocess
 
 from folia_owned_process import run_owned_test
@@ -16,14 +18,24 @@ parser.add_argument("--host-build", required=True, type=Path)
 parser.add_argument("--qt-bin", required=True, type=Path)
 parser.add_argument("--input", required=True, type=Path)
 parser.add_argument(
+    "--plugin-root",
+    type=Path,
+    help="Run original QML tests against a built Folia package, including baked shaders",
+)
+parser.add_argument(
     "--output-dir", type=Path, help="Separate runner for parallel scoped tests"
 )
 parser.add_argument("--platform", choices=["offscreen", "cocoa"], default="cocoa")
 parser.add_argument(
-    "--timeout", type=float, default=300, help="Positive total test-process limit in seconds"
+    "--timeout",
+    type=float,
+    default=300,
+    help="Positive total test-process limit in seconds",
 )
 parser.add_argument(
-    "--compile-only", action="store_true", help="Link the runner without opening a test window"
+    "--compile-only",
+    action="store_true",
+    help="Link the runner without opening a test window",
 )
 args = parser.parse_args()
 if not math.isfinite(args.timeout) or args.timeout <= 0:
@@ -87,11 +99,32 @@ subprocess.run(link, cwd=host_build, check=True)
 if args.compile_only:
     print(executable)
     raise SystemExit(0)
+test_input = args.input.resolve()
+plugin_root = args.plugin_root.resolve() if args.plugin_root else None
+if plugin_root:
+    manifest = json.loads((plugin_root / "manifest.json").read_text())
+    if manifest.get("id") != "folia-lyrics-skin":
+        raise ValueError("--plugin-root must be the built Folia package")
+    # Keep the tests and their relative imports unchanged. The plugin in this
+    # isolated view is the actual baker output, never an ad-hoc source QSB copy.
+    relative_input = test_input.relative_to(root / "tests")
+    view = Path(tempfile.mkdtemp(prefix="built-plugin-view-", dir=output))
+    shutil.copytree(
+        root / "tests", view / "tests", ignore=shutil.ignore_patterns("__pycache__")
+    )
+    (view / "plugins").mkdir()
+    (view / "plugins/folia-lyrics-skin").symlink_to(
+        plugin_root, target_is_directory=True
+    )
+    (view / "build").symlink_to(root / "build", target_is_directory=True)
+    test_input = view / "tests" / relative_input
 environment = {**os.environ, "QT_QPA_PLATFORM": args.platform}
+if plugin_root:
+    environment["FOLIA_GPU_ASSET_ROOT"] = str(plugin_root)
 if args.platform == "cocoa":
     environment["QSG_RHI_BACKEND"] = "metal"
 result = run_owned_test(
-    [str(executable), "-input", str(args.input.resolve()), "-o", "-,txt"],
+    [str(executable), "-input", str(test_input), "-o", "-,txt"],
     cwd=root,
     env=environment,
     timeout=args.timeout,

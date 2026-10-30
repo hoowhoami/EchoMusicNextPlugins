@@ -49,6 +49,13 @@ WorkerScript.onMessage = function (value) {
     } else if (request.phase === 'measurements' && request.sceneToken === sceneToken)
       send(job.accept(request.measurements, request.pieces));
   } catch (error) {
-    send({ error: String(error.message || error) });
+    send({
+      error:
+        'Sonnet worker ' +
+        request.phase +
+        ': ' +
+        String(error.message || error) +
+        (error.stack ? '\n' + String(error.stack) : ''),
+    });
   }
 };

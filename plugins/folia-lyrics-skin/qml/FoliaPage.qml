@@ -247,6 +247,7 @@ Item {
             styleWaits: root.dynamicPresentation ? root.dynamicPresentation.transitionWaits : false
             settings: root.settings
             assetsService: root.plugin.assets
+            graphics: root.plugin.graphics
             customBackgroundImages: backgroundAssets.assets
             coverUrl: root.dynamicPresentation ? root.dynamicPresentation.shownCoverUrl : root.page.player.coverUrl
             seed: root.dynamicPresentation ? root.dynamicPresentation.backgroundSeed : root.page.snapshot.track ? root.page.snapshot.track.id + ":" + root.page.snapshot.track.hash : root.revision

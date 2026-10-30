@@ -4,7 +4,6 @@ import { resolveFoliaReference } from './folia-reference.mjs';
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { transform } from 'esbuild';
 import { format, resolveConfig } from 'prettier';
@@ -200,22 +199,114 @@ void main(){
  fragColor=color*qt_Opacity;
 }
 `;
-const qt =
-  process.env.FOLIA_QT_BIN ||
-  path.resolve(root, '../EchoMusicNext/build/qt-official/6.12.0/macos/bin');
+// Keep the former Quick sources as exact source comparisons. They are never baked or consumed.
+const comparisons = {};
 for (const [name, body] of [
   ['mesh', mesh + rawMesh],
   ['dithering', dither + rawDither],
   ['latent', composite],
 ]) {
-  const shader = path.join(output, name + '.frag');
-  await writeFile(shader, prelude + body);
-  execFileSync(
-    path.join(qt, 'qsb'),
-    ['--glsl', '150,300es', '--hlsl', '50', '--msl', '12', '-o', shader + '.qsb', shader],
-    { stdio: 'inherit' },
+  comparisons[name] = prelude + body;
+  await writeFile(path.join(output, name + '.frag'), comparisons[name]);
+}
+
+// Source-owned RHI ABI and boundary adapters. QSB generation belongs exclusively to plugin.config.json.
+await mkdir(path.join(output, 'gpu'), { recursive: true });
+await writeFile(
+  path.join(output, 'gpu/frame.glsl'),
+  `// EchoGpuSurface public frame ABI; not the Qt Quick ShaderEffect uniform block.
+layout(std140,binding=0) uniform Frame {
+ vec4 viewport;
+ vec4 outputInfo;
+ mat4 correction;
+} frame;
+`,
+);
+await writeFile(
+  path.join(output, 'gpu/parameters.glsl'),
+  `// 13 std140 vec4 slots, packed by ../gpu.mjs. Colors are premultiplied sRGB.
+layout(std140,binding=1) uniform Parameters {
+ vec4 targetInfo;
+ vec4 animation;
+ vec4 effect;
+ vec4 grade;
+ vec4 backgroundColor;
+ vec4 ditherBack;
+ vec4 ditherFront;
+ vec4 mesh0; vec4 mesh1; vec4 mesh2; vec4 mesh3; vec4 mesh4; vec4 mesh5;
+};
+#define resolution targetInfo.xy
+#define pixelRatio targetInfo.z
+#define ditherTime animation.x
+#define meshTime animation.y
+#define pixelSize animation.z
+#define distortion animation.w
+#define swirl effect.x
+#define ditherOpacity effect.y
+#define ditherScale effect.z
+#define meshScale effect.w
+#define saturation grade.x
+#define brightness grade.y
+#define displayMode grade.z
+#define overlayOpacity grade.w
+vec4 straightColor(vec4 c){return c.a>0.?vec4(c.rgb/c.a,c.a):vec4(0.);}
+vec4 meshColor(int i){if(i==0)return straightColor(mesh0);if(i==1)return straightColor(mesh1);if(i==2)return straightColor(mesh2);if(i==3)return straightColor(mesh3);if(i==4)return straightColor(mesh4);return straightColor(mesh5);}
+`,
+);
+await writeFile(
+  path.join(output, 'gpu/fullscreen.vert'),
+  `#version 440
+#extension GL_GOOGLE_include_directive : require
+#include "frame.glsl"
+layout(location=0) out vec2 uv;
+void main(){
+ vec2 p=vec2((gl_VertexIndex<<1)&2,gl_VertexIndex&2);
+ uv=p; // Logical top-left origin on every RHI backend.
+ gl_Position=frame.correction*vec4(p.x*2.-1.,1.-p.y*2.,0.,1.);
+}
+`,
+);
+await writeFile(
+  path.join(output, 'gpu/color.glsl'),
+  `// Paper sources are encoded premultiplied sRGB. EchoGpuSurface accepts linear premultiplied RGBA.
+// Its SDR output pass encodes back to RGBA8, preserving the original Quick source sampling space.
+vec3 srgbToLinear(vec3 c){
+ return mix(c/12.92,pow((c+vec3(.055))/1.055,vec3(2.4)),step(vec3(.04045),c));
+}
+vec4 sourceToLinear(vec4 color){
+ vec3 straight=color.a>0.?color.rgb/color.a:vec3(0.);
+ return vec4(srgbToLinear(straight)*color.a,color.a);
+}
+`,
+);
+const rhiPrelude = (source) => `#version 440
+#extension GL_GOOGLE_include_directive : require
+// RHI adaptation of ../${source}; Paper 0.0.80 Apache-2.0, Folia a8da4437 AGPL-3.0-only.
+// The algorithm below is retained verbatim; only bindings, entry coordinates and output ABI differ.
+#include "parameters.glsl"
+#include "color.glsl"
+layout(location=0) in vec2 uv;
+layout(location=0) out vec4 fragColor;
+`;
+for (const [name, marker, sample] of [
+  ['mesh', '#define m_TWO_PI', 'm_sample((paperUV-.5)*resolution/min(resolution.x,resolution.y))'],
+  ['dithering', 'vec3 d_permute', 'd_sample(floor(paperUV*resolution)+vec2(.5))'],
+]) {
+  const original = comparisons[name];
+  const algorithm = original.slice(original.indexOf(marker), original.lastIndexOf('void main()'));
+  await writeFile(
+    path.join(output, 'gpu', name + '.frag'),
+    rhiPrelude(name + '.frag') +
+      algorithm +
+      `void main(){
+ vec2 paperUV=vec2(uv.x,1.-uv.y);
+ fragColor=sourceToLinear(${sample});
+}
+`,
   );
 }
+// Full-resolution Quick composition preserves the original CSS color space and opacity ABI.
+await writeFile(path.join(output, 'gpu/composition.frag'), comparisons.latent);
 for (const [f, n] of [
   ['LICENSE', 'PAPER-LICENSE.txt'],
   ['NOTICE', 'PAPER-NOTICE.txt'],

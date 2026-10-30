@@ -4,6 +4,8 @@
 
 ## Latent（隐现）
 
+2026-10-30 更新：Latent 已改接插件持有的两个有界 RHI 源和 Quick 最终合成，源码生成与正式 QSB 烘焙分离；当前实现、资源账本及新鲜验证见 [GPU 迁移边界](gpu-migration.md)。下述 2026-10-28 纹理用量与原生数据为旧链路历史记录。新链路在同一最新宿主上与旧正式包重新比较了 DPR1/2 共 18 帧：抖动单层逐像素一致，网格/混合平均单通道差不超过 0.0183、最大差 2/255。它们只证明该切片受控输入，没有替代前台性能或全部样式验收。
+
 源为 `backgrounds/latent/LatentBackground.tsx`、`tuning.ts`、`types.ts`、`colorPalette.ts` 和锁定的 Paper `0.0.80`。构建脚本提取原始 shader/helper/defaults，生成 QSB 与源 SHA；运行时没有浏览器、DOM、Canvas 或 Node。
 
 保留原始 mesh+dithering 两层、soft-light、滤镜、尺度、动态速度/能量/起音响应、暂停减速和全部 14 项设置。每层沿源的 `1280×720` 像素面积预算缩放，两张 RGBA8 GPU 纹理总计约 7.4 MB；这只限制背景源面，不降低歌词或窗口分辨率。减少动效冻结时间，隐藏卸载组件。封面由宿主受控解码，原始 weighted median-cut 在 Worker 中提取颜色。

@@ -42,9 +42,10 @@
       "graphics.glyphRun.canvas",
       "graphics.pointMesh",
       "graphics.shaderComposition",
-      "graphics.imageCapture"
+      "graphics.imageCapture",
+      "graphics.rhi"
     ]
   },
-  "capabilities": ["lyricsPage", "audioSpectrum"],
+  "capabilities": ["lyricsPage", "audioSpectrum", "graphics"],
   "contexts": ["main"]
 }

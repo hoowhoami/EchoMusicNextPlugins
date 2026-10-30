@@ -13,6 +13,7 @@ TestCase {
     Component {
         id: background
         BackgroundPresentation {
+            graphics: foliaTestPlugin.graphics
             width: 640
             height: 480
             settings: ({

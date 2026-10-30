@@ -81,7 +81,7 @@ ColumnLayout {
                 }
                 Label {
                     Layout.fillWidth: true
-                    text: settingsRoot.status.running ? "正在根据当前播放音频的频谱数据实时绘制" : settingsRoot.status.reason || "开启任一显示位置后，将按需订阅当前播放音频的频谱数据"
+                    text: settingsRoot.status.running ? (settingsRoot.plugin.graphics.capabilities.available ? settingsRoot.plugin.graphics.capabilities.backend + " GPU 实时绘制频谱" : "正在根据当前播放音频的频谱数据实时绘制") : settingsRoot.status.reason || "开启任一显示位置后，将按需订阅当前播放音频的频谱数据"
                     font: Theme.font(12, Theme.regularWeight)
                     color: Theme.floatingSecondaryText
                     wrapMode: Text.Wrap
@@ -386,12 +386,13 @@ ColumnLayout {
                     Layout.fillWidth: true
                     visible: true
                     title: "HDR 峰值高光"
-                    hint: "当前宿主未提供 HDR 绘图能力，保留普通频谱"
+                    hint: settingsRoot.plugin.graphics.capabilities.localHdrSupported === true ? "仅为频谱开启 HDR 高光，不改变普通界面" : "当前嵌入式画布不支持局部 HDR 输出"
                     switchRow: true
                     editor: Component {
                         EchoSwitch {
-                            checked: !!settingsRoot.s.hdrHighlights
-                            enabled: settingsRoot.plugin.supports("graphics.hdr")
+                            objectName: "spectrumHdrSwitch"
+                            checked: !!settingsRoot.s.hdrHighlights && settingsRoot.plugin.graphics.capabilities.localHdrSupported === true
+                            enabled: settingsRoot.plugin.graphics.capabilities.localHdrSupported === true
                             Accessible.name: "HDR 峰值高光"
                             onToggled: settingsRoot.patch("hdrHighlights", checked)
                         }
@@ -410,7 +411,7 @@ ColumnLayout {
                             stepSize: 5
                             suffix: "%"
                             value: Number(settingsRoot.s.hdrIntensity)
-                            enabled: settingsRoot.s.hdrHighlights && settingsRoot.plugin.supports("graphics.hdr")
+                            enabled: settingsRoot.s.hdrHighlights && settingsRoot.plugin.graphics.capabilities.localHdrSupported === true
                             onCommitted: nextValue => settingsRoot.patch("hdrIntensity", nextValue)
                         }
                     }
