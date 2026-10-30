@@ -1,3 +1,7 @@
 * text=auto eol=lf
 
 *.qsb binary
+
+# Preserve the original bytes used by third-party source and license manifests.
+plugins/folia-lyrics-skin/**/*LICENSE*.txt -text
+source/folia-reference/** -text

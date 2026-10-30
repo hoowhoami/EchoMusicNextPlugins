@@ -1,5 +1,11 @@
 {
   "singleQuote": true,
   "printWidth": 100,
-  "trailingComma": "all"
+  "trailingComma": "all",
+  "overrides": [
+    {
+      "files": "plugins/**/qml/**/*.mjs",
+      "options": { "trailingComma": "es5" }
+    }
+  ]
 }

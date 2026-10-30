@@ -4,3 +4,5 @@ build/
 .DS_Store
 .planning/
 *.tgz
+__pycache__/
+*.py[cod]

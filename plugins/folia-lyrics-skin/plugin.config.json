@@ -1,0 +1,23 @@
+{
+  "entry": "src/entry.ts",
+  "assets": ["qml", "assets", "LICENSE", "THIRD_PARTY_NOTICES.md", "README.md"],
+  "shaders": [
+    {
+      "source": "qml/backgrounds/latent/gpu/fullscreen.vert",
+      "output": "qml/backgrounds/latent/gpu/fullscreen.vert.qsb"
+    },
+    {
+      "source": "qml/backgrounds/latent/gpu/mesh.frag",
+      "output": "qml/backgrounds/latent/gpu/mesh.frag.qsb"
+    },
+    {
+      "source": "qml/backgrounds/latent/gpu/dithering.frag",
+      "output": "qml/backgrounds/latent/gpu/dithering.frag.qsb"
+    },
+    {
+      "source": "qml/backgrounds/latent/gpu/composition.frag",
+      "output": "qml/backgrounds/latent/gpu/composition.frag.qsb",
+      "target": "quick"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+BudouX 0.9.3
+Copyright 2021 Google LLC
+https://github.com/google/budoux
+Apache-2.0. Parser and Japanese model only; no HTML processor or other language models are included.

@@ -8,10 +8,13 @@ EchoMusicNext的独立插件仓库：公开类型SDK、开发工具、文档、�
 
 ```sh
 npm ci --ignore-scripts
+npm ci --prefix source/folia-reference --ignore-scripts --no-audit --no-fund
 npm run check
 npm test
 npm run build
 ```
+
+Folia 的源码对照测试使用 `source/folia-reference` 中的独立锁。第二步将 45 个构建和验收依赖安装到该目录，不加入插件运行包；固定源码及完整重建步骤见[对应源码说明](docs/folia/source-rebuild.md)。
 
 正式产物为`dist/<pluginId>-<version>.echomod`，并保留`dist/<pluginId>/`开发目录；包含manifest.json、entry.mjs及声明资源，可直接由宿主加载，不携带Node/node_modules/浏览器页面。TypeScript/async源码转换为Qt支持的ES2016模块。
 

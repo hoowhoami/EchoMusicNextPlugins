@@ -1,0 +1,2 @@
+Paper shaders 0.0.80, Copyright Paper Design. Apache-2.0.
+Original GLSL/vertex/sizing/color/noise bytes translated to QSB. Folia composition AGPL-3.0-only.

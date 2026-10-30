@@ -1,0 +1,10 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "sourcePath": "src/components/visualizer/backgrounds/common/GeometricBackground.tsx",
+  "sourceSha256": "9167ff07817d1bf38150932c8707e766043ceab2a75acd6ed3835dd0eadae682",
+  "cssPath": "src/components/visualizer/backgrounds/common/GeometricBackground.css",
+  "navigationSourcePath": "src/utils/playbackNeighbors.ts",
+  "navigationSourceSha256": "9e5e7ace0458bbf254e40d7c617dc6a19f1ac99aaee0ae6966f2e734aab41899",
+  "cssSha256": "63860a0784b4a70b06ab74a9262d9e36502720fe63671e05c79dd72897be4d39",
+  "geometry": "15 shapes, 20 particles; original Math.random call order. seed resets the scene but is not a seeded PRNG."
+}

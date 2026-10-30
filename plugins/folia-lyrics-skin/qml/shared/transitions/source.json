@@ -1,0 +1,10 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "sourcePath": "src/components/visualizer/styleTransition/layerTransition.ts",
+  "sourceSha256": "182a281257da6301dd806f3a104442d8a808466766eba85d2e80098fcd7dadde",
+  "softFocusPath": "src/components/visualizer/styleTransition/softFocus.ts",
+  "softFocusSha256": "e57c85a90e5cedde216b908d584f5fd5013dc089c5876cf58384b1e5dc7c2ac6",
+  "firstFrameLimitMs": 1500,
+  "backgroundReadyLimitMs": 1000,
+  "leaveFallbackMarginMs": 1000
+}

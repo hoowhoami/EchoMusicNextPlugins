@@ -1,0 +1,41 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "generatorCompiler": {
+    "package": "typescript",
+    "version": "5.9.3",
+    "target": "ES5",
+    "license": "TYPESCRIPT-LICENSE.txt"
+  },
+  "pretext": "0.0.9",
+  "unicode": "17.0.0",
+  "sha256": {
+    "src/components/visualizer/fume/fumeMath.ts": "165b7ac7394d453f06340d0a9f0a2c27306bda5799a64a6bb4a68386e1278674",
+    "src/components/visualizer/fume/fumeTextStyle.ts": "2e2ddaad132672f71084bf8342f7d5e8bae5419521c55e28eef5fef737ffebde",
+    "src/components/visualizer/fume/fumeBlockFrame.ts": "e475a08c46d48a3a5003b04be01bf2e3e57b7a726d92aa37443a6070a0b504e3",
+    "src/components/visualizer/fume/fumeReveal.ts": "365a693be5a6b92f43d22d4f31d073489cb0993c843a6fed85b59ae893a0644e",
+    "src/components/visualizer/fume/fumeCamera.ts": "99715b80e122e1a9580cdca98a05990ef39b6acc6eea2b7b158c3bfeab117c66",
+    "src/components/visualizer/fume/fumeCameraStep.ts": "c56f88d8da5d44c39378c3305f23d2436b5c9790df25e6ca9d8e6f29835043cf",
+    "src/components/visualizer/fume/fumeArticleLayout.ts": "e20180092c6eedb1484732b802d0f1372ef897d0d0a1e39ec6a4098057a7f820",
+    "src/components/visualizer/fume/fumeTextMeasure.ts": "4e8dc010deb37d853e4d2ea14a6ba26a01a95fcaee0b09980c983fb66549a972",
+    "src/components/visualizer/fume/FumeBackground.ts": "f31a917570935b5bfeb0c03eb368a19835fde5d168dbb93abc1e745ffe6689dd",
+    "src/components/visualizer/fume/fumeCanvasText.ts": "125e20bcbb75f3fcdd5805c14417361462cf44b6eca6e0b5b5fb7d18423c06a7",
+    "src/components/visualizer/textMeasureCache.ts": "6c08e5469611a06c97ffbebb8096d90935bdf963b769dbd7c534a215e1edcd82",
+    "src/components/visualizer/fume/VisualizerFume.tsx": "6c6ed828a53c400ad94a63f201d0607aa2167488a9610b7b34ab8e34491ebfb6",
+    "src/components/visualizer/fume/useFumeCanvasStage.ts": "6bdbcc77d78b4ad17a5d7559c8e3d000d5fe14dfbe3d8056c2b53591486c3f42",
+    "src/components/visualizer/fume/fumeLiveRaster.ts": "903ea97c9853795519f454f622eedd24b9842ee2bb73fd194b8c7e4d6af9fbdc",
+    "src/components/visualizer/fume/tuning.ts": "55156bc1539881f59ee23ef536584406aabf726f00dd9b214b5825b8eefa4a0d",
+    "src/components/visualizer/fume/entry.tsx": "d2f12f9e1891a2fded795b79f9dd199fe406b148f72ffa5b94393426ac5d5fbd",
+    "src/types.ts": "27e9dafb319bbdcf6b518cc7aaae06ef932f54c315742fa1c82cb612b79b8625"
+  },
+  "reused": {
+    "directory": "../cadenza",
+    "files": {
+      "pretext.mjs": "e7085a6dae67fcb5a83f903a9161324b1cd1981a07fe5a02ce9140e1792bea38",
+      "font-stacks.mjs": "ae285055ad6fcc5de777bb4b4bdabab2b97f774b3e2535937fd90f8f90bcfdf3",
+      "color.mjs": "2777786d29d3bb29907ce2844f569af620e9ae42476fbe5c484108ae721cd4fa",
+      "word-coloring.mjs": "b94de9c30aed673361ec0c241aec5e0ea6e7019cc52715e5015d213716df8953",
+      "compat.mjs": "d1029f22fec4503cea246f1477c7ba6d9eb1eba81e846e9d6083738256d3f5bc",
+      "unicode-properties.mjs": "dbca5c89eeebab211000de4cbbef34b9f4e3db428d8cceb7709ee4a1817da75b"
+    }
+  }
+}

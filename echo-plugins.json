@@ -6,6 +6,12 @@
       "path": "plugins/spectrum-visualizer",
       "artifact": "artifacts/spectrum-visualizer-1.0.0.echomod",
       "sha256": "7721fcf9edfcda1a16b4caf7b25229fc6a9709f70a232b2a9e5ab73ae9b35f7a"
+    },
+    {
+      "id": "folia-lyrics-skin",
+      "path": "plugins/folia-lyrics-skin",
+      "artifact": "artifacts/folia-lyrics-skin-1.0.0.echomod",
+      "sha256": "0000dfe77c8f04c23f7cdd84afc2a101779535467bcf577799525aa34e34ce9a"
     }
   ]
 }

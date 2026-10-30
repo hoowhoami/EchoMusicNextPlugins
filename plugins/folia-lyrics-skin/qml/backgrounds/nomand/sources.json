@@ -1,0 +1,27 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "paper": "0.0.80",
+  "sha256": {
+    "src/components/visualizer/backgrounds/nomand/NomandBackgroundLayer.tsx": "d0b25ed5c215f3bdb33d88b3f095bfe7b0f65a552bf8d43484f286c760b2a31e",
+    "src/components/visualizer/backgrounds/nomand/nomandShaderAdjustments.ts": "3a1371924804a024f9085ffbe2ddfcf0f8946c0536ede9a88db674f47cbd7217",
+    "src/components/visualizer/backgrounds/nomand/tuning.ts": "2386bd71fa34ec3a20f530df7fd61bab51195ca24baaeb863930d20d66624421",
+    "src/types.ts": "27e9dafb319bbdcf6b518cc7aaae06ef932f54c315742fa1c82cb612b79b8625",
+    "node_modules/@paper-design/shaders/dist/get-shader-color-from-string.js": "5b4a27c2ff3380adebe8b8957475866d05c6f8b442309d89f466f735bce33aed",
+    "node_modules/@paper-design/shaders-react/dist/shaders/fluted-glass.js": "ad3c2d4912e4d7914588d584ceb2dde49e27377dc81820e1e552f2d882c202a8",
+    "node_modules/@paper-design/shaders/dist/shaders/fluted-glass.js": "d24d9c28febf9fc126b81a1e3d3a3faca7e1f2e20f17fcfad6fabf775f777fa8",
+    "node_modules/@paper-design/shaders-react/dist/shaders/paper-texture.js": "26771c5643ef67725d44068859bb719a7e2d4a70c6db61b7b8ab85526ca30262",
+    "node_modules/@paper-design/shaders/dist/shaders/paper-texture.js": "b2fa3e8281bf85f9505880056d0cec947454604f4c780e11257ffec416d7e8ef",
+    "node_modules/@paper-design/shaders-react/dist/shaders/halftone-dots.js": "a4ad04fcadba3c261cc53ffd69bc8472d24443648fb713ca33d11b673577d729",
+    "node_modules/@paper-design/shaders/dist/shaders/halftone-dots.js": "52cf2cf58d6a5347e914bd5bbd6cdf9b363ca7d1e066a2d44ad4746e2a963e02",
+    "node_modules/@paper-design/shaders-react/dist/shaders/lens-distortion.js": "b746b8fc5b6be9959370706c8fa89ecd19d4cab4a958b7418d3205a5044c183a",
+    "node_modules/@paper-design/shaders/dist/shaders/lens-distortion.js": "e8677880e8af3205f71fe65f1e784982da6c29c0a0fb534001efd059b15eb4b5",
+    "node_modules/@paper-design/shaders-react/dist/shaders/image-dithering.js": "67f10955f5153d29f3285a91ad05aad114b8413b711e17153a9bef78df2000e5",
+    "node_modules/@paper-design/shaders/dist/shaders/image-dithering.js": "c469583c807aeea5b7204ddd5a2e94b3da3d7eea605dd65643c18c8aa269e055",
+    "src/utils/paperShaderContext.ts": "acb54ec2d7a920931bc3cfca639eff47027a8fe8d5f30436821f20617f2eb3f2",
+    "node_modules/@paper-design/shaders/dist/vertex-shader.js": "cd9856f2e071e0c18794dd9c5a1663c11d72cbc68b0403b555d190f412b3e8db",
+    "node_modules/@paper-design/shaders/dist/shader-sizing.js": "db0eb176c9a66c03653770a542adcf4cf8efc07b0929d9e257f49c05d82013fe",
+    "node_modules/@paper-design/shaders/dist/shader-utils.js": "26ba187ff4b02715bd98d8ff409c508efcc3881a1f45ceeb08d00b71b145eb2e",
+    "node_modules/@paper-design/shaders/dist/shader-mount.js": "a7eb58aa60f2d59b669e031af01e1f9ee0974a7805b38ff14704438462c461b1",
+    "node_modules/@paper-design/shaders/dist/get-shader-noise-texture.js": "54346e280909373cf4d519fb779f5cd6b22be4047b8eb78b7d5bdc9ec7987492"
+  }
+}

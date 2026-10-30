@@ -6,3 +6,5 @@ package-lock.json
 *.qml
 # Generated native ESM bundles are reproduced byte-for-byte by prepare:source.
 plugins/**/entry.mjs
+# Raw pinned preferred inputs and license originals are hashed in SOURCE.json.
+source/folia-reference

@@ -1,0 +1,68 @@
+{
+  "capturedAtUtc": "2026-10-23T01:57:23.251755+00:00",
+  "upstreamRevision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "qt": "6.12.0",
+  "backend": "Cocoa/Metal",
+  "logicalSize": [700, 450],
+  "devicePixelRatio": 1,
+  "fixture": "Explicit authored four-line preview sample, SVG cover and simulated audio; actual style implementations; paused at 5.4s. Original player remains unchanged.",
+  "validation": "42 passed; actual shaped glyph metrics and foreground-versus-background pixel differences for all 14 modes. These are catalog previews, not performance or full visual parity results.",
+  "files": {
+    "cadenza": {
+      "file": "cadenza.png",
+      "sha256": "76d16a83365a378cb8456e742ba9a7ae1c5aeaf6ea695991c36a769cb4c52977"
+    },
+    "cappella": {
+      "file": "cappella.png",
+      "sha256": "e11e43ef6658ec6f49cd4aa417522106a5b387a981cc0b17911193dc4fbace48"
+    },
+    "claddagh": {
+      "file": "claddagh.png",
+      "sha256": "5a5dd939b8a89797096f98bae660137bb088fb229678e9061a502ff34f7634cf"
+    },
+    "classic": {
+      "file": "classic.png",
+      "sha256": "46e1245ae7b40dc7676830a83980a9d387aca00979b7f7e9ac5eb234a46a43fe"
+    },
+    "diorama": {
+      "file": "diorama.png",
+      "sha256": "81ed0d2a9e0a8129c0de349edc96294857209ad29981fd40657194ec0b88181b"
+    },
+    "fume": {
+      "file": "fume.png",
+      "sha256": "5edfb1446488d07463983adcf7a8f0751623f7d7426aa30d5aa93c623841416f"
+    },
+    "lumiere": {
+      "file": "lumiere.png",
+      "sha256": "62ce816fc81cfc0bac1d05941df33e5defa0f9a3f9e90525745c9711c2da4a0a"
+    },
+    "monet": {
+      "file": "monet.png",
+      "sha256": "21b4d8da65ffb4323532dcf5d99b3d4b55c91f7595752c5b05892830c45cd31e"
+    },
+    "partita": {
+      "file": "partita.png",
+      "sha256": "be1aef197c9b3529a59cf084d54c89724c3dddd1bd9dac90ca68608bb506ce18"
+    },
+    "pendolo": {
+      "file": "pendolo.png",
+      "sha256": "59552826a81aa89622f1c44e485373219fe349f0299a124547c0327fb6e95f49"
+    },
+    "sonnet": {
+      "file": "sonnet.png",
+      "sha256": "be68b9d3bab077aa9310138ab13dd3768c8564d05712f68e198e7e6013be8af1"
+    },
+    "still": {
+      "file": "still.png",
+      "sha256": "6fe67addfe6d5eaaeb0bf73b41e2bbca1a5f256c93a1ac59d477a3a54774920a"
+    },
+    "tempera": {
+      "file": "tempera.png",
+      "sha256": "eb1837ebf5d1569c3c97213edc14f87d48485e064ea3b344c819a29fe8a8a99c"
+    },
+    "tilt": {
+      "file": "tilt.png",
+      "sha256": "fc4e22f0fb06c2061a332260a35f5294869bc34f0ba13a7f5b912702703ab170"
+    }
+  }
+}

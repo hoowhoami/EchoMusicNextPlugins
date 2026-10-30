@@ -26,7 +26,7 @@ SDK开发包为@echomusicnext/plugin-sdk，实际运行时模块为echo:plugin-s
 
 工具先strict类型检查再转换为ES2016 ESM，支持async源码，但语法转换不补浏览器/Node/新版标准库。没有DOM/fetch/process；网络用ctx.net.request，UI用Qt Quick。依据：[esbuild target](https://esbuild.github.io/api/#target)、[TypeScript lib](https://www.typescriptlang.org/tsconfig/lib.html)、[Qt JS环境](https://doc.qt.io/qt-6/qtqml-javascript-hostenvironment.html)。
 
-设置组件通过SDK1.0.0的ctx.ui.registerSettings注册，required plugin使用EchoPluginContext；官方频谱Settings.qml通过settings.patch命令写入安装私有SQLite并发布ui.state；三处Layer.qml共享同一状态。QML页面通过ctx.ui.registerPage注册，声明required plugin/context属性或使用EchoPluginPage。编辑器QML import path指当前宿主构建modules目录（含PluginSdk及Shell依赖），Qt模块/qmltypes由宿主提供。页面使用scoped SDK，不访问裸router/settings/应用数据库。
+设置组件通过SDK1.0.0的ctx.ui.registerSettings注册，required plugin使用EchoPluginContext；官方频谱Settings.qml通过settings.patch命令写入安装私有SQLite并发布ui.state；三处Layer.qml共享同一状态。QML页面通过ctx.ui.registerPage注册，声明required plugin/context属性或使用EchoPluginPage。完整播放页使用[皮肤入口与独立配置](appearance.md)。编辑器QML import path指当前宿主的 `build/<preset>/qml` 及 Qt SDK 的 `qml` 目录（含PluginSdk及Shell依赖），Qt模块/qmltypes由宿主提供。页面使用scoped SDK，不访问裸router/settings/应用数据库。
 
 ## 生命周期与能力
 

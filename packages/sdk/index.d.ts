@@ -160,15 +160,9 @@ declare module 'echo:plugin-sdk' {
     readonly cover: string;
     readonly durationMs: number;
   }
-  export interface LyricLineSnapshot {
-    readonly lineText: string;
-    readonly startMs: number;
-    readonly durationMs: number;
-    readonly words: JsonValue[];
+  export interface LyricLineSnapshot extends LyricRow {
     readonly translation: string;
     readonly romanization: string;
-    readonly filtered: boolean;
-    readonly wordTimed: boolean;
   }
   export interface LyricsInfo {
     readonly count: number;
@@ -185,6 +179,15 @@ declare module 'echo:plugin-sdk' {
     readonly offsetStep: number;
     readonly state: string;
     readonly currentLine: Partial<LyricLineSnapshot>;
+    readonly hasBackgroundVocals?: boolean;
+    readonly sourceFormat?: string;
+    readonly timingProfile?: string;
+    readonly agents?: Record<
+      string,
+      { readonly id: string; readonly name?: string; readonly type?: string }
+    >;
+    readonly errorMessage: string;
+    readonly embeddedErrorMessage: string;
   }
   export interface LyricsSnapshot extends LyricsInfo {
     readonly lines: LyricLineSnapshot[];
@@ -299,7 +302,8 @@ declare module 'echo:plugin-sdk' {
     | 'barrage'
     | 'queue'
     | 'addToPlaylist'
-    | 'share';
+    | 'share'
+    | 'closeSkinSettings';
   export interface PresentationArguments {
     value?: number | string | boolean;
     revision?: string;
@@ -404,6 +408,8 @@ declare module 'echo:plugin-sdk' {
     id: string;
     title: string;
     description?: string;
+    /** Up to 64 symbolic names (1..128 characters); the active skin resolves its icon vocabulary. */
+    lyricsIcons?: readonly string[];
     preview?: string;
     light?: ThemeVariant;
     dark?: ThemeVariant;
@@ -473,6 +479,7 @@ declare module 'echo:plugin-sdk' {
     readonly selectedTheme: string;
     readonly selectedSkin: string;
     readonly surfaces: ThemeVariant;
+    readonly themeMetadata: ThemeMetadata | null;
   }
   export interface EchoPluginAppearanceHandle {
     readonly key: string;
@@ -511,6 +518,7 @@ declare module 'echo:plugin-sdk' {
   export interface EchoPluginFonts {
     readonly families: readonly string[];
     build(families: string[], pixelSize?: number, weight?: number, letterSpacing?: number): QtFont;
+    readonly familiesChanged: QtSignal;
   }
   export interface EchoPluginViewContext {
     readonly active: boolean;
@@ -519,6 +527,10 @@ declare module 'echo:plugin-sdk' {
     readonly snapshot: PlaybackSnapshot;
     readonly changed: QtSignal;
     command(action: PresentationCommand, arguments?: PresentationArguments): EchoPluginOperation;
+    /** Synchronous hide/close/replacement notification. Accepted settings may be
+     * flushed here; permissions are revoked as soon as this callback returns. */
+    readonly aboutToClose: QtSignal;
+    closeSkinSettings(): EchoPluginOperation;
   }
   export interface FloatingWindowsSnapshot {
     readonly available: boolean;
@@ -792,9 +804,9 @@ declare module 'echo:plugin-sdk' {
       arguments: Partial<QtRect>,
     ): EchoPluginOperation;
   }
-  export interface EchoPluginReadModel {
+  export interface EchoPluginReadModel<Row = Record<string, JsonValue>> {
     readonly __qtListModel: unique symbol;
-    row(index: number): Record<string, JsonValue>;
+    row(index: number): Record<string, unknown> & Row;
   }
   export type AudioSourceStage =
     'before-catalog' | 'catalog' | 'after-catalog' | 'cloud' | 'final-fallback';
@@ -893,7 +905,7 @@ declare module 'echo:plugin-sdk' {
   }
   export type LyricDocument = LyricDocumentContent &
     (
-      | { readonly format: 'lrc' | 'yrc'; readonly encoding?: 'text' }
+      | { readonly format: 'lrc' | 'yrc' | 'ttml'; readonly encoding?: 'text' }
       | { readonly format: 'krc'; readonly encoding?: 'text' | 'base64' }
     );
   export interface LyricResolverContext {
@@ -931,7 +943,7 @@ declare module 'echo:plugin-sdk' {
     | 'seek';
   export interface EchoPluginLyrics {
     readonly snapshot: LyricSourceSnapshot;
-    readonly model: EchoPluginReadModel;
+    readonly model: EchoPluginReadModel<LyricRow>;
     readonly changed: QtSignal;
     registerResolver(
       id: string,
@@ -970,6 +982,16 @@ declare module 'echo:plugin-sdk' {
     move(key: string, revision: string, from: number, to: number): EchoPluginOperation;
     clear(key: string, revision: string): EchoPluginOperation;
   }
+  export interface PlaybackQueueRow {
+    readonly title: string;
+    readonly artistText: string;
+    readonly albumText: string;
+    readonly coverUrl: string;
+    readonly durationText: string;
+    readonly resourceId: string;
+    readonly isCurrent: boolean;
+    readonly queuedNext: boolean;
+  }
   export interface EchoPluginPlayer {
     readonly clock: PlaybackClockSnapshot;
     readonly clockChanged: QtSignal;
@@ -1004,8 +1026,8 @@ declare module 'echo:plugin-sdk' {
     readonly volume: number;
     /** Host playback rate: 0.1..5. */
     readonly speed: number;
-    readonly queue: EchoPluginReadModel;
-    readonly lyrics: EchoPluginReadModel;
+    readonly queue: EchoPluginReadModel<PlaybackQueueRow>;
+    readonly lyrics: EchoPluginReadModel<LyricRow>;
     readonly changed: QtSignal;
     readonly positionChanged: QtSignal;
     play(): EchoPluginOperation;
@@ -1021,6 +1043,7 @@ declare module 'echo:plugin-sdk' {
     remove(row: number): EchoPluginOperation;
     move(from: number, to: number): EchoPluginOperation;
     clear(): EchoPluginOperation;
+    readonly transition: EchoPluginPlaybackTransition;
   }
   export type TaskStatus = 'pending' | 'running' | 'completed' | 'error' | 'aborted';
   export interface TaskAction {
@@ -1164,6 +1187,7 @@ declare module 'echo:plugin-sdk' {
     top(container: EchoUiPartRef): EchoPluginOperation;
     bottom(container: EchoUiPartRef): EchoPluginOperation;
   }
+  /** Parser word times are raw milliseconds: add lyricsInfo.offsetMs once. */
   export interface LyricWord {
     readonly text: string;
     readonly start_ms: number;
@@ -1616,97 +1640,12 @@ declare module 'echo:plugin-sdk' {
     writeBuffer(resource: EchoGpuResource, data: GpuData, offset?: number): boolean;
     writeTexture(resource: EchoGpuResource, data: GpuData): boolean;
   }
-  /** Plugin-local GPU item. Default dynamicRange is sdr; requests never change its host window.
-   * Shaders output linear premultiplied RGBA; unsupported local HDR is tone mapped to SDR.
-   */
   /** A live Qt Quick object supplied by the plugin's QML presentation. */
   export interface QtQuickItem {
+    readonly __qtQuickItem: unique symbol;
     readonly width: number;
     readonly height: number;
     readonly visible: boolean;
-  }
-  /** Full native shaping context; positions and ranges use UTF-16 source indices. */
-  export interface GlyphRunDefinition {
-    key: string;
-    text: string;
-    size?: number;
-    weight?: number;
-    spacing?: number;
-    maxWidth?: number;
-    lineHeight?: number;
-    maxBlur?: 0 | 8 | 16 | 32;
-    maxHaloRadius?: 0 | 40 | 80 | 160 | 512 | 1024;
-    strokeWidth?: number;
-    strokeBitmap?: 'reject' | 'fill';
-  }
-  export interface GlyphPose {
-    key: string;
-    start?: number;
-    instance?: string;
-    x?: number;
-    y?: number;
-    scale?: number;
-    rotation?: number;
-    opacity?: number;
-    color?: QtColor;
-    tint?: QtColor;
-    blur?: number;
-    glow?: number;
-    halos?: { radius: number; opacity?: number; color: QtColor }[];
-    clip?: { x: number; y: number; width: number; height: number };
-  }
-  export interface GlyphRunMetric {
-    key: string;
-    width: number;
-    advance: number;
-    height: number;
-    lineCount: number;
-    baseline: number;
-    emAscent: number;
-    emDescent: number;
-    inkLeft: number;
-    inkRight: number;
-    inkTop: number;
-    inkBottom: number;
-    graphemes: {
-      start: number;
-      length: number;
-      x: number;
-      y: number;
-      advance: number;
-      clusterStart: number;
-    }[];
-  }
-  /** QML native producer. atlasOnly retains preparation/metrics and delegates drawing. */
-  export interface GlyphRun extends QtQuickItem {
-    atlasOnly: boolean;
-    font: QtFont;
-    measurementOnly: boolean;
-    runs: GlyphRunDefinition[];
-    poses: GlyphPose[];
-    composition: 'source-over' | 'screen';
-    readonly metrics: GlyphRunMetric[];
-    readonly errorString: string;
-    readonly maskRevision: number;
-    readonly textureUploads: number;
-    readonly renderBatches: number;
-    readonly supportedMaxHaloRadius: number;
-    readonly supportedMaxBlur: number;
-    readonly cacheBytes: number;
-    haloSampling: 'static' | 'canvas';
-    maximumRasterScale: number;
-    readonly preparing: boolean;
-    readonly ready: boolean;
-    readonly gpuCacheBytes: number;
-    readonly sharedCacheKey: string;
-    readonly sharedCacheBytes: number;
-    readonly layoutChanged: QtSignal;
-    readonly posesChanged: QtSignal;
-    readonly errorChanged: QtSignal;
-    readonly renderingChanged: QtSignal;
-    readonly compositionChanged: QtSignal;
-    readonly preparationChanged: QtSignal;
-    readonly atlasChanged: QtSignal;
   }
   export interface GlyphAtlasLevel {
     /** Index into this lease's pages, never a native handle. */
@@ -1740,13 +1679,16 @@ declare module 'echo:plugin-sdk' {
     readonly generation: number;
     readonly pages: EchoGpuResource[];
     readonly fragments: GlyphAtlasFragment[];
-    readonly metrics: GlyphRunMetric[];
+    readonly metrics: GlyphMetrics[];
     readonly pixelRatio: number;
     readonly textureUploads: number;
     readonly errorString: string;
     readonly changed: QtSignal;
     dispose(): void;
   }
+  /** Plugin-local GPU item. Default dynamicRange is sdr; requests never change its host window.
+   * Shaders output linear premultiplied RGBA; unsupported local HDR is tone mapped to SDR.
+   */
   export interface EchoGpuSurface {
     /** Borrow a full, non-atlas texture provider/layer from this plugin and window. */
     importTextureSource(source: QtQuickItem): EchoGpuResource | null;
@@ -5240,5 +5182,450 @@ declare module 'echo:plugin-sdk' {
       id: string,
       arguments?: Record<string, JsonValue>,
     ): EchoPluginOperation<JsonValue | void>;
+    readonly text: EchoPluginText;
+    readonly assets: EchoPluginAssets;
+  }
+
+  export interface LyricAlternateText {
+    readonly role: 'translation' | 'romanization';
+    readonly text: string;
+    readonly lang?: string;
+  }
+
+  export interface LyricBackgroundVocal {
+    readonly lineText: string;
+    /** Includes the effective lyric offset already, as the main row does. */
+    readonly startMs: number;
+    readonly durationMs: number;
+    readonly words: readonly LyricWord[];
+    readonly translation?: string;
+    readonly romanization?: string;
+    readonly agentId?: string;
+    readonly alternateTexts?: readonly LyricAlternateText[];
+  }
+
+  /** Explicit source metadata is optional; absence never implies a voice/section. */
+  export interface LyricRow extends LyricBackgroundVocal {
+    readonly filtered: boolean;
+    readonly wordTimed: boolean;
+    readonly id?: string;
+    readonly songPart?: string;
+    readonly blockIndex?: number;
+    readonly isChorus?: boolean;
+    readonly backgroundVocals: readonly LyricBackgroundVocal[];
+  }
+
+  export interface ThemeMetadata {
+    readonly key: string;
+    readonly title: string;
+    readonly description: string;
+    readonly lyricsIcons: readonly string[];
+  }
+
+  /** A retained host-parsed lyric presentation. No transport or source locator. */
+  export interface EchoPluginTransitionTrack {
+    readonly id: string;
+    readonly hash: string;
+    /** Unsigned catalog song ID as decimal text, preserving u64 precision. */
+    readonly songId: string;
+    readonly sequence: string;
+    readonly title: string;
+    readonly artist: string;
+    readonly album: string;
+    readonly coverUrl: string;
+    readonly durationMs: number;
+    readonly lyricRevision: string;
+    readonly lyricsInfo: Record<string, JsonValue>;
+    readonly lyrics: EchoPluginReadModel<LyricRow>;
+    readonly changed: QtSignal;
+  }
+
+  /** Actual queued/consumed native PCM, not a prediction of the next queue row. */
+  export interface EchoPluginPlaybackTransition {
+    readonly valid: boolean;
+    /** Exact decimal u64 identities; never convert to JavaScript Number. */
+    readonly epoch: string;
+    readonly generation: string;
+    readonly requestId: string;
+    readonly mode: string;
+    readonly phase: '' | 'queued' | 'mixing' | 'tail' | 'completed';
+    readonly reason: string;
+    readonly templateName: string;
+    readonly handedOver: boolean;
+    /** False when the selected plan has no paired gain crossover (e.g. EchoTail). */
+    readonly cueReady: boolean;
+    readonly cueReason: string;
+    readonly crossover: number;
+    readonly hasOutgoingPosition: boolean;
+    readonly hasIncomingPosition: boolean;
+    /** Meaningful only when the matching has*Position is true. */
+    readonly outgoingPositionMs: number;
+    readonly incomingPositionMs: number;
+    readonly outgoingEndMs: number;
+    readonly outgoingTempoRatio: number;
+    readonly outputSpeed: number;
+    readonly cueElapsedMs: number;
+    readonly cueDurationMs: number;
+    /** Consumed frame fraction; this is not the visual handoff curve. */
+    readonly overlapProgress: number;
+    readonly outgoing: EchoPluginTransitionTrack;
+    readonly incoming: EchoPluginTransitionTrack;
+    readonly changed: QtSignal;
+    readonly positionChanged: QtSignal;
+  }
+
+  export interface WordSegment {
+    readonly segment: string;
+    /** UTF-16 offset, matching QString and ECMAScript string indexing. */
+    readonly index: number;
+    readonly isWordLike: boolean;
+  }
+
+  export interface WordSegmentation {
+    readonly backend: string;
+    readonly unicodeVersion: string;
+    readonly lines: WordSegment[][];
+  }
+
+  /** Background native ICU segmentation; at most 64 texts/65536 UTF-16 units per call. */
+  export interface EchoPluginText {
+    readonly available: boolean;
+    readonly backend: string;
+    readonly unicodeVersion: string;
+    readonly drained: QtSignal;
+    segmentWords(texts: string[], locale?: string): EchoPluginOperation<WordSegmentation>;
+  }
+
+  export interface PluginAsset {
+    readonly handle: string;
+    readonly collection: string;
+    readonly kind: 'image' | 'font';
+    readonly name: string;
+    readonly url: { toString(): string };
+    readonly mimeType: string;
+    readonly bytes: number;
+    /** SVG originals stay private; url points at the validated static PNG. */
+    readonly renderMimeType?: 'image/png';
+    readonly renderBytes?: number;
+    readonly width?: number;
+    readonly height?: number;
+    readonly animated?: boolean;
+    readonly frameCount?: number;
+    readonly durationMs?: number;
+    readonly families?: string[];
+  }
+
+  /** Shared prepared PNG frames; dispose the reference when its view becomes inactive. */
+  export interface EchoPluginAssetAnimation {
+    readonly active: boolean;
+    readonly ready: boolean;
+    playing: boolean;
+    readonly frameSource: { toString(): string };
+    readonly frameIndex: number;
+    readonly frameCount: number;
+    readonly durationMs: number;
+    /** -1 repeats forever; 0 plays once; N repeats N times. */
+    readonly loopCount: number;
+    readonly width: number;
+    readonly height: number;
+    /** Encoded PNG disk bytes, excluding original files and decoded/GPU copies. */
+    readonly encodedBytes: number;
+    readonly errorString: string;
+    readonly changed: QtSignal;
+    readonly playingChanged: QtSignal;
+    readonly frameChanged: QtSignal;
+    setPlaying(playing: boolean): void;
+    dispose(): void;
+  }
+
+  export interface ImageArchiveEntry {
+    /** Relative name inside the selected archive, never a host filesystem path. */
+    readonly path: string;
+    readonly bytes: number;
+    readonly mimeType: string;
+  }
+
+  /** A private archive snapshot leased to this presentation/account epoch. */
+  export interface EchoPluginAssetArchive {
+    readonly active: boolean;
+    readonly ready: boolean;
+    readonly errorString: string;
+    readonly entries: ImageArchiveEntry[];
+    readonly jsonFiles: Record<string, JsonValue>;
+    readonly changed: QtSignal;
+    /** Atomic append of 1..16 selected image entries. Repeated placements may repeat path. */
+    importInto(
+      collection: string,
+      entries: { path: string; name?: string }[],
+    ): EchoPluginOperation<{
+      assets: (PluginAsset & { readonly entryPath: string })[];
+    }>;
+    dispose(): void;
+  }
+
+  export interface PluginImageImportOptions {
+    /** Defaults to atomic false. Invalid images are reported separately when true. */
+    partial?: boolean;
+    /** Accepted supported input slots, including corrupt images, 1..16. Defaults to16. */
+    maxCount?: number;
+  }
+  export interface PluginImageRejection {
+    /** Basename only, at most128 UTF-16; never an input path. */
+    name: string;
+    code: string;
+    message: string;
+  }
+  export interface PluginImageImportResult {
+    assets: PluginAsset[];
+    /** Present only for explicit partial batches; at most128 bounded records. */
+    rejected?: PluginImageRejection[];
+  }
+  /** QML-only native external-drop receiver. It has no invokable URL/path API. */
+  export interface EchoPluginImageDropArea extends QtQuickItem {
+    assets: EchoPluginAssets | null;
+    collection: string;
+    maxCount: number;
+    /** Empty by default. Opt in to the first dropped ZIP as an existing typed archive lease.
+     * At most four safe relative JSON paths; no filesystem paths are accepted. */
+    archiveJsonPaths: string[];
+    readonly containsDrag: boolean;
+    readonly busy: boolean;
+    readonly changed: QtSignal;
+    readonly importStarted: QtSignal<[operation: EchoPluginOperation<PluginImageImportResult>]>;
+    readonly archiveDropped: QtSignal<[archive: EchoPluginAssetArchive]>;
+  }
+  /** Real user file picker and installation-owned assets. Requests retire with their scope. */
+  export interface EchoPluginAssets {
+    readonly changed: QtSignal;
+    readonly drained: QtSignal;
+    importImages(
+      collection: string,
+      options?: PluginImageImportOptions,
+    ): EchoPluginOperation<PluginImageImportResult>;
+    importFonts(collection: string): EchoPluginOperation<{ assets: PluginAsset[] }>;
+    /** Select one ZIP; only these bounded JSON entries are parsed, at most four. */
+    openImageArchive(jsonPaths: string[]): EchoPluginAssetArchive | null;
+    /** Save original bytes through a real dialog. Entries use scoped asset handles. */
+    exportImageArchive(
+      collection: string,
+      entries: { handle: string; path: string }[],
+      jsonFiles: Record<string, JsonValue>,
+      suggestedName: string,
+    ): EchoPluginOperation<{
+      exported: boolean;
+      bytes: number;
+    }>;
+    list(collection: string): EchoPluginOperation<{ assets: PluginAsset[] }>;
+    remove(handle: string): EchoPluginOperation;
+    clear(collection: string): EchoPluginOperation;
+    /** Only the current public cover, package files or this installation's asset handles/URLs. */
+    sampleImage(
+      source: string | { toString(): string },
+      width?: number,
+      height?: number,
+    ): EchoPluginOperation<{
+      width: number;
+      height: number;
+      sourceWidth: number;
+      sourceHeight: number;
+      format: 'rgba8';
+      pixels: number[];
+    }>;
+    /** Same authorized sources as sampleImage; 1..4096 bounds, no upscaling. Cover keeps enough pixels for cropping. Null if scope/lease quota closes. */
+    animation(
+      source: string | { toString(): string },
+      width?: number,
+      height?: number,
+      fit?: 'contain' | 'cover',
+    ): EchoPluginAssetAnimation | null;
+  }
+
+  export type GlyphRunDefinition = GlyphRunInput;
+  export type GlyphRunMetric = GlyphMetrics;
+
+  export interface GlyphRunInput {
+    key: string;
+    text: string;
+    /** Native run size, 1/64..1024 logical pixels; measurementOnly permits 16384. */
+    size?: number;
+    weight?: number;
+    spacing?: number;
+    /** Native whole-context outline only, 0..8 logical pixels; 0 preserves normal ink. */
+    strokeWidth?: number;
+    /** With a native outline, explicitly preserve color/bitmap glyphs as their original RGBA. */
+    strokeBitmap?: 'reject' | 'fill';
+    /** Native paragraph wrapping; 1..4096 logical pixels. Omit for a single line. */
+    maxWidth?: number;
+    /** Baseline distance in logical pixels, (0,512]; only with maxWidth. */
+    lineHeight?: number;
+    maxBlur?: 0 | 8 | 16 | 32;
+    maxHaloRadius?: 0 | 40 | 80 | 160 | 512 | 1024;
+  }
+
+  export interface GlyphPose {
+    /** Multiply the composed glyph/halo RGB, including colour emoji; alpha is ignored. */
+    tint?: QtColor;
+    key: string;
+    /** Distinct ordered paint instance. Omit to preserve duplicate (key,start) rejection. */
+    instance?: string;
+    /** A safe clusterStart from metrics; omitted means the entire run. */
+    start?: number;
+    x?: number;
+    y?: number;
+    scale?: number;
+    rotation?: number;
+    opacity?: number;
+    blur?: number;
+    glow?: number;
+    color?: QtColor;
+    /** Full-context run-local clip, before pose scale/rotation; also clips blur and halos. */
+    clip?: { x: number; y: number; width: number; height: number };
+    halos?: { radius: number; opacity?: number; color: QtColor }[];
+  }
+
+  export interface GlyphMetrics {
+    readonly key: string;
+    readonly width: number;
+    /** Full-context horizontal advance, independent of overhanging ink. */
+    readonly advance: number;
+    readonly inkLeft: number;
+    readonly inkRight: number;
+    /** Primary-font normalized typographic em metrics; middle-baseline shift is (ascent-descent)/2. */
+    readonly emAscent: number;
+    readonly emDescent: number;
+    readonly height: number;
+    readonly baseline: number;
+    readonly lineCount: number;
+    /** Actual full-context ink bounds relative to the alphabetic baseline; blank ink is 0. */
+    readonly inkTop: number;
+    readonly inkBottom: number;
+    readonly graphemes: {
+      start: number;
+      length: number;
+      x: number;
+      /** Line baseline offset relative to the first baseline; zero for a single line. */
+      y: number;
+      advance: number;
+      clusterStart: number;
+    }[];
+  }
+
+  /** QML drawable. Full-context shaping and bounded immutable texture atlases. */
+  export interface GlyphRun extends QtQuickItem {
+    /** Retain native shaping/metrics and delegate drawing to an imported atlas. */
+    atlasOnly: boolean;
+    font: QtFont;
+    /** Pure native measurement, size up to 16384; rejects poses and never allocates masks. */
+    measurementOnly: boolean;
+    /** Premultiplied native scene blending; changing this never rebuilds glyph masks. */
+    composition: 'source-over' | 'screen';
+    /** Native preparation mode; defaults to static. Requires graphics.glyphRun.canvas. */
+    haloSampling: 'static' | 'canvas';
+    /** Finite logical sampling scale in (0,32], including parent and pose transforms. Default 32. */
+    maximumRasterScale: number;
+    runs: GlyphRunInput[];
+    poses: GlyphPose[];
+    readonly metrics: GlyphMetrics[];
+    readonly errorString: string;
+    readonly maskRevision: number;
+    readonly textureUploads: number;
+    readonly renderBatches: number;
+    readonly supportedMaxBlur: number;
+    readonly supportedMaxHaloRadius: number;
+    readonly cacheBytes: number;
+    /** Current generation CPU preparation. Retired workers may still be draining. */
+    readonly preparing: boolean;
+    /** Current resources uploaded, visible, error-free and no longer preparing. */
+    readonly ready: boolean;
+    /** Item-owned GPU resources; excludes the shared pool. */
+    readonly gpuCacheBytes: number;
+    /** Same-window pool identity. Count sharedCacheBytes once per distinct key. */
+    readonly sharedCacheKey: string;
+    readonly sharedCacheBytes: number;
+    readonly layoutChanged: QtSignal;
+    readonly posesChanged: QtSignal;
+    readonly errorChanged: QtSignal;
+    readonly renderingChanged: QtSignal;
+    readonly compositionChanged: QtSignal;
+    readonly preparationChanged: QtSignal;
+    readonly atlasChanged: QtSignal;
+  }
+
+  /** Native RGBA32F sampler. Nearest filtering, no colour conversion or atlas. */
+  export interface FloatTexture extends QtQuickItem {
+    active: boolean;
+    readonly textureWidth: number;
+    readonly textureHeight: number;
+    readonly sourceBytes: number;
+    readonly cacheBytes: number;
+    readonly textureUploads: number;
+    readonly errorString: string;
+    readonly activeChanged: QtSignal;
+    readonly contentChanged: QtSignal;
+    readonly renderingChanged: QtSignal;
+    readonly errorChanged: QtSignal;
+    /** 1..8192 axes, 16MiB, exact finite native-endian Float32 RGBA bytes. Atomic rejection. */
+    upload(width: number, height: number, arrayBuffer: ArrayBuffer): boolean;
+    /** WorkerScript transport: two raw UTF-16 words per float; preserves NUL/surrogates. Same host endianness. */
+    uploadPacked(width: number, height: number, utf16Words: string): boolean;
+    clear(): void;
+  }
+
+  /** Qt ShaderEffect with explicit blend state. Inherits the native ShaderEffect QML API. */
+  export interface NativeShaderEffect extends QtQuickItem {
+    composition: 'source-over' | 'additive';
+    readonly compositionChanged: QtSignal;
+  }
+
+  /** ShaderEffect point vertices (0..4096). qt_Vertex=0, qt_MultiTexCoord0=1; texcoord.x is the exact index. */
+  export interface PointMesh {
+    pointCount: number;
+    /** Vertex data only; excludes backend allocations and ShaderEffect render targets. */
+    readonly vertexBytes: number;
+    readonly errorString: string;
+    readonly pointCountChanged: QtSignal;
+    readonly errorChanged: QtSignal;
+  }
+
+  /** Author-owned QML container. Effective geometric visibility through native ancestor clips. */
+  export interface PresentationScope extends QtQuickItem {
+    /** False while detached, hidden, transparent, fully clipped or minimized. Not occlusion detection. */
+    readonly presented: boolean;
+    readonly presentedChanged: QtSignal;
+  }
+
+  /** Immutable one-shot result; dispose releases the encoded private file asynchronously. */
+  export interface ImageCaptureLease {
+    readonly status: 'pending' | 'ready' | 'error' | 'disposed';
+    readonly ready: boolean;
+    readonly url: { toString(): string };
+    readonly errorString: string;
+    readonly encodedBytes: number;
+    readonly width: number;
+    readonly height: number;
+    readonly changed: QtSignal;
+    dispose(): void;
+  }
+
+  /** Static preparation only: async scenegraph readback, then off-GUI bounded JPEG/PNG encoding. */
+  export interface ImageCapture {
+    active: boolean;
+    readonly pendingJobs: number;
+    readonly leaseCount: number;
+    readonly reservedBytes: number;
+    readonly encodedBytes: number;
+    readonly drained: boolean;
+    readonly readbacks: number;
+    readonly encodes: number;
+    readonly activeChanged: QtSignal;
+    readonly changed: QtSignal;
+    /** Physical pixels, 1..4096 axes/8MiPixels; JPEG quality defaults to 92. */
+    encode(
+      sourceItem: QtQuickItem,
+      width: number,
+      height: number,
+      format?: 'jpeg' | 'png',
+      quality?: number,
+    ): ImageCaptureLease;
   }
 }
