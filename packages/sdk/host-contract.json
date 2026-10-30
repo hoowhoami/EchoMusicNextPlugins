@@ -121,11 +121,24 @@
     "serverIntercept",
     "navigation",
     "hostSettings",
-    "cover"
+    "cover",
+    "appearance",
+    "appIcons"
   ],
   "contexts": ["main"],
   "features": [
+    "playback.clock",
+    "appearance.overrides",
+    "app.icons",
+    "files.audioMetadata",
     "graphics.rhi",
+    "graphics.resources",
+    "graphics.submissions",
+    "graphics.mrt",
+    "graphics.indirect",
+    "graphics.textureViews",
+    "graphics.textureArrays",
+    "graphics.textureDimensions",
     "graphics.compute",
     "graphics.readback",
     "ui.navigation",
@@ -180,6 +193,8 @@
     "ui.settings",
     "plugins.dependencies",
     "plugins.services",
+    "plugins.catalog",
+    "plugins.commands",
     "audio.spectrum",
     "ui.surfaces",
     "ui.state",
@@ -344,6 +359,18 @@
           "signal": false
         },
         {
+          "name": "enqueue",
+          "parameters": ["QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "readback",
+          "parameters": ["EchoMusic::EchoGpuResource*", "QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
           "name": "readback",
           "parameters": ["EchoMusic::EchoGpuResource*"],
           "returnType": "EchoMusic::EchoPluginOperation*",
@@ -468,6 +495,79 @@
         }
       ]
     },
+    "EchoPluginAppIcons": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "drainedChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "set",
+          "parameters": ["QString", "QVariantMap", "int"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "set",
+          "parameters": ["QString", "QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "setRuntimeWindowIcon",
+          "parameters": ["QString", "int"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "setRuntimeWindowIcon",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "restoreDefaultWindowIcon",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "restoreDefaultDesktopIcon",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "restoreDefaultTaskbarIcon",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "refresh",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "snapshot",
+          "type": "QVariantMap",
+          "writable": false
+        }
+      ]
+    },
     "EchoPluginAppearance": {
       "enums": [],
       "methods": [
@@ -487,6 +587,30 @@
           "name": "registerSkin",
           "parameters": ["QJSValue"],
           "returnType": "EchoMusic::EchoPluginAppearanceHandle*",
+          "signal": false
+        },
+        {
+          "name": "setOverride",
+          "parameters": ["QString", "QVariantMap", "int"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "setOverride",
+          "parameters": ["QString", "QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "themes",
+          "parameters": [],
+          "returnType": "QVariantList",
+          "signal": false
+        },
+        {
+          "name": "skins",
+          "parameters": [],
+          "returnType": "QVariantList",
           "signal": false
         },
         {
@@ -523,6 +647,18 @@
           "name": "openSkins",
           "parameters": [],
           "returnType": "void",
+          "signal": false
+        },
+        {
+          "name": "onSnapshot",
+          "parameters": ["QString", "QJSValue", "bool"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "onSnapshot",
+          "parameters": ["QString", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         }
       ],
@@ -810,6 +946,12 @@
           "constant": true,
           "name": "cover",
           "type": "EchoMusic::EchoPluginCover*",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "appIcons",
+          "type": "EchoMusic::EchoPluginAppIcons*",
           "writable": false
         },
         {
@@ -2039,6 +2181,24 @@
           "signal": true
         },
         {
+          "name": "clockChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "snapshotChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "samplePosition",
+          "parameters": [],
+          "returnType": "double",
+          "signal": false
+        },
+        {
           "name": "lyricSnapshot",
           "parameters": [],
           "returnType": "QVariantMap",
@@ -2157,6 +2317,12 @@
         {
           "constant": false,
           "name": "snapshot",
+          "type": "QVariantMap",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "clock",
           "type": "QVariantMap",
           "writable": false
         },
@@ -2445,6 +2611,24 @@
           "signal": true
         },
         {
+          "name": "exportsChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "onChanged",
+          "parameters": ["QString", "QJSValue", "bool"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "onChanged",
+          "parameters": ["QString", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
           "name": "isAvailable",
           "parameters": ["QString"],
           "returnType": "bool",
@@ -2469,6 +2653,30 @@
           "signal": false
         },
         {
+          "name": "registerCommand",
+          "parameters": ["QString", "QString", "QJSValue", "QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "registerCommand",
+          "parameters": ["QString", "QString", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "callCommand",
+          "parameters": ["QString", "QString", "QString", "QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "callCommand",
+          "parameters": ["QString", "QString", "QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
           "name": "call",
           "parameters": ["QString", "QString", "QString", "QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
@@ -2481,7 +2689,14 @@
           "signal": false
         }
       ],
-      "properties": []
+      "properties": [
+        {
+          "constant": false,
+          "name": "snapshot",
+          "type": "QVariantMap",
+          "writable": false
+        }
+      ]
     },
     "EchoPluginScroll": {
       "enums": [],
@@ -3579,6 +3794,42 @@
           "signal": true
         },
         {
+          "name": "setAlwaysOnTop",
+          "parameters": ["bool"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "setOpacity",
+          "parameters": ["double"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "setTitle",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "minimize",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "restore",
+          "parameters": ["bool"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "restore",
+          "parameters": [],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
           "name": "hide",
           "parameters": [],
           "returnType": "void",
@@ -3697,6 +3948,18 @@
           "name": "show",
           "parameters": ["QString"],
           "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "onSnapshot",
+          "parameters": ["QString", "QJSValue", "bool"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "onSnapshot",
+          "parameters": ["QString", "QJSValue"],
+          "returnType": "EchoMusic::EchoPluginRegistration*",
           "signal": false
         },
         {

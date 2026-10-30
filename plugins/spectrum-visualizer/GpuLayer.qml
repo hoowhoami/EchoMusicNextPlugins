@@ -210,7 +210,7 @@ Item {
         graphics: root.plugin.graphics
         paused: !root.live
         fps: root.settings.fps
-        continuous: root.live && (root.settings.mode === "mist" && !root.settings.reducedMotion && root.settings.mistMotion > 0 || root.settings.mode === "centered" && !root.settled || !root.frame || root.frame.state === "idle")
+        continuous: root.live && (root.settings.mode === "centered" && !root.settled || root.plugin.player.clock.isAdvancing === true && (root.settings.mode === "mist" && !root.settings.reducedMotion && root.settings.mistMotion > 0 || root.settings.mode === "centered" && !root.settled || !root.frame || root.frame.state === "idle"))
         dynamicRange: root.settings.hdrHighlights && root.plugin.graphics.capabilities.localHdrSupported === true ? "auto" : "sdr"
     }
 }

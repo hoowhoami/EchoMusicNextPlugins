@@ -135,3 +135,9 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 导航、分域设置、动态工具栏操作与全局封面 API 的使用和生命周期见[宿主扩展](host-access.md)。
 
 2026-10-29：频谱改由宿主RHI API执行GPU插值与绘制；旧Shapes保留为不支持GPU/compute时的回退。着色器由发布工具生成，版本保持1.0.0。
+
+公开依赖目录、服务方法发现、变化订阅及公开命令注册/互调见[插件协作](plugin-cooperation.md)。已有 context 私有命令不会自动公开。
+
+播放时钟、按优先级撤销的临时主题、应用图标与完整文件标签见[呈现与元数据 API](presentation-services.md)。
+
+GPU资源、命令与生命周期见 [GPU提交](gpu-submissions.md)；主题目录、材质和浮窗见 [呈现服务](presentation-services.md)。

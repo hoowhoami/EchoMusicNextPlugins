@@ -120,7 +120,26 @@ try {
         [
           ...(spectrum ? ['builtAuthorPackageCommands'] : []),
           'graphicsValidationOwnershipAndAccount',
-          ...(process.env.ECHO_TEST_NATIVE_GPU ? ['graphicsNativePixelsComputeAndRecovery'] : []),
+          'graphicsMultipleTargetsMipRenderingAndLifetime',
+          'graphicsIndirectGpuArgumentsAndRetirement',
+          'graphicsTextureArraysTransfersAndLifetime',
+          'graphicsCubeVolumeSlicesAndRecovery',
+          'appearancePreviewCatalogAndFloatingIsolation',
+          'appearanceMaterialsAndRouteLifecycle',
+          'floatingWindowsNativeStateAuthorizationAndObservation',
+          'publicPluginCatalogCommandsAndRetirement',
+          'publicPluginCatalogScopeAccountAndReplacement',
+          'playbackClockNativeSamplesAndPluginLifetime',
+          'temporaryAppearancePriorityLiveBaseAndRevocation',
+          'applicationIconsPriorityNativeOwnersAndCancellation',
+          'completeAudioMetadataRealFilesAndCancellation',
+          'shortcutIconTransactionPreservesCurrentFields',
+          ...(process.env.ECHO_TEST_NATIVE_GPU
+            ? [
+                'graphicsNativePixelsComputeAndRecovery',
+                'graphicsOrderedTransfersMipmapsAndCompletion',
+              ]
+            : []),
           'hostNavigationRoutesHistoryCancellationAndAccount',
           'hostSettingsPersistenceSubscriptionsAndRevocation',
           'hostActionsDynamicAsyncAndLifecycle',

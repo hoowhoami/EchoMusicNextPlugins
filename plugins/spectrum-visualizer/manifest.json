@@ -22,6 +22,7 @@
       "ui.state",
       "ui.surfaces",
       "audio.spectrum",
+      "playback.clock",
       "graphics.rhi",
       "graphics.compute"
     ]

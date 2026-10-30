@@ -66,6 +66,7 @@ const nativeScriptDefinitions = new Set([
 let declaredTypes = new Map();
 function compatibleType(qtType, type, depth = 0) {
   if (depth > 16) return false;
+  if (type && ts.isParenthesizedTypeNode(type)) return compatibleType(qtType, type.type, depth + 1);
   const native = qtType.replace('EchoMusic::', '').replace(/\s*\*$/, '');
   if (
     native === 'QJSValue' &&
@@ -124,7 +125,10 @@ function compatibleType(qtType, type, depth = 0) {
       !!array && ts.isArrayTypeNode(array) && array.elementType.kind === ts.SyntaxKind.StringKeyword
     );
   }
-  if (native === 'QVariantList') return !!type && ts.isArrayTypeNode(type);
+  if (native === 'QVariantList') {
+    const array = type && ts.isTypeOperatorNode(type) ? type.type : type;
+    return !!array && ts.isArrayTypeNode(array);
+  }
   if (native === 'QRectF') return text === 'QtRect';
   if (native === 'QVariantMap' && type && ts.isUnionTypeNode(type))
     return type.types.every((part) => compatibleType(qtType, part, depth + 1));
