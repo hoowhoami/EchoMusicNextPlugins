@@ -1334,7 +1334,8 @@ declare module 'echo:plugin-sdk' {
   }
   /** Numeric arrays use dataFormat; ArrayBuffer contains already packed bytes. */
   export type GpuData = readonly number[] | ArrayBuffer | ArrayBufferView;
-  export type GpuDataFormat = 'float32' | 'float16' | 'uint8' | 'uint16' | 'uint32';
+  export type GpuDataFormat =
+    'float32' | 'float16' | 'uint8' | 'uint16' | 'uint32' | 'int8' | 'int16' | 'int32';
   export interface GpuBufferDefinition {
     size: number;
     usage: readonly ('uniform' | 'vertex' | 'index' | 'storage' | 'indirect')[];
@@ -1387,15 +1388,52 @@ declare module 'echo:plugin-sdk' {
     cull?: 'none' | 'back' | 'front';
     depthTest?: boolean;
     depthWrite?: boolean;
-    vertexLayout?: {
-      stride: number;
-      attributes: readonly {
-        location: number;
-        offset: number;
-        format: 'float' | 'float2' | 'float3' | 'float4';
-      }[];
-    };
+    vertexLayout?: GpuVertexLayout;
   }
+  export type GpuVertexFormat =
+    | 'float'
+    | 'float2'
+    | 'float3'
+    | 'float4'
+    | 'half'
+    | 'half2'
+    | 'half3'
+    | 'half4'
+    | 'uint'
+    | 'uint2'
+    | 'uint3'
+    | 'uint4'
+    | 'int'
+    | 'int2'
+    | 'int3'
+    | 'int4'
+    | 'uint16'
+    | 'uint16x2'
+    | 'uint16x3'
+    | 'uint16x4'
+    | 'int16'
+    | 'int16x2'
+    | 'int16x3'
+    | 'int16x4'
+    | 'unorm8'
+    | 'unorm8x2'
+    | 'unorm8x4';
+  export interface GpuVertexStream {
+    stride: number;
+    stepMode?: 'vertex' | 'instance';
+    stepRate?: number;
+  }
+  export type GpuVertexLayout = {
+    attributes: readonly {
+      binding?: number;
+      location: number;
+      offset: number;
+      format: GpuVertexFormat;
+      matrixSlice?: number;
+    }[];
+  } & (
+    { stride: number; bindings?: never } | { bindings: readonly GpuVertexStream[]; stride?: never }
+  );
   export interface GpuComputePipelineDefinition {
     computeShader: string;
   }
@@ -1411,12 +1449,17 @@ declare module 'echo:plugin-sdk' {
     offset?: number;
     size?: number;
   }
-  export interface GpuDrawBuffers {
-    vertexBuffer?: string;
-    vertexOffset?: number;
+  export type GpuDrawBuffers = {
     indexBuffer?: string;
     indexFormat?: 'uint16' | 'uint32';
-  }
+  } & (
+    | { vertexBuffer?: string; vertexOffset?: number; vertexBuffers?: never }
+    | {
+        vertexBuffers: readonly { buffer: string; offset?: number }[];
+        vertexBuffer?: never;
+        vertexOffset?: never;
+      }
+  );
   /** Packed uint32 arguments; indexed vertexOffset is int32. GPU-written arguments are
    * consumed directly, without CPU readback. Authors own their vertex/index ranges. */
   export type GpuDraw = GpuDrawBuffers &
@@ -1514,6 +1557,12 @@ declare module 'echo:plugin-sdk' {
     readonly state?: 'ready' | 'error' | 'suspended' | 'unavailable' | 'waiting';
     readonly reason?: string;
     readonly backend?: string;
+    /** Opaque RHI device identity. A resource cannot cross incompatible devices/threads. */
+    readonly deviceId?: string;
+    readonly instancing?: boolean;
+    readonly customInstanceStepRate?: boolean;
+    readonly integerAttributes?: boolean;
+    readonly halfAttributes?: boolean;
     readonly compute: boolean;
     readonly multipleRenderTargets?: boolean;
     readonly independentBlend?: boolean;
@@ -1560,8 +1609,13 @@ declare module 'echo:plugin-sdk' {
     /** Raw native framebuffer row order. */
     yUp?: boolean;
   }
-  /** Logical CPU definition; each canvas owns its native instance and GPU-only contents. */
+  /** Scoped logical handle. Non-uniform buffers/textures share a native allocation on one RHI device. */
   export interface EchoGpuResource {
+    readonly shared: boolean;
+    readonly readOnly: boolean;
+    /** Owned definitions are usable immediately; borrowed sources await their Qt texture. */
+    readonly ready: boolean;
+    readonly generation: number;
     readonly id: string;
     readonly kind: string;
     readonly active: boolean;
@@ -1570,6 +1624,9 @@ declare module 'echo:plugin-sdk' {
   }
   /** Handles are scoped to this presentation, account and activation. */
   export interface EchoPluginGraphics {
+    shareResource(resource: EchoGpuResource, access?: 'read' | 'read-write'): string;
+    importResource(token: string, access?: 'read' | 'read-write'): EchoGpuResource | null;
+    revokeSharing(resource: EchoGpuResource): boolean;
     readonly capabilities: GpuCapabilities;
     readonly errorMessage: string;
     readonly changed: QtSignal;
@@ -1583,10 +1640,60 @@ declare module 'echo:plugin-sdk' {
     writeBuffer(resource: EchoGpuResource, data: GpuData, offset?: number): boolean;
     writeTexture(resource: EchoGpuResource, data: GpuData): boolean;
   }
+  /** A live Qt Quick object supplied by the plugin's QML presentation. */
+  export interface QtQuickItem {
+    readonly __qtQuickItem: unique symbol;
+    readonly width: number;
+    readonly height: number;
+    readonly visible: boolean;
+  }
+  export interface GlyphAtlasLevel {
+    /** Index into this lease's pages, never a native handle. */
+    page: number;
+    /** Normalized x, y, width, height; no implicit Y flip. */
+    uv: [number, number, number, number];
+    /** Local ink x, y, width, height, including raster rounding/padding. */
+    rect: [number, number, number, number];
+    /** Linear coverage channel. Other mask channels may contain opaque/internal data. */
+    coverage: 'r' | 'a';
+    /** Preserve native premultiplied encoded color; false means tintable linear coverage. */
+    color: boolean;
+  }
+  export interface GlyphAtlasFragment {
+    key: string;
+    start: number;
+    length: number;
+    anchor: [number, number];
+    baseline: number;
+    /** canvas: DPR, DPR/2, DPR/4, DPR/8; static: one full-DPR level. */
+    levels: GlyphAtlasLevel[];
+  }
+  /** Read-only, plugin/account/window-bound GPU sampling lease.
+   * changed publishes pages, UVs and metrics atomically; regenerate draws on revision/generation.
+   * Hiding releases native allocations; dispose does not destroy the native font producer.
+   */
+  export interface EchoGpuGlyphAtlas {
+    readonly active: boolean;
+    readonly ready: boolean;
+    readonly revision: number;
+    readonly generation: number;
+    readonly pages: EchoGpuResource[];
+    readonly fragments: GlyphAtlasFragment[];
+    readonly metrics: GlyphMetrics[];
+    readonly pixelRatio: number;
+    readonly textureUploads: number;
+    readonly errorString: string;
+    readonly changed: QtSignal;
+    dispose(): void;
+  }
   /** Plugin-local GPU item. Default dynamicRange is sdr; requests never change its host window.
    * Shaders output linear premultiplied RGBA; unsupported local HDR is tone mapped to SDR.
    */
   export interface EchoGpuSurface {
+    /** Borrow a full, non-atlas texture provider/layer from this plugin and window. */
+    importTextureSource(source: QtQuickItem): EchoGpuResource | null;
+    /** Import this plugin's native glyph ink atlas on this window/RHI, with coherent UVs. */
+    importGlyphAtlas(source: GlyphRun): EchoGpuGlyphAtlas | null;
     graphics: EchoPluginGraphics | null;
     paused: boolean;
     continuous: boolean;
@@ -5079,10 +5186,6 @@ declare module 'echo:plugin-sdk' {
     readonly assets: EchoPluginAssets;
   }
 
-  export interface QtQuickItem {
-    readonly __qtQuickItem: unique symbol;
-  }
-
   export interface LyricAlternateText {
     readonly role: 'translation' | 'romanization';
     readonly text: string;
@@ -5337,6 +5440,9 @@ declare module 'echo:plugin-sdk' {
     ): EchoPluginAssetAnimation | null;
   }
 
+  export type GlyphRunDefinition = GlyphRunInput;
+  export type GlyphRunMetric = GlyphMetrics;
+
   export interface GlyphRunInput {
     key: string;
     text: string;
@@ -5374,7 +5480,7 @@ declare module 'echo:plugin-sdk' {
     color?: QtColor;
     /** Full-context run-local clip, before pose scale/rotation; also clips blur and halos. */
     clip?: { x: number; y: number; width: number; height: number };
-    halos?: { radius: number; opacity: number; color: QtColor }[];
+    halos?: { radius: number; opacity?: number; color: QtColor }[];
   }
 
   export interface GlyphMetrics {
@@ -5405,7 +5511,9 @@ declare module 'echo:plugin-sdk' {
   }
 
   /** QML drawable. Full-context shaping and bounded immutable texture atlases. */
-  export interface GlyphRun {
+  export interface GlyphRun extends QtQuickItem {
+    /** Retain native shaping/metrics and delegate drawing to an imported atlas. */
+    atlasOnly: boolean;
     font: QtFont;
     /** Pure native measurement, size up to 16384; rejects poses and never allocates masks. */
     measurementOnly: boolean;
@@ -5440,6 +5548,7 @@ declare module 'echo:plugin-sdk' {
     readonly renderingChanged: QtSignal;
     readonly compositionChanged: QtSignal;
     readonly preparationChanged: QtSignal;
+    readonly atlasChanged: QtSignal;
   }
 
   /** Native RGBA32F sampler. Nearest filtering, no colour conversion or atlas. */

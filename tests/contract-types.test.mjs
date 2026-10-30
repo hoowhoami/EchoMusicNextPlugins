@@ -22,7 +22,13 @@ visit(source);
 // This exercises the checker only; it does not describe an exported host contract.
 const bindings = {
   declaredTypes,
-  nativeTypes: new Set(['EchoPluginOperation', 'EchoPluginPlayer', 'EchoPluginReadModel']),
+  nativeTypes: new Set([
+    'EchoPluginOperation',
+    'EchoPluginPlayer',
+    'EchoPluginReadModel',
+    'GlyphRun',
+    'EchoGpuGlyphAtlas',
+  ]),
 };
 function type(text) {
   return ts.createSourceFile('type.ts', `type Probe = ${text};`, ts.ScriptTarget.Latest, true)
@@ -64,6 +70,12 @@ test('native pointers require the exact name, including nullable and generic rea
   for (const text of ['EchoPluginPlayer', 'EchoPluginPlayer | null', '(EchoPluginPlayer | null)'])
     assert.equal(accepts('EchoMusic::EchoPluginPlayer *', text), true, text);
   assert.equal(accepts('EchoPluginReadModel*', 'EchoPluginReadModel<LyricRow>'), true);
+  for (const native of ['GlyphRun', 'EchoGpuGlyphAtlas']) {
+    assert.equal(accepts(`EchoMusic::${native}*`, native), true);
+    assert.equal(accepts(`EchoMusic::${native}*`, `${native} | null`), true);
+    assert.equal(accepts(`EchoMusic::${native}*`, `${native}Fake`), false);
+    assert.equal(accepts(`EchoMusic::${native}*`, `${native} | string`), false);
+  }
   for (const text of [
     'EchoPluginPlayerFake',
     'EchoPluginPlayer | string',

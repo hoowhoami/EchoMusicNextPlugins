@@ -139,6 +139,10 @@
     "graphics.textureViews",
     "graphics.textureArrays",
     "graphics.textureDimensions",
+    "graphics.sharedResources",
+    "graphics.vertexStreams",
+    "graphics.textureSources",
+    "graphics.glyphAtlases",
     "graphics.compute",
     "graphics.readback",
     "plugins.catalog",
@@ -310,6 +314,85 @@
         }
       ]
     },
+    "EchoGpuGlyphAtlas": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "dispose",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "ready",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "revision",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "generation",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "pages",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "fragments",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "metrics",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "pixelRatio",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "textureUploads",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorString",
+          "type": "QString",
+          "writable": false
+        }
+      ]
+    },
     "EchoGpuResource": {
       "enums": [],
       "methods": [
@@ -344,6 +427,30 @@
           "name": "active",
           "type": "bool",
           "writable": false
+        },
+        {
+          "constant": false,
+          "name": "shared",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "readOnly",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "generation",
+          "type": "qlonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "ready",
+          "type": "bool",
+          "writable": false
         }
       ]
     },
@@ -372,6 +479,18 @@
           "name": "submit",
           "parameters": ["QVariantMap"],
           "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "importTextureSource",
+          "parameters": ["QQuickItem*"],
+          "returnType": "EchoMusic::EchoGpuResource*",
+          "signal": false
+        },
+        {
+          "name": "importGlyphAtlas",
+          "parameters": ["EchoMusic::GlyphRun*"],
+          "returnType": "EchoMusic::EchoGpuGlyphAtlas*",
           "signal": false
         },
         {
@@ -2033,6 +2152,36 @@
         {
           "name": "writeTexture",
           "parameters": ["EchoMusic::EchoGpuResource*", "QJSValue"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "shareResource",
+          "parameters": ["EchoMusic::EchoGpuResource*", "QString"],
+          "returnType": "QString",
+          "signal": false
+        },
+        {
+          "name": "shareResource",
+          "parameters": ["EchoMusic::EchoGpuResource*"],
+          "returnType": "QString",
+          "signal": false
+        },
+        {
+          "name": "importResource",
+          "parameters": ["QString", "QString"],
+          "returnType": "EchoMusic::EchoGpuResource*",
+          "signal": false
+        },
+        {
+          "name": "importResource",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoGpuResource*",
+          "signal": false
+        },
+        {
+          "name": "revokeSharing",
+          "parameters": ["EchoMusic::EchoGpuResource*"],
           "returnType": "bool",
           "signal": false
         }
@@ -5020,9 +5169,21 @@
           "parameters": [],
           "returnType": "void",
           "signal": true
+        },
+        {
+          "name": "atlasChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
         }
       ],
       "properties": [
+        {
+          "constant": false,
+          "name": "atlasOnly",
+          "type": "bool",
+          "writable": true
+        },
         {
           "constant": false,
           "name": "font",

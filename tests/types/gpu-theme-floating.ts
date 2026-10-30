@@ -1,4 +1,10 @@
-import type { EchoPluginContext, EchoGpuSurface, GpuCommandList, GpuDraw } from 'echo:plugin-sdk';
+import type {
+  EchoPluginContext,
+  EchoGpuSurface,
+  GpuCommandList,
+  GpuDraw,
+  GpuVertexLayout,
+} from 'echo:plugin-sdk';
 export function author(c: EchoPluginContext, surface: EchoGpuSurface) {
   const image = c.graphics.createTexture({
     width: 32,
@@ -188,4 +194,89 @@ export function volumes(c: EchoPluginContext, surface: EchoGpuSurface, pipeline:
     height: 4,
     usage: ['sampled'],
   });
+}
+
+export function sharedStreams(c: EchoPluginContext, surface: EchoGpuSurface) {
+  const buffer = c.graphics.createBuffer(
+    { size: 32, usage: ['storage', 'vertex'], format: 'int32' },
+    [-1, 1, 2, 3],
+  );
+  if (!buffer) return;
+  const token = c.graphics.shareResource(buffer, 'read-write');
+  const imported = c.graphics.importResource(token);
+  if (imported) {
+    void imported.shared;
+    void imported.readOnly;
+    void imported.generation;
+    imported.changed.connect(() => {});
+  }
+  c.graphics.revokeSharing(buffer);
+  // @ts-expect-error Sharing access is explicit.
+  c.graphics.importResource(token, 'write-only');
+  const p = c.graphics.createRenderPipeline({
+    vertexShader: 'multi.vert.qsb',
+    fragmentShader: 'color.frag.qsb',
+    vertexLayout: {
+      bindings: [{ stride: 8 }, { stride: 16, stepMode: 'instance' }],
+      attributes: [
+        { binding: 0, location: 0, offset: 0, format: 'float2' },
+        { binding: 1, location: 1, offset: 0, format: 'float4' },
+      ],
+    },
+  });
+  if (p)
+    surface.enqueue({
+      passes: [
+        {
+          type: 'render',
+          pipeline: p.id,
+          bindings: [],
+          draws: [
+            {
+              count: 3,
+              instances: 2,
+              vertexBuffers: [{ buffer: buffer.id }, { buffer: buffer.id, offset: 16 }],
+            },
+          ],
+        },
+      ],
+    });
+  // @ts-expect-error Single and multi-stream fields are mutually exclusive.
+  const mixed: GpuDraw = { count: 3, vertexBuffer: 'one', vertexBuffers: [{ buffer: 'two' }] };
+  void mixed;
+}
+
+export function sharingTypeBoundaries(c: EchoPluginContext) {
+  const resource = c.graphics.importResource('token', 'read-write');
+  if (resource) {
+    // @ts-expect-error Generation is reported by the host.
+    resource.generation = 2;
+    // @ts-expect-error Import permissions are immutable.
+    resource.readOnly = false;
+  }
+  // @ts-expect-error Legacy stride and explicit bindings cannot be mixed.
+  const layout: GpuVertexLayout = {
+    stride: 8,
+    bindings: [{ stride: 8 }],
+    attributes: [{ location: 0, offset: 0, format: 'float2' }],
+  };
+  void layout;
+}
+
+export function qtTextureSource(
+  surface: EchoGpuSurface,
+  source: import('echo:plugin-sdk').QtQuickItem,
+) {
+  const texture = surface.importTextureSource(source);
+  if (texture) {
+    void texture.ready;
+    void texture.readOnly;
+    void texture.generation;
+  }
+  // @ts-expect-error A native Qt Quick object is required.
+  surface.importTextureSource(42);
+  if (texture) {
+    // @ts-expect-error Readiness is reported by the host.
+    texture.ready = true;
+  }
 }

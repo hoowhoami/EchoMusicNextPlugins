@@ -35,7 +35,7 @@ const read = surface.readback(texture, { level: 1, x: 0, y: 0, width: 1, height:
 if (read) await awaitOperation(read);
 ```
 
-逻辑资源在每个画布拥有独立原生实例；GPU派生内容不跨画布自动共享。纹理仍为2D；`mipmaps:true` 分配完整链，sampler支持mipFilter。`writeTexture`写整个基础层，`writeBuffer`更新可恢复的CPU定义；enqueue上传/计算/拷贝产生GPU暂存内容，不自动变成CPU持久副本。设备重建后CPU定义重建，观察generation后重新提交自己的GPU派生内容。
+非uniform缓冲和纹理在同一RHI设备/渲染线程上复用同一原生分配；跨呈现scope使用下述分享租约。uniform、sampler及pipeline仍是画布局部对象。`writeTexture`写全部base面/层/切片，`writeBuffer`更新可恢复的CPU定义；enqueue计算/拷贝的GPU结果不自动变成CPU副本。所有使用者隐藏后释放原生分配，恢复时从CPU定义重建；观察资源generation并重新生成GPU派生内容。
 
 render pass支持物理像素viewport/scissor（左上原点）、load/clear、depth与混合；draw支持firstInstance/baseVertex，uniform binding支持offset/size，偏移遵守实际uniformBufferAlignment。仅改变draw/groups/clear/viewport/scissor时复用管线，内部GPU拷贝管线每个设备代际复用，不随上传重编译。底层没有把设备未支持的baseVertex/baseInstance当作成功。
 
@@ -68,7 +68,7 @@ const rendered = surface.enqueue({
 
 管线 `blend` 默认应用所有附件；可用 `blends: ['none', 'add']` 明确每个附件，长度必须与附件数一致。不同模式需要设备的 independentBlend。storage-image binding 的 `level` 选择具体 mip，其他 binding 不接受该字段。普通 sampled texture 仍按 sampler/mipmap 自动选择，不将它冒充受限 mip 范围的采样视图。内置 `frame` uniform 始终描述画布；附件/mip 尺寸需要自己计算并通过 uniform 提供。
 
-跨画布GPU派生资源共享及真正局部HDR仍需另行实现；设备验收范围另列。
+同设备的跨画布GPU资源共享已接入；跨不兼容RHI设备互操作及真正局部HDR仍未提供，设备验收范围另列。
 
 ## GPU 参数驱动的绘制
 
@@ -109,3 +109,60 @@ sampled绑定使用sampler2DArray，storage-image使用image2DArray并以level�
 先检查cubeTextures、volumeTextures、volumeMipmaps、renderVolumeSlices；非base mip渲染/读回还须对应已有能力。generation/隐藏/账号/停用规则与其它纹理相同。恢复CPU快照后，GPU生成的面/切片需重提生成命令。
 
 固定Qt的QRhi mip层数为`1 + floor(log2(max(width,height)))`；3d的每层深度为`max(1, depth >> level)`。深度大于宽高时末级仍可能有多个切片，SDK按这条实际链计费、生成和验证索引，不宣称总会缩为1×1×1。最大读回区域与内存/提交预算继续有效。
+
+## 跨画布资源租约
+
+需要在界面实例销毁后继续使用的资源由activate上下文创建，通过`shareResource(resource, 'read' | 'read-write')`生成当前插件/账号内的临时token，再通过ui.setState等传给各呈现上下文。呈现方用`importResource(token, access?)`取得自己的句柄，默认只读。不要保存token作为下一次启动的配置。
+
+```ts
+const image = ctx.graphics.createTexture({
+  width: 256,
+  height: 256,
+  usage: ['sampled', 'storage', 'readback'],
+});
+if (image) {
+  const token = ctx.graphics.shareResource(image, 'read-write');
+  ctx.ui.setState({ sharedImage: token });
+}
+// Consumer presentation: importResource(token) samples; producer imports read-write.
+```
+
+仅非uniform缓冲和纹理可分享。同插件的呈现scope可导入；其它插件、其它账号和旧token不能导入。分享者限定最大权限：只读租约不能做CPU写入、上传、copy目标、mipmap、渲染附件或shader存储写入。dispose导入句柄只释放自身租约；revokeSharing原句柄撤销全部导入及待执行操作，原资源仍可使用；原资源dispose/所有者结束自动撤销。更改权限时先revoke再share，旧token失效。
+
+同一资源的buffer/image GPU数据由所有导入者直接访问，同一GPU分配只计费一次；别名不能绕过同pass读写冲突、重复附件或同源/目标copy检查。GPU写入方与读取方用enqueue返回的operation成功通知安排顺序，operation表示GPU完成，不依赖画布节点渲染顺序。不要用CPU readback再upload充当共享。
+
+`surface.status.deviceId`是实际RHI设备的opaque身份，graphics.capabilities为最近上报快照。同设备/同线程共享；不同QRhi实例即使对应同一物理显卡也可能不兼容，首次GPU使用会报different RHI device/render thread。import只建立逻辑租约，不代表原生设备兼容。普通窗口render loop和交换链保持现状，没有把其它窗口改为共用渲染线程。
+
+单个生产者隐藏、暂停或其呈现销毁时，有其它活动导入画布则保留共享结果。最后使用者挂起释放原生GPU分配，恢复/场景图/设备重建令资源generation递增并回到CPU定义；重新提交生成操作之后再启动读取方。账号、授权scope或停用取消在途操作并回收；已经编码的GPU命令不回滚。
+
+## 多顶点流与实例属性
+
+`graphics.vertexStreams`允许vertexLayout.bindings声明1..16条流，数组下标即binding。stride为4的倍数、4..2048字节；stepMode默认vertex，可选instance；stepRate默认1、仅instance允许其它正整数并需customInstanceStepRate。每条流须至少提供一个属性。
+
+```ts
+const vertexLayout = {
+  bindings: [
+    { stride: 8 },
+    { stride: 8, stepMode: 'instance' as const },
+    { stride: 4, stepMode: 'instance' as const },
+  ],
+  attributes: [
+    { binding: 0, location: 0, offset: 0, format: 'float2' as const },
+    { binding: 1, location: 1, offset: 0, format: 'float2' as const },
+    { binding: 2, location: 2, offset: 0, format: 'unorm8x4' as const },
+  ],
+};
+const draw = {
+  count: 3,
+  instances: 2,
+  vertexBuffers: [{ buffer: positions.id }, { buffer: offsets.id }, { buffer: colors.id }],
+};
+```
+
+vertexBuffers与vertexBuffer/vertexOffset互斥，数量须与bindings相同；每项offset为4字节对齐的流起点。旧单流stride形式继续可用，与bindings互斥。direct/indexed/indirect/索引indirect均使用同一组流；直接draw检查first/count及firstInstance/instances/stepRate后的实际末尾范围。GPU生成的索引/间接参数范围由作者保证，宿主不会读回参数裁剪。
+
+属性支持float/half/uint/int的1..4分量（标量无数字后缀）、uint16/int16及x2/x3/x4、unorm8及x2/x4。half需halfAttributes、整数需integerAttributes；16位三分量按8字节占用预留，保持D3D的填充。偏移按组件字节对齐，属性不得越过stride。CPU数字数组可用int8/int16/int32等format，或直接传打包ArrayBuffer。
+
+shader的整数/浮点分类必须与属性一致。矩阵按列展开为连续location，matrixSlice从0开始，location-matrixSlice保持矩阵起点，各列format的分量数匹配矩阵行数。反射校验所需列、类型和位置；按[Qt属性规则](https://doc.qt.io/qt-6/qrhivertexinputattribute.html#QRhiVertexInputAttribute-1)转换原生布局。共享流同样受只读和同pass写别名约束。源缓冲或布局变化时按现有提交快照及生命周期执行。
+
+实例流的直接draw最后记录为`firstInstance + floor((instances - 1) / stepRate)`，base不参与除法，随后按stride和流offset检查最后属性的实际范围。见[原生顶点寻址规则](https://github.khronos.org/Vulkan-Site/spec/latest/chapters/fxvertex.html)。
