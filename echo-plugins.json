@@ -14,6 +14,14 @@
       "path": "plugins/cloud-priority",
       "artifact": "artifacts/cloud-priority-1.0.2.echomod",
       "sha256": "0bd6697efc68b4bb06431f7a9d8d71c9cc3fc50318230d7a7386dd309f944b01"
+    },
+    {
+      "id": "custom-icon",
+      "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
+      "ref": "custom-icon-v1.0.0",
+      "path": "plugins/custom-icon",
+      "artifact": "artifacts/custom-icon-1.0.0.echomod",
+      "sha256": "065baf5da71cb915dbbf5868a26bb427f9ce4ba91b824a3f79b614bc8713f19e"
     }
   ]
 }
