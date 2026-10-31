@@ -43,6 +43,24 @@ test('bindings follow actual Qt properties, signals, methods, readonly state and
   await assert.rejects(checkBindings(method), /method differs/);
 });
 
+test('resource and presentation bindings retain native return types and state', async () => {
+  const contract = await loadContract();
+  await checkBindings(contract);
+  assert.ok(contract.types.EchoPluginAssetAnimation);
+  assert.ok(contract.types.EchoPluginAssetArchive);
+  assert.ok(contract.types.EchoPluginAssets);
+  assert.ok(contract.types.EchoPluginText);
+  assert.ok(contract.types.ImageCaptureLease);
+  assert.ok(contract.types.PresentationScope);
+  const changed = structuredClone(contract);
+  changed.types.ImageCapture.methods.find((method) => method.name === 'encode').returnType =
+    'QString';
+  await assert.rejects(checkBindings(changed), /SDK method differs: ImageCapture.encode/);
+  const property = structuredClone(contract);
+  property.types.PointMesh.properties.find((item) => item.name === 'pointCount').type = 'bool';
+  await assert.rejects(checkBindings(property), /SDK property type differs: PointMesh.pointCount/);
+});
+
 test('manifest compatibility, source-only index and comparator intersections', async () => {
   assert.equal((await localPackages(root)).length, 1);
   assert.equal(rangeContains('>=0.1.0 <1.0.0', '0.1.0'), true);

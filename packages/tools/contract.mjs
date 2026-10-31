@@ -130,7 +130,7 @@ function compatibleType(qtType, type, depth = 0) {
     const array = type && ts.isTypeOperatorNode(type) ? type.type : type;
     return !!array && ts.isArrayTypeNode(array);
   }
-  if (native === 'GlyphRun') return text === 'GlyphRun';
+  if (['GlyphRun', 'ImageCaptureLease'].includes(native)) return text === native;
   if (native === 'QQuickItem') return text === 'QtQuickItem';
   if (native === 'QRectF') return text === 'QtRect';
   if (native === 'QVariantMap' && type && ts.isUnionTypeNode(type))

@@ -141,3 +141,11 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 播放时钟、按优先级撤销的临时主题、应用图标与完整文件标签见[呈现与元数据 API](presentation-services.md)。
 
 GPU资源、命令与生命周期见 [GPU提交](gpu-submissions.md)；主题目录、材质和浮窗见 [呈现服务](presentation-services.md)。
+
+## 资源与原生呈现类型
+
+`ctx.assets` 提供安装私有的图片/字体导入、集合列举、图片采样、动画租约和图片归档。声明实际使用的 `assets.images`、`assets.fonts`、`assets.sampleImage`、`assets.animation` 或 `assets.imageArchives` feature。异步操作用 `awaitOperation`；动画和归档返回可空租约，使用前检查，结束时 `dispose()`。动画的 `playing` 可写，`ready/frameSource/frameCount` 等准备结果只读。URL 使用 `QtUrl` 类型，可将 `ctx.player.coverUrl` 直接交给采样或动画接口，持久保存前用 `toString()` 转换。
+
+`ctx.text.segmentWords(texts, locale)` 返回按输入行排列的词段，`index` 为 UTF-16 偏移。先检查 `ctx.text.available`；构建缺少兼容 ICU 时，该接口仍有声明，但宿主不提供 `text.segmentation` 能力，调用会明确失败。
+
+QML 的 `ImageCapture` 返回只读结果 `ImageCaptureLease`，`encode()` 的结果不是直接可用的 URL，应等待 `ready` 后使用 `url`，替换或退出时释放租约。`PointMesh.pointCount` 可写，`vertexBytes/errorString` 只读；`PresentationScope.presented` 只读，用于跟随实际可见呈现状态。`ctx.fonts.familiesChanged` 通知字体目录变化；视图的 `aboutToClose` 和 `closeSkinSettings()` 分别用于关闭前通知与主动关闭皮肤设置。
