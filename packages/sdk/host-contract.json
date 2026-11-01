@@ -109,6 +109,7 @@
     "lyrics",
     "lyricEffects",
     "kugouApi",
+    "kugouAuth",
     "kugouVerification",
     "backups",
     "sqlite",
@@ -226,7 +227,10 @@
     "appearance.metadata",
     "appearance.lyricIcons",
     "ui.presentationClosing",
-    "ui.presentationVisibility"
+    "ui.presentationVisibility",
+    "kugou.authSnapshot",
+    "ui.dialogs",
+    "clipboard.write"
   ],
   "hostVersion": "0.1.0",
   "module": "echo:plugin-sdk",
@@ -1249,6 +1253,18 @@
       ],
       "properties": []
     },
+    "EchoPluginClipboard": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "write",
+          "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        }
+      ],
+      "properties": []
+    },
     "EchoPluginContext": {
       "enums": [],
       "methods": [
@@ -1456,6 +1472,12 @@
           "constant": true,
           "name": "ui",
           "type": "EchoMusic::EchoPluginUi*",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "clipboard",
+          "type": "EchoMusic::EchoPluginClipboard*",
           "writable": false
         },
         {
@@ -1705,6 +1727,37 @@
           "type": "bool",
           "writable": false
         },
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginDialog": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "closed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "close",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
         {
           "constant": false,
           "name": "active",
@@ -2305,6 +2358,12 @@
         {
           "name": "request",
           "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "authSnapshot",
+          "parameters": [],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
@@ -3864,6 +3923,12 @@
           "name": "registerSongMenuItem",
           "parameters": ["QString", "QJSValue"],
           "returnType": "EchoMusic::EchoPluginRegistration*",
+          "signal": false
+        },
+        {
+          "name": "showDialog",
+          "parameters": ["QVariantMap"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         },
         {

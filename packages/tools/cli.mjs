@@ -144,6 +144,9 @@ try {
                 'graphicsOrderedTransfersMipmapsAndCompletion',
               ]
             : []),
+          'authSnapshotAuthorizationCurrentSessionAndCancellation',
+          'pluginClipboardWritesAndScopeCancellation',
+          'pluginMainWindowDialogsLifecycle',
           'hostNavigationRoutesHistoryCancellationAndAccount',
           'hostSettingsPersistenceSubscriptionsAndRevocation',
           'hostActionsDynamicAsyncAndLifecycle',

@@ -149,3 +149,38 @@ GPU资源、命令与生命周期见 [GPU提交](gpu-submissions.md)；主题目
 `ctx.text.segmentWords(texts, locale)` 返回按输入行排列的词段，`index` 为 UTF-16 偏移。先检查 `ctx.text.available`；构建缺少兼容 ICU 时，该接口仍有声明，但宿主不提供 `text.segmentation` 能力，调用会明确失败。
 
 QML 的 `ImageCapture` 返回只读结果 `ImageCaptureLease`，`encode()` 的结果不是直接可用的 URL，应等待 `ready` 后使用 `url`，替换或退出时释放租约。`PointMesh.pointCount` 可写，`vertexBytes/errorString` 只读；`PresentationScope.presented` 只读，用于跟随实际可见呈现状态。`ctx.fonts.familiesChanged` 通知字体目录变化；视图的 `aboutToClose` 和 `closeSkinSettings()` 分别用于关闭前通知与主动关闭皮肤设置。
+
+## 按需会话、主窗口弹窗与剪贴板
+
+声明 `kugouAuth` 后，`await awaitOperation(ctx.kugou.authSnapshot())` 触发独立授权并返回 `{ Authorization, revision }`。Authorization 与 API 阶段 `server.intercept` 同名头的9字段完全一致，空值省略；只读当前账号/设备内存快照，不发送网络请求或等待其它业务请求。授权按安装与包内容绑定，可在插件授权管理撤销。普通 `kugouApi` 不允许读取；未登录时返回当前设备字段。订阅 `ctx.kugou.accountChanged` 后按需重取，处理取消/拒绝；不要日志记录、持久化或公开凭证，撤权无法收回已交付的字符串。
+
+```ts
+const auth = await awaitOperation(ctx.kugou.authSnapshot());
+const dialog = await awaitOperation(
+  ctx.ui.showDialog({
+    component: 'Panel.qml',
+    width: 400,
+    modal: true,
+    closeOnMask: true,
+  }),
+);
+await awaitOperation(ctx.clipboard.write('要复制的文本'));
+dialog.close();
+```
+
+`showDialog` 使用主窗口共享弹层，保留当前页面，不需windows授权。宽度160..2048逻辑px并服从主窗边界，title默认插件名，modal/closeOnMask默认true；Escape始终可关闭。返回operation在正文准备完成时交付句柄，可取消尚未完成的打开；句柄支持active/changed/closed/close。最多同时8个。正文自备自然高度和必要滚动：
+
+```qml
+import QtQuick
+import EchoMusic.PluginSdk
+Item {
+    required property EchoPluginContext plugin
+    required property EchoPluginDialog dialog
+    implicitHeight: 160
+    // 按钮调用 dialog.close()；命令使用本呈现作用域的 plugin。
+}
+```
+
+弹窗跟随主窗主题/缩放/移动；最小化保留实例和草稿。关闭、主窗真正隐藏、账号变化、调用者呈现结束或插件停用会释放正文与作用域。系统安全验证覆盖期间保留原实例并暂停交互；不将验证覆盖当作离页。
+
+`clipboard.write(text)` 只写系统文本剪贴板，允许空文本，最多1MiB UTF-8，不读剪贴板、不依赖焦点；账号/停用取消尚未执行的写入。API存在性可通过 `kugou.authSnapshot`、`ui.dialogs`、`clipboard.write` feature声明，SDK版本仍为1.0.0。

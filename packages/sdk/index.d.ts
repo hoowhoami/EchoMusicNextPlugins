@@ -704,6 +704,7 @@ declare module 'echo:plugin-sdk' {
     | 'windows'
     | 'process'
     | 'serverIntercept'
+    | 'kugouAuth'
     | 'navigation'
     | 'hostSettings'
     | 'cover'
@@ -2332,7 +2333,27 @@ declare module 'echo:plugin-sdk' {
     cancel(): void;
     dispose(): void;
   }
+  export interface PluginDialogOptions {
+    /** Package-relative QML Item; required properties: plugin, dialog. */
+    component: string;
+    width?: number;
+    title?: string;
+    modal?: boolean;
+    closeOnMask?: boolean;
+  }
+  export interface EchoPluginDialog {
+    readonly active: boolean;
+    readonly changed: QtSignal;
+    readonly closed: QtSignal;
+    close(): void;
+  }
+  export interface EchoPluginClipboard {
+    /** Text-only system clipboard, at most 1 MiB UTF-8. */
+    write(text: string): EchoPluginOperation<void>;
+  }
   export interface EchoPluginUi {
+    /** Main-window overlay; completes when its QML content is ready. */
+    showDialog(options: PluginDialogOptions): EchoPluginOperation<EchoPluginDialog>;
     registerSidebarItem(id: string, definition: SidebarDefinition): EchoPluginRegistration | null;
     registerShortcutCard(id: string, definition: SidebarDefinition): EchoPluginRegistration | null;
     registerSongMenuItem(id: string, definition: SongMenuDefinition): EchoPluginRegistration | null;
@@ -4863,7 +4884,14 @@ declare module 'echo:plugin-sdk' {
     videoPrivilege: { arguments: { hash: string }; result: KugouDto_video_privilege_Row[] };
     videoUrl: { arguments: { hash: string }; result: KugouDto_video_url_VideoUrl | null };
   }
+  export interface KugouAuthSnapshot {
+    /** Logical Authorization, identical to the API-stage interceptor header. */
+    readonly Authorization: string;
+    readonly revision: string;
+  }
   export interface EchoPluginKugou {
+    /** Requires separate kugouAuth capability and user authorization. */
+    authSnapshot(): EchoPluginOperation<KugouAuthSnapshot>;
     readonly account: Readonly<{ userId: string; loggedIn: boolean; revision: string }>;
     readonly accountChanged: QtSignal;
     request(
@@ -5341,6 +5369,7 @@ declare module 'echo:plugin-sdk' {
     refresh(): EchoPluginOperation<AppIconSnapshot>;
   }
   export interface EchoPluginContext {
+    readonly clipboard: EchoPluginClipboard;
     readonly assets: EchoPluginAssets;
     readonly text: EchoPluginText;
     readonly appIcons: EchoPluginAppIcons;
