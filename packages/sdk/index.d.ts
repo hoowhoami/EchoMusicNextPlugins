@@ -1099,6 +1099,8 @@ declare module 'echo:plugin-sdk' {
       id: string,
       definition: LyricResolverDefinition,
     ): EchoPluginRegistration | null;
+    /** Within a document, lines and nested values are shared read-only data.
+     * Copy before transforming; document changes publish a new lines array. */
     onSnapshot(
       id: string,
       callback: (snapshot: LyricSourceSnapshot) => void,

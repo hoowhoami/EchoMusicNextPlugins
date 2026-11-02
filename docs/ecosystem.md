@@ -2,6 +2,10 @@
 
 这些接口都从 `EchoPluginContext` 获取。声明所需 feature；业务接口另外声明 `kugouApi`、显式验证声明 `kugouVerification`、歌词动效声明 `lyricEffects` capability。
 
+## 合并首次授权
+
+同一插件在同一轮事件处理中并发发起的首次授权请求，会合并为一个清单，分别展示权限和用途。相互独立的权限可用 `Promise.all` 请求；逐个 `await` 的后续请求仍需等待各自确认。不同插件排队显示，已经展示的清单不会追加新权限。授权记录仍按安装、包内容和具体资源独立保存、撤销，合并提示不会让普通 API 权限获得账号凭证。
+
 ## 业务与验证
 
 `ctx.kugou.request(method, arguments)` 调用宿主类型化业务服务。编辑器按 method 提示准确的参数和结果字段；方法目录见 `KugouMethods`。目前提供 98 个正式命令，覆盖搜索、推荐/榜单、专辑/歌手、歌单、收藏、云盘、社交、评论/弹幕、音效、歌词、媒体和一起听。结果使用宿主已经转换的领域数据，字段保留其真实单位和可空性。业务 ID 使用十进制字符串，避免 JavaScript 大整数精度损失。
@@ -113,6 +117,8 @@ retention 支持 transient、action-required，或分别配置 completed/error/a
 component 是包内 QML，作为歌词视口 foreground 装饰按可见性创建，注入 `plugin`、`page`、`part`。它可以查询 `lyrics.viewport`、`lyrics.line` 和 `lyrics.run`，通过 `lyricEffects.snapshot(part)` 取得类型化上下文。viewport 提供时间、偏移、当前行、跟随/浏览状态；line 提供行和逐字时间；run 额外提供 Qt 原生排版后的字形簇矩形和 UTF-16 范围。拼音和竖排使用其真实原生 run，不伪造字符几何。rect 是原生排版单元，inkRect 是真实字形墨迹范围，rtl 和 wordIndices 保留方向及跨词字形簇的时间归属。矩形在对应 run 的局部坐标中，run 的公开 geometry 提供窗口位置。连字/组合字符保留 Qt 可用的字形簇，不将一个字形强行分成多个字符。
 
 完整歌词数据按需要读取 player.lyricSnapshot()；视口快照不在每一帧重复拷贝整首歌词。时间与词/glyph 的 startMs 对照时减去 snapshot.offsetMs；run 自带的 timelineMs 已位于原始逐字时间轴。快照只在持有公开引用时生成，字形几何随排版缓存，正常播放不重做 CPU 字体栅格化。
+
+`lyrics.onSnapshot`的`lines`及嵌套数据在文档不变时共享并保持只读，换行只更新当前行等轻量信息；内容、过滤或偏移变化后会换成新的行数组。需要改写内容时先复制，不要在每次回调中深度遍历不变的整首歌词。缓存归订阅租约所有，取消订阅即释放宿主引用；调用者自行保留的旧快照不被后续更新改写。
 
 `autoScroll({host, request, snapshot})` 同步返回 true 表示接管这次滚动，否则宿主按原逻辑跟随。较高 order 先执行；已接管后不再调用较低优先级处理器。通过 host.invoke('scrollTo',{position}) 调整位置；resumeFollow 恢复默认跟随。页面手动浏览时不调用接管处理器，减少动态效果时 request.reducedMotion=true、smooth=false。桌面横排、拼音和竖排均使用实际跟随位置。停用会移除处理器、装饰组件、样式和呈现订阅，下一次跟随回到原生行为。
 
