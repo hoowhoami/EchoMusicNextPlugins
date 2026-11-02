@@ -22,6 +22,14 @@
       "path": "plugins/custom-icon",
       "artifact": "artifacts/custom-icon-1.0.0.echomod",
       "sha256": "065baf5da71cb915dbbf5868a26bb427f9ce4ba91b824a3f79b614bc8713f19e"
+    },
+    {
+      "id": "auto-team-vip",
+      "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
+      "ref": "auto-team-vip-v1.2.6",
+      "path": "plugins/auto-team-vip",
+      "artifact": "artifacts/auto-team-vip-1.2.6.echomod",
+      "sha256": "46d360d0fdb398dc17c192dd0b1557e85e6a7256f50f20c2fb2e1609db114a14"
     }
   ]
 }
