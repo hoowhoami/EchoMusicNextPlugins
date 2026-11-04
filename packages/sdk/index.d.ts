@@ -2,18 +2,44 @@
 /** Qt 6.12 authoring contract. Compile source to the supported ECMAScript syntax;
  * this declaration adds no Node, Electron or browser runtime. */
 declare module 'echo:plugin-sdk' {
-  /** A curated index points at author-owned manifests and immutable .echomod bytes. */
+  /** Stable curation locator; current package metadata belongs to the author's manifest.json. */
   export interface PluginSourceEntry {
     id: string;
-    /** GitHub repository URL; omitted for a package maintained in the index repository. */
     repo?: string;
-    /** Branch, tag or commit; defaults to HEAD. */
     ref?: string;
-    /** Manifest directory relative to the author repository; empty means repository root. */
-    path: string;
-    /** Repository-relative package path or an absolute HTTPS .echomod URL. */
+    path?: string;
+  }
+  export interface PluginManifest {
+    schemaVersion: 1;
+    id: string;
+    name: string;
+    version: string;
+    kind: 'qml-js';
+    entry: string;
+    format: 'echomod';
+    requires: { hostVersion: string; sdkVersion: string; features: string[] };
+    capabilities: string[];
+    contexts: ['main'];
+    description?: string;
+    author?: string;
+    license?: string;
+    homepage?: string;
+    icon?: string;
+    tags?: string[];
+    dependencies?: Record<string, string>;
+    optionalDependencies?: Record<string, string>;
+    conflicts?: Record<string, string>;
+    loadAfter?: string[];
+    loadBefore?: string[];
+    windows?: PluginWindowDefinition[];
+  }
+  export interface PluginDistribution {
     artifact: string;
     sha256: string;
+  }
+  /** Author-repository manifest; distribution is excluded from the packaged manifest. */
+  export interface PublishedPluginManifest extends PluginManifest {
+    distribution: PluginDistribution;
   }
   export interface PluginSourceIndex {
     schemaVersion: 2;

@@ -22,3 +22,17 @@ export function directory(context: EchoPluginContext): PluginDirectorySnapshot {
   api.registerCommand('invalid', '1.0.0', () => null, { private: true });
   return api.snapshot;
 }
+
+import type { PluginSourceEntry, PublishedPluginManifest, PluginManifest } from 'echo:plugin-sdk';
+export const authorLocator: PluginSourceEntry = {
+  id: 'my-plugin',
+  repo: 'https://github.com/author/plugin',
+};
+// @ts-expect-error mutable publication information is not part of the curated locator.
+export const invalidLocator: PluginSourceEntry = { id: 'my-plugin', artifact: 'plugin.echomod' };
+export function publicationTypes(manifest: PublishedPluginManifest): PluginManifest {
+  const { distribution, ...packaged } = manifest;
+  const checksum: string = distribution.sha256;
+  void checksum;
+  return packaged;
+}

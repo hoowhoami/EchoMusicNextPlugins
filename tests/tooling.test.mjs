@@ -15,7 +15,14 @@ import {
 import { loadContract, checkBindings, rangeContains } from '../packages/tools/contract.mjs';
 import { packPluginArchive, unpackPluginArchive } from '../packages/tools/archives.mjs';
 import { dependencyOrder } from '../packages/tools/dependencies.mjs';
-import { readIndex, indexEntry, parseEntry, checkPublished } from '../packages/tools/index.mjs';
+import {
+  readIndex,
+  indexEntry,
+  parseEntry,
+  parsePublication,
+  publicationEntry,
+  checkPublished,
+} from '../packages/tools/index.mjs';
 import { createServer } from 'node:http';
 import { once } from 'node:events';
 
@@ -92,34 +99,39 @@ test('echomod is a deterministic validated container and corrupted contents are 
   await assert.rejects(validatePackage(first.file), /checksum mismatch/);
 });
 
-test('published index points to plugin archives under artifacts and verifies their bytes', async (t) => {
+test('stable author locators discover updates through manifests and verify package snapshots', async (t) => {
   const { source, output } = await author(t);
   const repository = path.dirname(source);
-  await writeFile(
-    path.join(repository, 'echo-plugins.json'),
-    JSON.stringify({ schemaVersion: 2, plugins: [] }),
-  );
+  const indexFile = path.join(repository, 'echo-plugins.json');
+  const manifestFile = path.join(source, 'manifest.json');
+  await writeFile(indexFile, JSON.stringify({ schemaVersion: 2, plugins: [] }));
   await writeFile(
     path.join(repository, 'echo-plugin.build.json'),
     JSON.stringify({ repository: 'https://github.com/test/official', plugins: ['source'] }),
   );
   await prepareIndex(repository);
-  const index = JSON.parse(await readFile(path.join(repository, 'echo-plugins.json'), 'utf8'));
-  const [published] = index.plugins;
-  assert.equal(published.artifact, 'artifacts/spectrum-visualizer-1.0.0.echomod');
+  const originalIndex = await readFile(indexFile, 'utf8');
+  const index = JSON.parse(originalIndex);
+  const [locator] = index.plugins;
+  assert.deepEqual(locator, { id: 'spectrum-visualizer', path: 'source' });
+  const first = JSON.parse(await readFile(manifestFile, 'utf8'));
+  assert.equal(first.distribution.artifact, 'artifacts/spectrum-visualizer-1.0.0.echomod');
   assert.deepEqual(
-    await readFile(path.join(repository, published.artifact)),
+    await readFile(path.join(repository, first.distribution.artifact)),
     await readFile(path.join(output, 'spectrum-visualizer-1.0.0.echomod')),
   );
   assert.equal(
-    (await validatePackage(path.join(repository, published.artifact))).id,
-    'spectrum-visualizer',
+    Object.hasOwn(
+      await validatePackage(path.join(repository, first.distribution.artifact)),
+      'distribution',
+    ),
+    false,
   );
   const server = createServer(async (req, res) => {
     const url = new URL(decodeURIComponent(req.url.slice(1)));
     const resource = url.pathname.endsWith('manifest.json')
-      ? path.join(source, 'manifest.json')
-      : path.join(repository, published.artifact);
+      ? manifestFile
+      : path.join(repository, decodeURIComponent(url.pathname.split('/HEAD/')[1]));
     res.end(await readFile(resource));
   });
   server.listen(0, '127.0.0.1');
@@ -130,38 +142,70 @@ test('published index points to plugin archives under artifacts and verifies the
   });
   const fetcher = (url, options) =>
     fetch(`http://127.0.0.1:${server.address().port}/${encodeURIComponent(url)}`, options);
-  assert.equal((await checkPublished(repository, { fetcher })).length, 1);
-  const third = await indexEntry(path.join(repository, published.artifact), {
+  assert.equal((await checkPublished(repository, { fetcher }))[0].version, '1.0.0');
+  await writeFile(manifestFile, JSON.stringify({ ...first, version: '1.0.1' }));
+  await prepareIndex(repository);
+  assert.equal(await readFile(indexFile, 'utf8'), originalIndex);
+  const second = JSON.parse(await readFile(manifestFile, 'utf8'));
+  assert.notEqual(second.distribution.sha256, first.distribution.sha256);
+  assert.equal((await checkPublished(repository, { fetcher }))[0].version, '1.0.1');
+  // Publication metadata cannot recursively enter the package or alter a rebuild's hash.
+  assert.equal((await buildPluginArchive(source, output)).sha256, second.distribution.sha256);
+  const independent = await indexEntry(path.join(repository, second.distribution.artifact), {
     repo: 'https://github.com/another/independent.git/',
-    ref: 'release/v1',
     path: '',
+  });
+  const parsed = parseEntry(independent);
+  assert.equal(parsed.repository, 'another/independent');
+  assert.equal(parsed.ref, 'HEAD');
+  assert.match(parsed.manifestUrl, /HEAD\/manifest.json$/);
+  const publication = await publicationEntry(path.join(repository, second.distribution.artifact), {
     artifact: 'https://github.com/another/independent/releases/download/v1/plugin.echomod',
   });
-  third.id = 'second-plugin';
-  index.plugins.push(third);
-  await writeFile(path.join(repository, 'echo-plugins.json'), JSON.stringify(index));
-  await prepareIndex(repository);
-  assert.deepEqual((await readIndex(repository)).original.plugins[1], third);
-  const parsed = parseEntry(third);
-  assert.equal(parsed.repository, 'another/independent');
-  assert.match(parsed.manifestUrl, /release%2Fv1\/manifest.json$/);
-  assert.equal(parsed.artifactUrl, third.artifact);
+  assert.equal(
+    parsePublication(publication, parsed).artifactUrl,
+    publication.distribution.artifact,
+  );
   for (const change of [
     { repo: 'http://github.com/a/b' },
     { path: '../x' },
-    { artifact: 'https://user:secret@example.org/a.echomod' },
-    { artifact: 'https://example.org/a.zip?x=.echomod' },
-    { sha256: 'a'.repeat(63) },
+    { artifact: 'x.echomod' },
+    { sha256: 'a'.repeat(64) },
     { id: 'con.txt' },
     { id: 'tail.' },
     { ref: '../escape' },
   ])
-    assert.throws(() => parseEntry({ ...third, ...change }));
+    assert.throws(() => parseEntry({ ...independent, ...change }));
+  for (const change of [
+    { artifact: 'https://user:secret@example.org/a.echomod' },
+    { artifact: 'https://example.org/a.zip?x=.echomod' },
+    { artifact: '../a.echomod' },
+    { artifact: '//example.org/a.echomod' },
+    { sha256: 'a'.repeat(63) },
+    { sha256: 'A'.repeat(64) },
+    { extra: true },
+  ])
+    assert.throws(() =>
+      parsePublication(
+        { ...publication, distribution: { ...publication.distribution, ...change } },
+        parsed,
+      ),
+    );
+  assert.throws(() => parsePublication({ ...publication, id: 'another-plugin' }, parsed));
+  // Local preparation keeps other authors' stable locators untouched.
+  const third = { ...independent, id: 'second-plugin', ref: 'release/rolling' };
+  index.plugins.push(third);
+  await writeFile(indexFile, JSON.stringify(index));
+  await prepareIndex(repository);
+  assert.deepEqual((await readIndex(repository)).original.plugins[1], third);
+  await writeFile(indexFile, originalIndex);
   await writeFile(
-    path.join(repository, 'echo-plugins.json'),
-    JSON.stringify({ schemaVersion: 2, plugins: [{ ...published, sha256: '0'.repeat(64) }] }),
+    manifestFile,
+    JSON.stringify({ ...second, distribution: { ...second.distribution, sha256: '0'.repeat(64) } }),
   );
   await assert.rejects(checkPublished(repository, { fetcher }), /SHA-256/);
+  await writeFile(manifestFile, JSON.stringify({ ...second, description: 'not in the package' }));
+  await assert.rejects(checkPublished(repository, { fetcher }), /manifest differs/);
 });
 
 test('plugin dependency closure has deterministic order and rejects missing/version/cycle/conflict errors', () => {

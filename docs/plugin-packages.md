@@ -6,14 +6,14 @@ SDK/tools1.0.0正式生成`.echomod`文件；普通开发目录仍用于编辑�
 
 ## 统一命名
 
-| 层级         | 名称与职责                                                                               |
-| ------------ | ---------------------------------------------------------------------------------------- |
-| 产品扩展     | 插件 / Plugin，管理、安装、依赖与启停使用同一套模型                                      |
-| 分发文件     | `.echomod` 插件包，manifest 的 `format` 为 `echomod`                                     |
-| 作者接口     | `EchoMusic.PluginSdk` / `echo:plugin-sdk`，依赖协作使用 `ctx.plugins` 与 `pluginService` |
-| 编辑源码     | `plugins/<pluginId>/`                                                                    |
-| 官方发布包   | `artifacts/<pluginId>-<version>.echomod`，由索引的 `artifact` 指向                       |
-| 临时构建输出 | `dist/`，不作为第二类扩展或安装状态                                                      |
+| 层级         | 名称与职责                                                                                |
+| ------------ | ----------------------------------------------------------------------------------------- |
+| 产品扩展     | 插件 / Plugin，管理、安装、依赖与启停使用同一套模型                                       |
+| 分发文件     | `.echomod` 插件包，manifest 的 `format` 为 `echomod`                                      |
+| 作者接口     | `EchoMusic.PluginSdk` / `echo:plugin-sdk`，依赖协作使用 `ctx.plugins` 与 `pluginService`  |
+| 编辑源码     | `plugins/<pluginId>/`                                                                     |
+| 官方发布包   | `artifacts/<pluginId>-<version>.echomod`，由作者 manifest 的 `distribution.artifact` 指向 |
+| 临时构建输出 | `dist/`，不作为第二类扩展或安装状态                                                       |
 
 原生 DSP 使用独立音频 ABI 与生命周期，其音频处理职责与上述插件管理分开。
 
@@ -23,14 +23,46 @@ npm run sdk:check -- --host /absolute/path/to/echomusicnext
 npx echo-plugin build plugins/spectrum-visualizer --out dist
 npx echo-plugin validate dist/spectrum-visualizer-1.0.0.echomod
 npm run prepare:source
+npm run format:write
 npm run check:published
 ```
 
-跨仓库收录使用 schema2：`id` 为预期插件 ID，`repo` 为作者 GitHub 仓库（省略为当前源），`ref` 默认为 HEAD，`path` 为 manifest 目录（空字符串表示根），`artifact` 为仓库根的相对 .echomod 路径或 HTTPS 下载地址，`sha256` 绑定包字节。名称、描述、版本和能力来自 manifest；下载后同时核对哈希与完整清单。官方收录源与作者仓库分别记录，仓库按钮打开作者地址。
+官方 `echo-plugins.json`（schema2）只收录稳定定位：`id`、作者 GitHub `repo`、可选 `path` 和 `ref`。省略 `repo` 表示同仓，省略 `path` 表示仓库根，省略 `ref` 使用 HEAD。跟随作者更新应使用默认分支或持续维护的分支，不固定到版本 tag。
 
-作者构建后运行 `echo-plugin index-entry dist/plugin-1.0.0.echomod --repo https://github.com/author/plugin --ref v1.0.0 --path "" --artifact https://github.com/author/plugin/releases/download/v1.0.0/plugin-1.0.0.echomod` 生成条目，提交到官方源的 plugins 数组即可。命令不上传或发布。
+```json
+{
+  "schemaVersion": 2,
+  "plugins": [{ "id": "my-plugin", "repo": "https://github.com/author/my-plugin" }]
+}
+```
 
-本地构建清单在 `echo-plugin.build.json`，与公开索引分开。`build-index` 构建其中明确列出的本地插件；`prepare-index` 更新同仓插件的 artifacts 与索引，保留第三方条目；`check-index` 不读取第三方本地源码；`check-published` 联网校验每条作者清单和实际包。频谱仍在本仓库维护，第三方可独立维护仓库。生成入口只需放在 .echomod 内。
+应用从作者仓库的 `manifest.json` 读取最新版本、能力和 `distribution`，无需额外发布文件：
+
+```json
+"distribution": {
+  "artifact": "https://github.com/author/my-plugin/releases/download/v1.0.0/my-plugin-1.0.0.echomod",
+  "sha256": "<由工具计算的64位小写哈希>"
+}
+```
+
+`artifact` 也可使用相对作者仓库根的 `.echomod` 路径。发布字段不进入包内 manifest，避免哈希自引用。应用刷新一次取得完整版本/包地址/哈希快照；安装验证哈希，并比对去掉 `distribution` 后的完整清单。作者请求失败时保留整份缓存并标记过期，不混用新旧字段。不同作者仓库不能接管现有安装的数据或授权。
+
+独立作者首次收录与后续发布：
+
+```sh
+# 构建真实包；发布包后，再更新作者仓库的 manifest。
+echo-plugin build ./my-plugin --out dist
+echo-plugin publish-manifest dist/my-plugin-1.0.0.echomod \
+  --artifact https://github.com/author/my-plugin/releases/download/v1.0.0/my-plugin-1.0.0.echomod \
+  --out my-plugin/manifest.json
+# 只在首次收录或仓库/路径变化时提交该定位到官方源。
+echo-plugin index-entry dist/my-plugin-1.0.0.echomod \
+  --repo https://github.com/author/my-plugin --path my-plugin
+```
+
+`publish-manifest` 从实际包提取清单并计算哈希，原子写入指定 manifest；省略 `--out` 输出 JSON。上述命令不上传或推送。后续版本只需更新作者仓库的包与 manifest，官方索引不动；先确保包地址可下载，再提交新 manifest，历史版本包应保留以便已刷新客户端完成安装。
+
+本仓库的 `echo-plugin.build.json` 明确本地构建集合。`prepare-index` 构建本地插件，将包复制到 `artifacts/`，自动更新作者 manifest 的 `distribution`，首次添加本地定位并保留第三方条目。`check-index` 离线校验定位；`check-published` 联网校验每个作者 manifest、包哈希与包内完整清单。频谱继续同仓维护，第三方无需将源码迁入官方源。
 
 manifest支持dependencies/optionalDependencies/conflicts（ID到版本范围）及loadAfter/loadBefore（ID数组）。范围使用`>=1.0.0 <2.0.0`等比较交集；拒绝自依赖和矛盾声明。完整源索引构建验证依赖闭包、版本、冲突与循环；单独build允许声明由其它可信来源提供的依赖，最终由宿主基于实际安装集合检查。
 

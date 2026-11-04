@@ -15,12 +15,20 @@ build先严格类型检查，再bundling/transpile，资源仅复制config.asset
 
 1.0.0的build正式输出.echomod并保留开发目录；validate同时支持两者，容器验证包含CRC/路径/链接/预算。源schema2的产物/哈希及插件依赖见[插件指南](../../docs/plugin-packages.md)。
 
-跨仓库收录使用 schema2：`id` 为预期插件 ID，`repo` 为作者 GitHub 仓库（省略为当前源），`ref` 默认为 HEAD，`path` 为 manifest 目录（空字符串表示根），`artifact` 为仓库根的相对 .echomod 路径或 HTTPS 下载地址，`sha256` 绑定包字节。名称、描述、版本和能力来自 manifest；下载后同时核对哈希与完整清单。官方收录源与作者仓库分别记录，仓库按钮打开作者地址。
+官方索引只收录 id/repo/ref/path；应用从作者 manifest.json 的 distribution 读取最新包地址和哈希，作者升级无需修改官方源。完整字段与发布顺序见[发布指南](../../docs/plugin-packages.md)。
 
-作者构建后运行 `echo-plugin index-entry dist/plugin-1.0.0.echomod --repo https://github.com/author/plugin --ref v1.0.0 --path "" --artifact https://github.com/author/plugin/releases/download/v1.0.0/plugin-1.0.0.echomod` 生成条目，提交到官方源的 plugins 数组即可。命令不上传或发布。
+```sh
+# 先发布实际包，再用其内容生成作者 manifest 的发布字段。
+echo-plugin publish-manifest dist/my-plugin-1.0.0.echomod \
+  --artifact https://github.com/author/my-plugin/releases/download/v1.0.0/my-plugin-1.0.0.echomod \
+  --out my-plugin/manifest.json
+# 仅首次收录时提交生成的定位。
+echo-plugin index-entry dist/my-plugin-1.0.0.echomod \
+  --repo https://github.com/author/my-plugin --path my-plugin
+```
 
-本地构建清单在 `echo-plugin.build.json`，与公开索引分开。`build-index` 构建其中明确列出的本地插件；`prepare-index` 更新同仓插件的 artifacts 与索引，保留第三方条目；`check-index` 不读取第三方本地源码；`check-published` 联网校验每条作者清单和实际包。频谱仍在本仓库维护，第三方可独立维护仓库。生成入口只需放在 .echomod 内。
+命令只生成本地文件，不上传或推送。`prepare-index` 自动准备本仓库的包与作者 manifest 并保留第三方定位；`check-index` 离线校验定位，`check-published` 校验远端 manifest、包哈希和完整清单。
 
 `test-host <package.echomod>` 直接验证独立作者的实际包，无需官方源或本地构建清单；省略包路径才批量构建本仓库插件。索引类型为 SDK 的 `PluginSourceIndex` / `PluginSourceEntry`。
 
-GPU 着色器可在 plugin.config.json 的 shaders 中声明 source/output/target（rhi 或 quick），由匹配宿主 Qt 版本的 qsb 编译并验证跨后端包。设置 ECHO_QSB 或将 qsb 放入 PATH。编译失败保留旧产物，包与索引仍执行哈希校验。详见[GPU 绘图](../../docs/graphics.md)。
+GPU 着色器可在 plugin.config.json 的 shaders 中声明 source/output/target（rhi 或 quick），由匹配宿主 Qt 版本的 qsb 编译并验证跨后端包。设置 ECHO_QSB 或将 qsb 放入 PATH。编译失败保留旧产物，发布信息与包仍执行哈希校验。详见[GPU 绘图](../../docs/graphics.md)。

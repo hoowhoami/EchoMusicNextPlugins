@@ -3,10 +3,11 @@ import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile, rename, rm } from 'node:fs/promises';
+import { randomUUID } from 'node:crypto';
 import { readJson } from './contract.mjs';
 import { checkBindings, checkHost } from './contract.mjs';
-import { readIndex, indexEntry, checkPublished } from './index.mjs';
+import { readIndex, indexEntry, publicationEntry, checkPublished } from './index.mjs';
 import {
   buildPackage,
   buildPluginArchive,
@@ -18,7 +19,8 @@ import {
 
 const usage = `echo-plugin build <source> [--out <directory>]
 echo-plugin validate <built-package>
-echo-plugin index-entry <package.echomod> --repo <github-url> --ref <ref> --path <manifest-directory> --artifact <path-or-https-url>
+echo-plugin index-entry <package.echomod> --repo <github-url> [--ref <branch>] [--path <plugin-directory>]
+echo-plugin publish-manifest <package.echomod> --artifact <path-or-https-url> [--out <manifest.json>]
 echo-plugin build-index [--root <repository>]
 echo-plugin prepare-index [--root <repository>]
 echo-plugin check-published [--root <repository>]
@@ -54,7 +56,22 @@ try {
     console.info((await validatePackage(path.resolve(input))).id);
   else if (command === 'index-entry' && input)
     console.info(JSON.stringify(await indexEntry(path.resolve(input), values), null, 2));
-  else if (command === 'build-index')
+  else if (command === 'publish-manifest' && input) {
+    const publication = await publicationEntry(path.resolve(input), values);
+    const body = `${JSON.stringify(publication, null, 2)}\n`;
+    if (values.out) {
+      const file = path.resolve(values.out),
+        pending = `${file}.${randomUUID()}.tmp`;
+      await mkdir(path.dirname(file), { recursive: true });
+      try {
+        await writeFile(pending, body);
+        await rename(pending, file);
+      } finally {
+        await rm(pending, { force: true });
+      }
+      console.info(file);
+    } else console.info(body.trimEnd());
+  } else if (command === 'build-index')
     for (const destination of await buildIndex(root)) {
       const manifest = await readJson(path.join(destination, 'manifest.json'));
       console.info(path.join(root, 'dist', `${manifest.id}-${manifest.version}.echomod`));

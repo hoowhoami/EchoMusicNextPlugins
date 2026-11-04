@@ -21,7 +21,7 @@ import { sdkRoot, readJson, loadContract, rangeContains } from './contract.mjs';
 import { packPluginArchive, unpackPluginArchive } from './archives.mjs';
 import { dependencyOrder } from './dependencies.mjs';
 import { bakeShaders, validateShader } from './shaders.mjs';
-import { readIndex, indexEntry, parseEntry } from './index.mjs';
+import { readIndex, indexEntry, publicationEntry, parseEntry } from './index.mjs';
 
 const maximumBytes = 128 * 1024 * 1024;
 const validateSchema = new Ajv({ allErrors: true, strict: true }).compile(
@@ -84,7 +84,8 @@ export async function validateManifest(manifest, contract) {
   ])
     for (const item of requested)
       if (!supported.includes(item)) throw new Error(`Unavailable required ${kind}: ${item}`);
-  return manifest;
+  const { distribution, ...packaged } = manifest;
+  return packaged;
 }
 
 export function relativePath(value) {
@@ -148,7 +149,10 @@ export async function validatePackage(root) {
   if ((await lstat(root)).isSymbolicLink()) throw new Error('Package root is a symlink');
   const manifestPath = await containedFile(root, 'manifest.json');
   if ((await lstat(manifestPath)).size > 256 * 1024) throw new Error('Oversized manifest');
-  const manifest = await validateManifest(await readJson(manifestPath));
+  const published = await readJson(manifestPath);
+  if (Object.hasOwn(published, 'distribution'))
+    throw new Error('Distribution metadata must remain outside the plugin package');
+  const manifest = await validateManifest(published);
   for (const window of manifest.windows ?? []) await containedFile(root, window.component);
   const files = await inventory(root);
   const entries = new Map();
@@ -372,16 +376,25 @@ export async function prepareIndex(root) {
       repo: config.repository,
       ref: config.ref ?? 'HEAD',
       path: path.relative(root, source).split(path.sep).join('/'),
-      artifact,
     });
     const previous = published.plugins.findIndex((value) => value.id === entry.id);
     if (previous >= 0 && published.plugins[previous].repository !== parseEntry(entry).repository)
       throw new Error(`Local package conflicts with a curated author: ${entry.id}`);
-    const portable = { id: entry.id, path: entry.path, artifact, sha256: entry.sha256 };
-    if (entry.ref !== 'HEAD') portable.ref = entry.ref;
+    const portable = { id: entry.id, path: entry.path };
+    if (entry.ref && entry.ref !== 'HEAD') portable.ref = entry.ref;
     if (previous >= 0) published.original.plugins[previous] = portable;
     else published.original.plugins.push(portable);
     await writeFile(path.join(root, artifact), await readFile(file));
+    const publication = await publicationEntry(file, { artifact });
+    // The complete publication moves atomically after its package is present.
+    const manifestFile = path.join(source, 'manifest.json');
+    const pending = `${manifestFile}.${randomUUID()}.tmp`;
+    try {
+      await writeFile(pending, `${JSON.stringify(publication, null, 2)}\n`);
+      await rename(pending, manifestFile);
+    } finally {
+      await rm(pending, { force: true });
+    }
   }
   await writeFile(
     path.join(root, 'echo-plugins.json'),

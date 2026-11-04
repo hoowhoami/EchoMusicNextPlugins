@@ -220,6 +220,22 @@
           }
         }
       }
+    },
+    "distribution": {
+      "type": "object",
+      "required": ["artifact", "sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 8192
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
     }
   },
   "$defs": {

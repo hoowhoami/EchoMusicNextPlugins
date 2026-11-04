@@ -42,9 +42,7 @@ export function parseEntry(entry, sourceRepo) {
     typeof entry !== 'object' ||
     Array.isArray(entry) ||
     Object.entries(entry).some(
-      ([key, value]) =>
-        !['id', 'repo', 'ref', 'path', 'artifact', 'sha256'].includes(key) ||
-        typeof value !== 'string',
+      ([key, value]) => !['id', 'repo', 'ref', 'path'].includes(key) || typeof value !== 'string',
     )
   )
     throw new Error('Invalid plugin index field');
@@ -61,11 +59,40 @@ export function parseEntry(entry, sourceRepo) {
   const ref = entry.ref ?? 'HEAD';
   if (!/^[A-Za-z0-9_][A-Za-z0-9_./-]{0,255}$/.test(ref) || ref.includes('..') || ref.endsWith('/'))
     throw new Error('Invalid repository ref');
-  portable(entry.path, true);
-  if (!/^[a-f0-9]{64}$/.test(entry.sha256)) throw new Error('Invalid SHA-256');
+  const directory = portable(entry.path ?? '', true);
+  return {
+    ...entry,
+    path: directory,
+    repository: repo,
+    ref,
+    manifestUrl: raw(repo, ref, directory ? `${directory}/manifest.json` : 'manifest.json'),
+  };
+}
+export function parsePublication(published, entry) {
+  if (
+    !published ||
+    typeof published !== 'object' ||
+    Array.isArray(published) ||
+    published.id !== entry.id ||
+    Buffer.byteLength(JSON.stringify(published)) > 256 * 1024
+  )
+    throw new Error('Invalid published plugin manifest or ID');
+  const { distribution, ...manifest } = published;
+  if (
+    !distribution ||
+    typeof distribution !== 'object' ||
+    Array.isArray(distribution) ||
+    Object.keys(distribution).length !== 2 ||
+    Object.keys(distribution).some((key) => !['artifact', 'sha256'].includes(key)) ||
+    typeof distribution.sha256 !== 'string' ||
+    !/^[a-f0-9]{64}$/.test(distribution.sha256) ||
+    typeof distribution.artifact !== 'string'
+  )
+    throw new Error('Invalid plugin distribution artifact or SHA-256');
+  const artifact = distribution.artifact;
   let artifactUrl;
-  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(entry.artifact)) {
-    const url = new URL(entry.artifact);
+  if (/^[A-Za-z][A-Za-z0-9+.-]*:/.test(artifact)) {
+    const url = new URL(artifact);
     if (
       url.protocol !== 'https:' ||
       !url.hostname ||
@@ -77,19 +104,13 @@ export function parseEntry(entry, sourceRepo) {
       throw new Error('Expected HTTPS .echomod artifact');
     artifactUrl = url.href;
   } else {
-    portable(entry.artifact);
-    if (!entry.artifact.toLowerCase().endsWith('.echomod'))
-      throw new Error('Expected .echomod artifact');
-    artifactUrl = raw(repo, ref, entry.artifact);
+    portable(artifact);
+    if (!artifact.toLowerCase().endsWith('.echomod')) throw new Error('Expected .echomod artifact');
+    artifactUrl = raw(entry.repository, entry.ref, artifact);
   }
-  return {
-    ...entry,
-    repository: repo,
-    ref,
-    artifactUrl,
-    manifestUrl: raw(repo, ref, entry.path ? `${entry.path}/manifest.json` : 'manifest.json'),
-  };
+  return { ...entry, ...distribution, manifest, artifactUrl };
 }
+
 export async function readIndex(root, sourceRepo) {
   if (!sourceRepo) {
     try {
@@ -119,17 +140,29 @@ export async function readIndex(root, sourceRepo) {
 export async function indexEntry(file, options) {
   const { validatePackage } = await import('./packages.mjs');
   const manifest = await validatePackage(file);
-  const bytes = await readFile(file);
   const entry = {
     id: manifest.id,
     repo: `https://github.com/${repository(options.repo)}`,
-    ref: options.ref ?? 'HEAD',
     path: options.path ?? '',
-    artifact: options.artifact,
-    sha256: createHash('sha256').update(bytes).digest('hex'),
   };
+  if (options.ref && options.ref !== 'HEAD') entry.ref = options.ref;
   parseEntry(entry);
   return entry;
+}
+export async function publicationEntry(file, options) {
+  const { validatePackage } = await import('./packages.mjs');
+  const manifest = await validatePackage(file);
+  const publication = {
+    ...manifest,
+    distribution: {
+      artifact: options.artifact,
+      sha256: createHash('sha256')
+        .update(await readFile(file))
+        .digest('hex'),
+    },
+  };
+  parsePublication(publication, { id: manifest.id, repository: 'author/repository', ref: 'HEAD' });
+  return publication;
 }
 async function download(url, limit, fetcher) {
   for (let redirects = 0; redirects <= 8; redirects++) {
@@ -170,12 +203,13 @@ export async function checkPublished(root, { sourceRepo, fetcher = fetch } = {})
   try {
     const manifests = [];
     for (const entry of index.plugins) {
-      const manifest = await validateManifest(
+      const resolved = parsePublication(
         JSON.parse((await download(entry.manifestUrl, 256 * 1024, fetcher)).toString('utf8')),
+        entry,
       );
-      if (manifest.id !== entry.id) throw new Error(`Published ID differs: ${entry.id}`);
-      const bytes = await download(entry.artifactUrl, 128 * 1024 * 1024, fetcher);
-      if (createHash('sha256').update(bytes).digest('hex') !== entry.sha256)
+      const manifest = await validateManifest(resolved.manifest);
+      const bytes = await download(resolved.artifactUrl, 128 * 1024 * 1024, fetcher);
+      if (createHash('sha256').update(bytes).digest('hex') !== resolved.sha256)
         throw new Error(`Published SHA-256 mismatch: ${entry.id}`);
       const file = path.join(directory, `${entry.id}.echomod`);
       await writeFile(file, bytes);
