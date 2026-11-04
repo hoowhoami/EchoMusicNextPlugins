@@ -26,10 +26,10 @@
     {
       "id": "auto-team-vip",
       "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
-      "ref": "auto-team-vip-v1.2.6",
+      "ref": "auto-team-vip-v1.2.7",
       "path": "plugins/auto-team-vip",
-      "artifact": "artifacts/auto-team-vip-1.2.6.echomod",
-      "sha256": "46d360d0fdb398dc17c192dd0b1557e85e6a7256f50f20c2fb2e1609db114a14"
+      "artifact": "artifacts/auto-team-vip-1.2.7.echomod",
+      "sha256": "9556d39865714c70083d94bc71dba184b052ba8b7d6d97e7cbbc46f656f04892"
     }
   ]
 }
