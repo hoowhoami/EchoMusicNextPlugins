@@ -4,6 +4,21 @@
     {
       "id": "spectrum-visualizer",
       "path": "plugins/spectrum-visualizer"
+    },
+    {
+      "id": "cloud-priority",
+      "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
+      "path": "plugins/cloud-priority"
+    },
+    {
+      "id": "auto-team-vip",
+      "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
+      "path": "plugins/auto-team-vip"
+    },
+    {
+      "id": "custom-icon",
+      "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
+      "path": "plugins/custom-icon"
     }
   ]
 }
