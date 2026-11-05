@@ -19,6 +19,12 @@
       "id": "custom-icon",
       "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
       "path": "plugins/custom-icon"
+    },
+    {
+      "id": "public-song-fallback",
+      "repo": "https://github.com/CarsonGame/EchoMusicNextPlugins",
+      "path": "plugins/public-song-fallback",
+      "ref": "public-song-fallback-next"
     }
   ]
 }
