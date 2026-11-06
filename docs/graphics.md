@@ -30,6 +30,8 @@ EchoGpuSurface {
 }
 ```
 
+`fps`为正数时按1–120节流；设为0且`continuous: true`时跟随窗口帧继续绘制，不启用轮询计时器。实际呈现仍受Qt窗口与显示设备调度限制；隐藏、最小化、暂停或作用域退休时停止。
+
 `submit({passes})` 提交有序命令图；重复的相同图复用管线。每个 render pass 包含 pipeline、bindings、draws，可指定 target（默认 `surface`）、clear 和 loadOp（clear/load）。可先渲染到纹理，再由后续 pass 采样；不能在同一 pass 读写颜色附件。draw 支持 count、first、instances、vertexBuffer、vertexOffset（字节）、indexBuffer、indexFormat。
 
 compute pass 包含 pipeline、bindings、groups `[x,y,z]`。bindings 显式指定 binding、kind（uniform/texture/storage-buffer/storage-image）、resource，采样纹理另带 sampler，storage 另带 access（read/write/read-write）。宿主检查资源所有权、usage、着色器反射、uniform 大小、storage image 格式及设备 dispatch 限制。

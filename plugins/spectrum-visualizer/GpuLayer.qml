@@ -197,7 +197,7 @@ Item {
     }
     Timer {
         id: decay
-        interval: Math.ceil(Math.log(0.5 / Math.max(1, root.height * root.settings.fill / 100)) / Math.log(0.88)) * 1000 / Math.max(1, root.settings.fps)
+        interval: Math.ceil(Math.log(0.5 / Math.max(1, root.height * root.settings.fill / 100)) / Math.log(0.88)) * 1000 / Math.max(1, root.settings.fps === 0 ? root.Screen.refreshRate : root.settings.fps)
         onTriggered: {
             root.settled = true;
             root.haveSignal = false;

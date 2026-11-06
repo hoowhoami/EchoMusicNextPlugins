@@ -21,7 +21,7 @@ SDK/tools1.0.0正式生成`.echomod`文件；普通开发目录仍用于编辑�
 npm ci
 npm run sdk:check -- --host /absolute/path/to/echomusicnext
 npx echo-plugin build plugins/spectrum-visualizer --out dist
-npx echo-plugin validate dist/spectrum-visualizer-1.0.0.echomod
+npx echo-plugin validate dist/spectrum-visualizer-1.0.1.echomod
 npm run prepare:source
 npm run format:write
 npm run check:published

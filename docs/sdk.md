@@ -96,7 +96,7 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 `ctx.audio.spectrum.status/getStatus()`返回available/running/provider/reason/subscriberCount。
 声明feature `audio.spectrum`与capability `audioSpectrum`后，`subscribe(options)`返回类型化订阅：active、paused、frame、status与frameChanged/statusChanged；setPaused/dispose控制投递。dispose后宿主销毁完整订阅，不能继续使用旧句柄。
 
-选项fps1..60、binCount8..512、fftSize256/512/1024/2048/4096/8192、smoothing0..0.95、scale log/linear/mel、minFrequency/maxFrequency、includeWaveform。frame含source(player/silence/unavailable)、state、timestamp毫秒、timePos秒、sampleRate、fftSize、bins、可选waveform、peak/rms和频率边界。取播放器实际输出后的PCM，不采集系统混音；FFI控制队列最多一帧在途，Qt投递合并最新帧，音频回调仅try_lock写入有界环形缓冲。当前帧通过有界JSON事件传输，尚未实现迁移设计的零复制二进制buffer。
+选项fps0（不额外限帧）或1..60、binCount8..512、fftSize256/512/1024/2048/4096/8192、smoothing0..0.95、scale log/linear/mel、minFrequency/maxFrequency、includeWaveform。frame含source(player/silence/unavailable)、state、timestamp毫秒、timePos秒、sampleRate、fftSize、bins、可选waveform、peak/rms和频率边界。取播放器实际输出后的PCM，不采集系统混音；FFI控制队列最多一帧在途，Qt投递合并最新帧，音频回调仅try_lock写入有界环形缓冲。当前帧通过有界JSON事件传输，尚未实现迁移设计的零复制二进制buffer。
 
 多个活跃订阅共用一次分析，合并帧率/FFT/频段/波形需求，再按订阅频率投递、映射频带。暂停或没有可见订阅时停止采集与FFT请求；曲目/配置世代阻止迟到帧。播放状态始终只读宿主PlaybackService。
 

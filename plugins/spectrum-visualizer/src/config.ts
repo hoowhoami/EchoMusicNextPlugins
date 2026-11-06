@@ -41,7 +41,7 @@ export const normalizeSettings = (value: unknown): Settings => {
     showMiniPlayer: source.showMiniPlayer ?? DEFAULT_SETTINGS.showMiniPlayer,
     showLyricControls: source.showLyricControls ?? DEFAULT_SETTINGS.showLyricControls,
     showBackdrop: source.showBackdrop ?? DEFAULT_SETTINGS.showBackdrop,
-    fps: [15, 24, 30].includes(fps) ? fps : DEFAULT_SETTINGS.fps,
+    fps: [0, 15, 24, 30].includes(fps) ? fps : DEFAULT_SETTINGS.fps,
     binCount: [32, 64, 96, 128].includes(binCount) ? binCount : DEFAULT_SETTINGS.binCount,
     fftSize: [1024, 2048, 4096, 8192].includes(fftSize) ? fftSize : DEFAULT_SETTINGS.fftSize,
     smoothing: clamp(source.smoothing ?? DEFAULT_SETTINGS.smoothing, 0, 95),

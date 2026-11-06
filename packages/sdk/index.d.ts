@@ -1448,6 +1448,7 @@ declare module 'echo:plugin-sdk' {
     ): LyricViewportSnapshot | LyricEffectLineSnapshot | LyricRunSnapshot | null;
   }
   export interface SpectrumOptions {
+    /** 0 removes frame pacing; positive values are limited to 1–60. */
     fps?: number;
     binCount?: number;
     fftSize?: number;
@@ -1945,6 +1946,7 @@ declare module 'echo:plugin-sdk' {
     graphics: EchoPluginGraphics | null;
     paused: boolean;
     continuous: boolean;
+    /** 0 follows window frames without a timer; positive pacing is limited to 1–120. */
     fps: number;
     dynamicRange: 'auto' | 'sdr' | 'hdr';
     readonly status: GpuCapabilities;
