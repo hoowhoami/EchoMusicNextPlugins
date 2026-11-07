@@ -8,6 +8,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-22.04, macos-15, windows-2022]
+        include:
+          - os: windows-2022
+            # Qt 6.11+ splits Windows repositories by compiler architecture.
+            aqtSource: git+https://github.com/miurahr/aqtinstall.git@7e5a5c3d95cf962cfc2f36c86ffa0d2c07f1a0d4
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
@@ -19,6 +23,7 @@ jobs:
         with:
           version: '6.12.0'
           modules: 'qtshadertools'
+          aqtsource: ${{ matrix.aqtSource || '' }}
       - run: npm ci --ignore-scripts
       - run: npm run check
       - run: npm test
