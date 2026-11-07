@@ -15,3 +15,5 @@ HDR默认关闭，仅在宿主报告localHdrSupported时可用；当前嵌入式
 构建：仓库根执行npm run build；生成dist/spectrum-visualizer-1.0.1.echomod。打开插件管理面板安装，点插件设置选择显示位置；无需安装其它示例依赖。插件版本为1.0.1，SDK版本保持1.0.0。
 
 shaders下的qsb由Qt6.12 qsb离线生成（GLSL100es/120/150、HLSL50、MSL12），插件运行时无需编译器。修改frag时用相同参数重新生成。原绘制数学和图标的MIT版权见LICENSE，保留原作者声明。
+
+三处频谱通过 `ui.parts.contribute` 匹配 `extension.surface` 的稳定 key，在真实宿主区域内创建 QML；歌词区域沿自然高度参与播放栏占位，窗口隐藏和插件停用时回收呈现 scope 与订阅。

@@ -26,9 +26,18 @@ export function activate(ctx: EchoPluginContext) {
     ctx.registerCommand('settings.patch', (args) => save({ ...desired, ...args }));
     ctx.registerCommand('settings.reset', () => save(normalizeSettings(DEFAULT_SETTINGS)));
     ctx.ui.registerSettings('Settings.qml');
-    ctx.ui.registerSurface('playerbar', 'playerbar.background', 'Layer.qml');
-    ctx.ui.registerSurface('mini', 'mini.background', 'Layer.qml');
-    ctx.ui.registerSurface('lyrics', 'lyrics.aboveControls', 'Layer.qml');
+    for (const placement of ['playerbar.background', 'mini.background', 'lyrics.aboveControls']) {
+      const contribution = ctx.ui.parts.contribute(
+        placement,
+        { role: 'extension.surface', key: placement },
+        {
+          operation: 'insert',
+          position: 'foreground',
+          component: 'Layer.qml',
+        },
+      );
+      if (!contribution) throw new Error(ctx.ui.parts.errorMessage);
+    }
   });
 }
 export function deactivate() {

@@ -1966,7 +1966,123 @@ declare module 'echo:plugin-sdk' {
   export interface EchoPluginAudio {
     readonly spectrum: EchoPluginSpectrum;
   }
+  export interface UiModelRow {
+    readonly index: number;
+    readonly column: number;
+    readonly values: Readonly<Record<string, JsonValue>>;
+  }
+  export interface UiStateFieldSchema {
+    readonly type: 'boolean' | 'integer' | 'number' | 'string' | 'array' | 'object' | 'null';
+    readonly readOnly: true;
+  }
+  export interface UiActionSchema {
+    readonly type: 'object';
+    readonly properties: Readonly<
+      Record<string, { readonly type: string; readonly maxLength?: number }>
+    >;
+    readonly required: readonly string[];
+    readonly additionalProperties: boolean;
+  }
+  export type UiMappedPoint =
+    | { readonly valid: false }
+    | { readonly valid: true; readonly x: number; readonly y: number; readonly window: string };
+  export interface UiStyleSource {
+    readonly owner: string;
+    readonly id: string;
+    readonly priority: number;
+    readonly value: UiStyleProperties[keyof UiStyleProperties];
+    readonly selector: Readonly<UiPartSelector>;
+  }
+  export interface UiPreflight {
+    readonly valid: boolean;
+    readonly error: string;
+    readonly matchCount: number;
+    readonly uniqueSelector?: Readonly<UiPartSelector>;
+    readonly targets?: readonly {
+      readonly id: string;
+      readonly address: string;
+      readonly persistent: boolean;
+      readonly supported: boolean;
+      readonly error: string;
+      readonly layoutEngine: string;
+      readonly insertionPositions: readonly UiPartPosition[];
+    }[];
+  }
+  export interface UiModelEntry {
+    key: string;
+    component: string;
+    width?: number;
+    height?: number;
+    label?: string;
+    enabled?: boolean;
+    values?: Readonly<Record<string, JsonValue>>;
+  }
+  export interface UiMenuActionEntry {
+    key: string;
+    label: string;
+    command: string;
+    arguments?: Readonly<Record<string, JsonValue>>;
+    enabled?: boolean;
+    checkable?: boolean;
+    checked?: boolean;
+    danger?: boolean;
+    separator?: false;
+  }
+  export interface UiMenuSeparatorEntry {
+    key: string;
+    separator: true;
+  }
+  export interface UiTabEntry extends UiModelEntry {
+    label: string;
+    glyph?: string;
+    contentTarget: UiPartSelector;
+  }
+  export interface UiSettingsEntry extends UiModelEntry {
+    label: string;
+    glyph?: string;
+    keywords?: string;
+  }
+  export type UiModelDefinition =
+    | {
+        kind: 'rows' | 'columns';
+        entries: readonly UiModelEntry[];
+        priority?: number;
+      }
+    | {
+        kind: 'menu';
+        entries: readonly (UiMenuActionEntry | UiMenuSeparatorEntry)[];
+        priority?: number;
+      }
+    | { kind: 'tabs'; entries: readonly UiTabEntry[]; priority?: number }
+    | { kind: 'settings'; entries: readonly UiSettingsEntry[]; priority?: number };
+  export interface EchoUiModelContribution {
+    readonly active: boolean;
+    readonly errorMessage: string;
+    readonly matches: readonly {
+      readonly id: string;
+      readonly address: string;
+      readonly kind: UiModelDefinition['kind'];
+      readonly state: 'active' | 'unsupported';
+      readonly error: string;
+    }[];
+    readonly definition: Readonly<UiModelDefinition>;
+    readonly changed: QtSignal;
+    update(definition: UiModelDefinition): boolean;
+    dispose(): void;
+  }
   export interface UiPartSelector {
+    /** Exact public-state predicates; host properties notify and drive style rules. */
+    state?: Readonly<Record<string, boolean | number | string>>;
+    /** Follow the current public parent of matching anchors, across recreation. */
+    parentOf?: UiPartSelector;
+    /** Match within a stable semantic ancestry, without retaining a host Item. */
+    ancestor?: UiPartSelector;
+    /** Scoped semantic address; @ addresses are instance-only. */
+    address?: string;
+    scope?: string;
+    resourceKey?: string;
+    parentId?: string;
+    owner?: string;
     /** Instance ID. Recycled delegates always receive a new ID. */
     id?: string;
     /** Exact role, '*' or a namespace such as 'control.*'. */
@@ -1976,7 +2092,19 @@ declare module 'echo:plugin-sdk' {
     /** Engine-local window identity, not a native window handle. */
     window?: string;
   }
-  export interface UiStyleProperties {
+  export interface UiStyleProperties extends UiLayoutProperties {
+    padding?: number;
+    leftPadding?: number;
+    rightPadding?: number;
+    topPadding?: number;
+    bottomPadding?: number;
+    /** Native display text only; editor contents are not style properties. */
+    text?: string;
+    glyph?: string;
+    toolTip?: string;
+    spacing?: number;
+    rowSpacing?: number;
+    columnSpacing?: number;
     foreground?: string | QtColor;
     secondaryForeground?: string | QtColor;
     background?: string | QtColor;
@@ -2001,10 +2129,125 @@ declare module 'echo:plugin-sdk' {
   }
   export type UiPartPosition =
     'append' | 'prepend' | 'before' | 'after' | 'replace' | 'background' | 'foreground';
+  export interface UiLayoutProperties {
+    margins?: number;
+    leftMargin?: number;
+    rightMargin?: number;
+    topMargin?: number;
+    bottomMargin?: number;
+    visible?: boolean;
+    preferredWidth?: number;
+    preferredHeight?: number;
+    minimumWidth?: number;
+    minimumHeight?: number;
+    maximumWidth?: number;
+    maximumHeight?: number;
+    fillWidth?: boolean;
+    fillHeight?: boolean;
+    alignment?: number;
+    row?: number;
+    column?: number;
+    rowSpan?: number;
+    columnSpan?: number;
+  }
+  export interface UiContributionOptions {
+    layout?: UiLayoutProperties;
+    priority?: number;
+    /** Exact matches on public part state; false suspends the contribution. */
+    when?: Readonly<Record<string, JsonValue>>;
+  }
+  export type UiContributionDefinition = UiContributionOptions &
+    (
+      | {
+          operation: 'insert';
+          component: string;
+          position?: 'append' | 'prepend' | 'before' | 'after' | 'background' | 'foreground';
+          /** For before/after in a free-form anchor group. Native containers retain their own axis. */
+          axis?: 'horizontal' | 'vertical';
+          /** Logical pixels, 0..1024; applies to a free-form anchor group. */
+          gap?: number;
+        }
+      | { operation: 'wrap' | 'replace'; component: string }
+      | { operation: 'layout' | 'hide' }
+      | { operation: 'move'; destination: UiPartSelector; position?: 'append' | 'prepend' }
+    );
+  export type UiBatchEntry = {
+    id: string;
+    selector: UiPartSelector;
+  } & (
+    | { definition: UiContributionDefinition; style?: never; priority?: never }
+    | { style: UiStyleProperties; priority?: number; definition?: never }
+  );
+  /** Transaction over the current target snapshot; use contribute() for future instances. */
+  export interface EchoUiBatch {
+    readonly active: boolean;
+    readonly pending: boolean;
+    readonly state: 'idle' | 'preparing' | 'active' | 'failed' | 'disposed';
+    readonly revision: string;
+    readonly errorMessage: string;
+    readonly definition: readonly UiBatchEntry[];
+    readonly matches: readonly {
+      readonly entry: string;
+      readonly id: string;
+      readonly state: string;
+      readonly error: string;
+    }[];
+    readonly changed: QtSignal;
+    readonly committed: QtSignal;
+    readonly rejected: QtSignal<[message: string]>;
+    /** Prepare and atomically replace this group. Rejection leaves its current revision in place. */
+    update(entries: readonly UiBatchEntry[]): boolean;
+    /** Cancel only a pending update; the committed group remains active. */
+    cancel(): void;
+    dispose(): void;
+  }
+  export interface EchoUiContribution {
+    readonly active: boolean;
+    readonly errorMessage: string;
+    readonly matches: readonly { id: string; state: string; error: string }[];
+    readonly definition: Readonly<UiContributionDefinition>;
+    readonly changed: QtSignal;
+    /** Asynchronously prepare a new revision. Failed revisions retain the previous view. */
+    update(definition: UiContributionDefinition): boolean;
+    dispose(): void;
+  }
+  /** QML visual type. Put this once inside a wrapper to compose native host content. */
+  export interface EchoUiHostContent {
+    part: EchoUiPartRef | null;
+    readonly partChanged: QtSignal;
+  }
+  /** Attached Controls metadata for a custom presentation or virtual delegate root. */
+  export interface EchoUiScope {
+    owner: string;
+    surface: string;
+    key: string;
+    resourceKey: string;
+    active: boolean;
+    readonly generation: number;
+    readonly changed: QtSignal;
+    configure(owner: string, surface: string, key: string): void;
+  }
   export interface EchoUiPartRef {
+    readonly address: string;
+    readonly scope: string;
+    readonly resourceKey: string;
+    /** False for unnamed or ambiguous nodes; do not persist their addresses. */
+    readonly persistent: boolean;
+    readonly parentId: string;
+    readonly layoutKind: '' | 'row' | 'column' | 'grid' | 'flow';
+    readonly layoutEngine: '' | 'layout' | 'positioner';
+    readonly insertionPositions: readonly string[];
+    readonly automatic: boolean;
+    /** Presentation-local colors. Empty when the target has no palette. */
+    readonly palette: Readonly<UiPartPalette>;
+    /** @host identifies built-in nodes; other values are public plugin IDs. */
+    readonly owner: string;
+    readonly composable: boolean;
+    readonly contractVersion: number;
     readonly id: string;
     readonly revision: string;
     readonly role: string;
+    /** Named semantic key, or an @ instance key valid only for this object. */
     readonly key: string;
     readonly surface: string;
     readonly window: string;
@@ -2013,7 +2256,12 @@ declare module 'echo:plugin-sdk' {
     /** Current window-scene coordinates. Not device pixels. */
     readonly geometry: QtRect;
     readonly state: Readonly<Record<string, unknown>>;
+    readonly stateSchema: Readonly<Record<string, UiStateFieldSchema>>;
+    readonly actionSchema: Readonly<Record<string, UiActionSchema>>;
+    /** Native item local coordinates to/from logical window-scene coordinates. */
+    mapPoint(point: { x: number; y: number }, space?: 'local' | 'window'): UiMappedPoint;
     readonly visuals: Readonly<UiStyleProperties>;
+    readonly visualSources: Readonly<Record<string, UiStyleSource>>;
     readonly properties: readonly string[];
     readonly actions: readonly string[];
     readonly replaceable: boolean;
@@ -2021,6 +2269,20 @@ declare module 'echo:plugin-sdk' {
     readonly invalidated: QtSignal;
     readonly eventOccurred: QtSignal<[event: string, payload: Record<string, JsonValue>]>;
     invoke(action: string, arguments?: Record<string, JsonValue>): EchoPluginOperation;
+  }
+  export interface UiPartPalette {
+    readonly text?: QtColor;
+    readonly tone?: QtColor;
+    readonly secondaryText?: QtColor;
+    readonly elevated?: QtColor;
+    readonly card?: QtColor;
+    readonly border?: QtColor;
+    readonly accent?: QtColor;
+    readonly accentText?: QtColor;
+  }
+  /** QML ThemeColors adapter for a target's current presentation palette. */
+  export interface EchoUiPartPalette {
+    part: EchoUiPartRef | null;
   }
   export interface UiPartEvent {
     readonly type: 'added' | 'changed' | 'removed' | 'event';
@@ -2037,9 +2299,26 @@ declare module 'echo:plugin-sdk' {
     dispose(): void;
   }
   export interface EchoPluginUiParts {
+    /** Requires ui.transactions. Resolves 1..256 current targets for 1..64 entries. */
+    applyBatch(id: string, entries: readonly UiBatchEntry[]): EchoUiBatch | null;
+    /** Scoped virtual data projection; native rows/columns retain their original indices. */
+    contributeModel(
+      id: string,
+      selector: UiPartSelector,
+      definition: UiModelDefinition,
+    ): EchoUiModelContribution | null;
+    contribute(
+      id: string,
+      selector: UiPartSelector,
+      definition: UiContributionDefinition,
+    ): EchoUiContribution | null;
     readonly errorMessage: string;
     readonly errorChanged: QtSignal;
     query(selector?: UiPartSelector): EchoUiPartRef | null;
+    /** Reject zero or ambiguous matches, with errorMessage describing the count. */
+    queryUnique(selector: UiPartSelector): EchoUiPartRef | null;
+    /** Read-only capability/selector/component checks; runtime construction may still fail. */
+    preflight(selector: UiPartSelector, definition: UiContributionDefinition): UiPreflight;
     queryAll(selector?: UiPartSelector): EchoUiPartRef[];
     observe(
       id: string,

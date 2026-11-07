@@ -10,13 +10,14 @@ Item {
     id: visualizer
     objectName: "spectrumVisualizerLayer"
     required property EchoPluginContext plugin
-    required property string placement
+    required property EchoUiPartRef part
+    readonly property string placement: String(part.state.placement || "")
     readonly property var settings: plugin.ui.state
     readonly property string kind: placement === "mini.background" ? "mini" : placement === "lyrics.aboveControls" ? "lyric" : "playerbar"
     readonly property bool allowed: !!settings.enabled && (kind === "mini" ? !!settings.showMiniPlayer : kind === "lyric" ? !!settings.showLyricControls : !!settings.showPlayerBar)
     implicitHeight: kind === "lyric" && allowed ? Number(settings.lyricHeight || 82) : 0
     readonly property var hostWindow: Window.window
-    readonly property bool live: allowed && visible && width > 0 && height > 0 && hostWindow && hostWindow.visible && hostWindow.visibility !== Window.Minimized && plugin.active
+    readonly property bool live: !!(allowed && visible && width > 0 && height > 0 && hostWindow && hostWindow.visible && hostWindow.visibility !== Window.Minimized && plugin && plugin.active)
     readonly property var colors: Spectrum.palette(settings.palette || "theme", [plugin.accent.toString(), Theme.store.accentHover.toString(), Qt.darker(plugin.accent, 1.15).toString()])
     readonly property var renderSettings: Object.assign({}, settings, {
         reducedMotion: !Theme.store.motionEnabled

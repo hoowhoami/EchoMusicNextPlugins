@@ -206,6 +206,9 @@
     "ui.surfaces",
     "ui.state",
     "ui.parts",
+    "ui.composition",
+    "ui.models",
+    "ui.transactions",
     "ui.styles",
     "appearance.themes",
     "appearance.snapshot",
@@ -4053,6 +4056,24 @@
           "signal": true
         },
         {
+          "name": "applyBatch",
+          "parameters": ["QString", "QVariantList"],
+          "returnType": "EchoMusic::EchoUiBatch*",
+          "signal": false
+        },
+        {
+          "name": "contribute",
+          "parameters": ["QString", "QVariantMap", "QVariantMap"],
+          "returnType": "EchoMusic::EchoUiContribution*",
+          "signal": false
+        },
+        {
+          "name": "contributeModel",
+          "parameters": ["QString", "QVariantMap", "QVariantMap"],
+          "returnType": "EchoMusic::EchoUiModelContribution*",
+          "signal": false
+        },
+        {
           "name": "query",
           "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoUiPartRef*",
@@ -4061,6 +4082,12 @@
         {
           "name": "query",
           "parameters": [],
+          "returnType": "EchoMusic::EchoUiPartRef*",
+          "signal": false
+        },
+        {
+          "name": "queryUnique",
+          "parameters": ["QVariantMap"],
           "returnType": "EchoMusic::EchoUiPartRef*",
           "signal": false
         },
@@ -4074,6 +4101,12 @@
           "name": "queryAll",
           "parameters": [],
           "returnType": "QVariantList",
+          "signal": false
+        },
+        {
+          "name": "preflight",
+          "parameters": ["QVariantMap", "QVariantMap"],
+          "returnType": "QVariantMap",
           "signal": false
         },
         {
@@ -4560,6 +4593,208 @@
         }
       ]
     },
+    "EchoUiBatch": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "committed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "rejected",
+          "parameters": ["QString"],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "update",
+          "parameters": ["QVariantList"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "cancel",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        },
+        {
+          "name": "dispose",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "pending",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "state",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "revision",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorMessage",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "definition",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "matches",
+          "type": "QVariantList",
+          "writable": false
+        }
+      ]
+    },
+    "EchoUiContribution": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "update",
+          "parameters": ["QVariantMap"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "dispose",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorMessage",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "matches",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "definition",
+          "type": "QVariantMap",
+          "writable": false
+        }
+      ]
+    },
+    "EchoUiHostContent": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "partChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "part",
+          "type": "EchoMusic::EchoUiPartRef*",
+          "writable": true
+        }
+      ]
+    },
+    "EchoUiModelContribution": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "update",
+          "parameters": ["QVariantMap"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "dispose",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorMessage",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "matches",
+          "type": "QVariantList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "definition",
+          "type": "QVariantMap",
+          "writable": false
+        }
+      ]
+    },
     "EchoUiPartMount": {
       "enums": [],
       "methods": [
@@ -4625,6 +4860,18 @@
           "signal": true
         },
         {
+          "name": "mapPoint",
+          "parameters": ["QVariantMap", "QString"],
+          "returnType": "QVariantMap",
+          "signal": false
+        },
+        {
+          "name": "mapPoint",
+          "parameters": ["QVariantMap"],
+          "returnType": "QVariantMap",
+          "signal": false
+        },
+        {
           "name": "invoke",
           "parameters": ["QString", "QVariantMap"],
           "returnType": "EchoMusic::EchoPluginOperation*",
@@ -4638,6 +4885,78 @@
         }
       ],
       "properties": [
+        {
+          "constant": false,
+          "name": "parentId",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "address",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "scope",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "resourceKey",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "persistent",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "layoutKind",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "layoutEngine",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "insertionPositions",
+          "type": "QStringList",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "automatic",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "owner",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "composable",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": true,
+          "name": "contractVersion",
+          "type": "int",
+          "writable": false
+        },
         {
           "constant": true,
           "name": "id",
@@ -4663,7 +4982,7 @@
           "writable": false
         },
         {
-          "constant": true,
+          "constant": false,
           "name": "surface",
           "type": "QString",
           "writable": false
@@ -4700,12 +5019,36 @@
         },
         {
           "constant": false,
+          "name": "stateSchema",
+          "type": "QVariantMap",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "actionSchema",
+          "type": "QVariantMap",
+          "writable": false
+        },
+        {
+          "constant": false,
           "name": "visuals",
           "type": "QVariantMap",
           "writable": false
         },
         {
-          "constant": true,
+          "constant": false,
+          "name": "visualSources",
+          "type": "QVariantMap",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "palette",
+          "type": "QVariantMap",
+          "writable": false
+        },
+        {
+          "constant": false,
           "name": "properties",
           "type": "QStringList",
           "writable": false
@@ -4720,6 +5063,61 @@
           "constant": true,
           "name": "replaceable",
           "type": "bool",
+          "writable": false
+        }
+      ]
+    },
+    "EchoUiScope": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "configure",
+          "parameters": ["QString", "QString", "QString"],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "owner",
+          "type": "QString",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "surface",
+          "type": "QString",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "key",
+          "type": "QString",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "resourceKey",
+          "type": "QString",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "generation",
+          "type": "qulonglong",
           "writable": false
         }
       ]

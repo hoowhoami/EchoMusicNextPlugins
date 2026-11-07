@@ -20,7 +20,8 @@
       "storage",
       "ui.settings",
       "ui.state",
-      "ui.surfaces",
+      "ui.parts",
+      "ui.composition",
       "audio.spectrum",
       "playback.clock",
       "graphics.rhi",
@@ -32,6 +33,6 @@
   "tags": ["频谱", "可视化"],
   "distribution": {
     "artifact": "artifacts/spectrum-visualizer-1.0.1.echomod",
-    "sha256": "4b883e41d7922c67aa1e379d0eee2a823f8425598e88d070ad9483a83cbfb1b7"
+    "sha256": "87b20a0d17cc988bcf6841c1cfa24715900f367b5fb0d09e906227ddcd734824"
   }
 }

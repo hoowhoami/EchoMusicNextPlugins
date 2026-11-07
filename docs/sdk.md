@@ -108,7 +108,7 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 
 ## 公开宿主界面
 
-`ui.parts`与`ui.styles`已提供查询、观察、公开动作、真实QML挂载和分属性视觉优先级。声明对应features后，使用`ctx.ui.parts`和`ctx.ui.styles`；所有句柄随激活scope撤销，实例引用不会跟随虚拟委托复用。宿主基础绑定持续有效，停用恢复当前外观，不写用户主题偏好。完整接口与生命周期见[ui.parts文档](ui-parts.md)。主题中心候选、完整皮肤、Mini主题和播放/歌词/字体/浮窗SDK见[外观文档](appearance.md)。
+`ui.parts`与`ui.styles`提供查询、观察、公开动作、真实QML挂载和分属性视觉优先级；`ui.composition`增加布局插入、包裹原生内容、替换、隐藏、移动及事务更新。声明对应features后，使用`ctx.ui.parts`和`ctx.ui.styles`；所有句柄随激活scope撤销，实例引用不会跟随虚拟委托复用。宿主基础绑定持续有效，停用恢复当前外观，不写用户主题偏好。完整接口与生命周期见[ui.parts文档](ui-parts.md)。主题中心候选、完整皮肤、Mini主题和播放/歌词/字体/浮窗SDK见[外观文档](appearance.md)。
 
 音源五阶段解析/转换与自定义曲目、多队列接口见[音源与队列](audio-sources-and-queues.md)。
 
