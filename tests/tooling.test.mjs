@@ -32,6 +32,10 @@ async function author(t) {
   t.after(() => rm(temporary, { recursive: true, force: true }));
   const source = path.join(temporary, 'source');
   await cp(path.join(root, 'plugins/spectrum-visualizer'), source, { recursive: true });
+  // Keep publication-upgrade fixtures independent of the official plugin release.
+  const manifestFile = path.join(source, 'manifest.json');
+  const manifest = JSON.parse(await readFile(manifestFile, 'utf8'));
+  await writeFile(manifestFile, JSON.stringify({ ...manifest, version: '1.0.0' }));
   return { source, output: path.join(temporary, 'dist') };
 }
 

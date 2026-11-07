@@ -430,10 +430,11 @@ ColumnLayout {
                     Layout.fillWidth: true
                     visible: true
                     title: "刷新率"
-                    hint: "雾状模式最高按 24 FPS 绘制"
+                    hint: "不限制时按设备能力刷新，可能增加资源占用"
                     switchRow: false
                     editor: Component {
                         SelectSetting {
+                            objectName: "spectrumFpsSelect"
                             options: [
                                 {
                                     "label": "15 FPS · 节能",
@@ -446,6 +447,10 @@ ColumnLayout {
                                 {
                                     "label": "30 FPS · 流畅",
                                     "value": 30
+                                },
+                                {
+                                    "label": "不限制",
+                                    "value": 0
                                 }
                             ]
                             value: settingsRoot.s.fps

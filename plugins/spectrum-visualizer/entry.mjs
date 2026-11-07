@@ -60,7 +60,7 @@ var normalizeSettings = (value) => {
     showMiniPlayer: (_g = source.showMiniPlayer) != null ? _g : DEFAULT_SETTINGS.showMiniPlayer,
     showLyricControls: (_h = source.showLyricControls) != null ? _h : DEFAULT_SETTINGS.showLyricControls,
     showBackdrop: (_i = source.showBackdrop) != null ? _i : DEFAULT_SETTINGS.showBackdrop,
-    fps: [15, 24, 30].includes(fps) ? fps : DEFAULT_SETTINGS.fps,
+    fps: [0, 15, 24, 30].includes(fps) ? fps : DEFAULT_SETTINGS.fps,
     binCount: [32, 64, 96, 128].includes(binCount) ? binCount : DEFAULT_SETTINGS.binCount,
     fftSize: [1024, 2048, 4096, 8192].includes(fftSize) ? fftSize : DEFAULT_SETTINGS.fftSize,
     smoothing: clamp((_j = source.smoothing) != null ? _j : DEFAULT_SETTINGS.smoothing, 0, 95),

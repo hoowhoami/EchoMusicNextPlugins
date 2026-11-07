@@ -31,6 +31,7 @@ Item {
     readonly property bool gpuEnabled: !gpuFailed && plugin.graphics.capabilities.state !== "unavailable"
     property bool centerSettled: false
     readonly property string subscriptionKey: JSON.stringify([settings.fps, settings.binCount, settings.fftSize, settings.smoothing, settings.scale, settings.mode])
+    readonly property bool animating: live && !gpuEnabled && (settings.mode === "centered" ? !centerSettled : plugin.player.clock.isAdvancing === true && (settings.mode === "mist" || !frame || frame.state === "idle"))
     opacity: Number(settings.opacity || 56) / 100
     function release(): void {
         if (subscription)
@@ -70,16 +71,22 @@ Item {
             }
         }
     }
+    function advance(): void {
+        time = Date.now();
+        if (drawing.item)
+            drawing.item.repaint();
+    }
+    FrameAnimation {
+        objectName: "spectrumFrameClock"
+        running: visualizer.animating && visualizer.settings.fps === 0
+        onTriggered: visualizer.advance()
+    }
     Timer {
         objectName: "spectrumRenderClock"
         interval: Math.max(16, 1000 / (visualizer.settings.mode === "mist" ? Math.min(visualizer.settings.fps || 15, 24) : visualizer.settings.fps || 15))
         repeat: true
-        running: visualizer.live && !visualizer.gpuEnabled && (visualizer.settings.mode === "centered" ? !visualizer.centerSettled : visualizer.plugin.player.clock.isAdvancing === true && (visualizer.settings.mode === "mist" || !visualizer.frame || visualizer.frame.state === "idle"))
-        onTriggered: {
-            visualizer.time = Date.now();
-            if (drawing.item)
-                drawing.item.repaint();
-        }
+        running: visualizer.animating && visualizer.settings.fps !== 0
+        onTriggered: visualizer.advance()
     }
     Loader {
         id: drawing

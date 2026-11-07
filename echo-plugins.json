@@ -21,6 +21,11 @@
       "path": "plugins/custom-icon"
     },
     {
+      "id": "taskbar-lyrics",
+      "repo": "https://github.com/carsongame/echomusic-taskbarlyrics",
+      "path": "next/taskbar-lyrics"
+    },
+    {
       "id": "public-song-fallback",
       "repo": "https://github.com/CarsonGame/EchoMusicNextPlugins",
       "path": "plugins/public-song-fallback",

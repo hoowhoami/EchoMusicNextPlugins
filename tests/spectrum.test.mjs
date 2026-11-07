@@ -31,6 +31,7 @@ test('spectrum settings preserve original defaults and bound corrupt private val
   assert.equal(value.showPlayerBar, false);
   assert.equal(value.showMiniPlayer, false);
   assert.equal(value.showLyricControls, true);
+  for (const fps of [0, 15, 24, 30]) assert.equal(normalizeSettings({ fps }).fps, fps);
 });
 function canvas() {
   const calls = [];

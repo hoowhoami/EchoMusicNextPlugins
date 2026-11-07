@@ -17,7 +17,7 @@ npm run build
 
 ```sh
 /absolute/echomusicnext \
-  --plugin-dir /absolute/EchoMusicNextPlugins/dist/spectrum-visualizer-1.0.0.echomod
+  --plugin-dir /absolute/EchoMusicNextPlugins/dist/spectrum-visualizer-1.0.1.echomod
 ```
 
 宿主正式设置“插件→管理面板”提供已安装与在线插件、自定义源、安装/更新/卸载、开发目录/.echomod拖入、设置和分享；默认官方源为本仓库。echo-plugins.json 支持同仓插件与独立作者仓库，条目只含 id/repo/ref/path；版本、.echomod 地址和 SHA-256 从作者 manifest 的 distribution 自动读取，作者更新无需修改官方索引。频谱继续同仓维护，本地构建集合单独声明在 echo-plugin.build.json。
