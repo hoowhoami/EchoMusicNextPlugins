@@ -24,6 +24,11 @@
       "id": "taskbar-lyrics",
       "repo": "https://github.com/carsongame/echomusic-taskbarlyrics",
       "path": "next/taskbar-lyrics"
+    },
+    {
+      "id": "local-music",
+      "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
+      "path": "plugins/local-music"
     }
   ]
 }
