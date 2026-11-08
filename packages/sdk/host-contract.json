@@ -208,6 +208,10 @@
     "ui.parts",
     "ui.composition",
     "ui.models",
+    "ui.models.context",
+    "ui.models.placement",
+    "ui.models.columns",
+    "ui.models.transactions",
     "ui.transactions",
     "ui.styles",
     "appearance.themes",
@@ -4069,6 +4073,12 @@
         },
         {
           "name": "contributeModel",
+          "parameters": ["QString", "QVariantMap", "QVariantMap", "QJSValue"],
+          "returnType": "EchoMusic::EchoUiModelContribution*",
+          "signal": false
+        },
+        {
+          "name": "contributeModel",
           "parameters": ["QString", "QVariantMap", "QVariantMap"],
           "returnType": "EchoMusic::EchoUiModelContribution*",
           "signal": false
@@ -4101,6 +4111,18 @@
           "name": "queryAll",
           "parameters": [],
           "returnType": "QVariantList",
+          "signal": false
+        },
+        {
+          "name": "preflightBatch",
+          "parameters": ["QVariantList", "QString"],
+          "returnType": "QVariantMap",
+          "signal": false
+        },
+        {
+          "name": "preflightBatch",
+          "parameters": ["QVariantList"],
+          "returnType": "QVariantMap",
           "signal": false
         },
         {
@@ -4766,6 +4788,12 @@
           "parameters": [],
           "returnType": "void",
           "signal": false
+        },
+        {
+          "name": "cancel",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
         }
       ],
       "properties": [
@@ -4773,6 +4801,18 @@
           "constant": false,
           "name": "active",
           "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "pending",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "revision",
+          "type": "QString",
           "writable": false
         },
         {
@@ -5019,6 +5059,12 @@
         },
         {
           "constant": false,
+          "name": "modelContext",
+          "type": "QVariantMap",
+          "writable": false
+        },
+        {
+          "constant": false,
           "name": "stateSchema",
           "type": "QVariantMap",
           "writable": false
@@ -5077,6 +5123,12 @@
           "signal": true
         },
         {
+          "name": "modelContextChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
           "name": "configure",
           "parameters": ["QString", "QString", "QString"],
           "returnType": "void",
@@ -5119,6 +5171,18 @@
           "name": "generation",
           "type": "qulonglong",
           "writable": false
+        },
+        {
+          "constant": false,
+          "name": "modelContext",
+          "type": "QVariantMap",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "contextActive",
+          "type": "bool",
+          "writable": true
         }
       ]
     },

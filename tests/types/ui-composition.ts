@@ -1,4 +1,9 @@
-import type { EchoPluginContext, EchoUiPartRef, UiContributionDefinition } from 'echo:plugin-sdk';
+import type {
+  UiModelDefinition,
+  EchoPluginContext,
+  EchoUiPartRef,
+  UiContributionDefinition,
+} from 'echo:plugin-sdk';
 
 export function installUi(context: EchoPluginContext, part: EchoUiPartRef) {
   const definition: UiContributionDefinition = {
@@ -182,4 +187,48 @@ export function groupedUi(context: EchoPluginContext) {
     // @ts-expect-error One entry cannot supply both style and structural definitions.
     { id: 'both', selector: {}, style: { opacity: 0.5 }, definition: { operation: 'hide' } },
   ]);
+}
+
+function completeModels(context: EchoPluginContext) {
+  const columns: UiModelDefinition = {
+    kind: 'columns',
+    entries: [
+      {
+        key: 'note',
+        component: 'Note.qml',
+        label: 'Notes',
+        width: 120,
+        position: 'before',
+        anchor: 'native:album',
+        command: 'sort-notes',
+      },
+    ],
+  };
+  context.ui.parts.preflight({ key: 'songs' }, columns);
+  context.ui.parts.preflight({ role: 'song.row' }, { style: { radius: 4 } });
+  context.ui.parts.preflightBatch([{ id: 'notes', selector: { key: 'songs' }, model: columns }]);
+  context.ui.parts
+    .contributeModel(
+      'context-menu',
+      { role: 'model.menu' },
+      { kind: 'menu', entries: [] },
+      async (snapshot) => {
+        const resource = snapshot.values.resourceId;
+        return [
+          {
+            key: 'tools',
+            label: String(resource),
+            children: [{ key: 'run', label: 'Run', command: 'run' }],
+          },
+        ];
+      },
+    )
+    ?.cancel();
+  context.ui.parts.contributeModel(
+    'order',
+    { key: 'songs' },
+    { kind: 'rows', entries: [{ key: 'hide', operation: 'hide', target: 'native:track-1' }] },
+  );
+  // @ts-expect-error model definitions cannot use an arbitrary native Item pointer
+  context.ui.parts.preflight({}, { kind: 'rows', entries: [{ key: 'bad', component: {} }] });
 }

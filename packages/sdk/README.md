@@ -16,3 +16,5 @@ export async function activate(ctx: EchoPluginContext): Promise<void> {
 独立窗口、TCP 和本地 HTTP/WebSocket 服务的声明、授权、消息处理与生命周期见 [窗口与网络服务](../../docs/windows-network.md)。
 
 发布类型 `PluginSourceEntry` / `PluginSourceIndex` 描述稳定收录定位；`PublishedPluginManifest` 包含作者 manifest 的 `distribution`，由发布工具从实际 `.echomod` 生成。包内 `PluginManifest` 不含发布字段，详见[发布指南](../../docs/plugin-packages.md)。
+
+模型内容支持相对定位、原生条目呈现操作、共享歌曲列、有界上下文/provider、失败保旧及混合事务。完整用法与预检、检查器见[公开区域与样式](../../docs/ui-parts.md#模型内容贡献)；类型以本包为准，实际宿主契约由 sdk-sync 导出校验。

@@ -182,11 +182,11 @@ ctx.ui.styles.registerRule(
 
 ## 模型内容贡献
 
-声明 `ui.models`，使用 `contributeModel(id, selector, definition)` 注册模型内容，句柄支持 update/dispose，matches 报告每个目标的状态与错误。一次定义为 1–256 个唯一 key，同一视图最多 1024 个扩展条目。优先级及区域偏好复用已有顺序机制。
+声明 `ui.models`，使用 `contributeModel(id, selector, definition, provider?)` 注册模型内容。句柄提供 update/cancel/dispose、pending/revision/definition/errorMessage，matches 报告每个目标的状态与错误；update 返回接受准备，不代表已经提交。一次静态定义为 1–256 个唯一 key，有 provider 时可从空 entries 开始；同一视图最多 128 条贡献、1024 个扩展条目。优先级及区域偏好复用已有顺序机制。按所用能力声明 `ui.models.context`、`ui.models.placement`、`ui.models.columns`、`ui.models.transactions`，无需提高应用或 SDK 版本。
 
-- `rows`：为原生 ListView/GridView/TableView 追加行；原数据与原生索引不变。支持 C++ item model、数值、字符串/值列表和 JS 数组，保留原委托与数据绑定。
-- `columns`：为原生 TableView 追加列，保留宿主列 provider 与显式内容尺寸，扩展列使用自己的尺寸。
-- `menu`：为共享 EchoMenu 增加原生 Action 或分隔项，走现有键盘、勾选与命令路径。
+- `rows`：扩展原生 ListView/GridView/TableView 行。支持 C++ item model、数值、字符串/值列表和 JS 数组，保留原委托与数据绑定；视图坐标遵循 Qt 投影模型，源数据和业务身份仍归宿主。
+- `columns`：扩展原生 TableView 列，也适用于实际 SongList/CatalogSongList 的共享表头及虚拟行；保留宿主列 provider 与显式内容尺寸，扩展列使用自己的尺寸。条目的 label/width/command 分别控制表头、共享列宽和排序命令，排序仍由命令操作原宿主数据。
+- `menu`：为共享 EchoMenu 增加原生 Action、分隔项或带 children 的子菜单，group 变化产生分隔，走现有键盘、勾选与命令路径。
 - `tabs`：为共享 EchoTabBar / EchoDetailTabs 增加标签及正文；插件标签使用独立选择身份，不把其索引发给宿主 picked。contentTarget 必须在同一窗口中唯一解析到可组合正文区域。
 - `settings`：将章节加入现有设置目录及搜索，选择后通过同一正文 Loader 加载；撤下选中章节恢复之前的宿主章节。
 
@@ -237,13 +237,42 @@ ctx.ui.parts.contributeModel(
 
 单元 QML 提供 typed plugin/part，按需声明 `row` 和 `entry` 两个 var 属性；row 包含 index/column/values，entry 包含自身定义。Table 行按单元调用，使用 row.column 区分列。提供 implicitWidth/implicitHeight，或在条目中声明正的 width/height（至多 16384）。额外 values 必须为有限 JSON，单次定义至多 1 MiB、嵌套至多 16 层；宿主行值有 64 KiB 预算，不传递宿主 QObject。菜单的 command 是本插件注册的命令，勾选动作的参数包含 checked。
 
-同一模型贡献任一目标不兼容或超出容量时撤下该贡献的全部目标，`matches` 和 `errorMessage` 返回原因；目标集合/容量变化后重新评估，更新定义也可重试。不会保留一部分目标的新修订。
+条目的 `position: append | prepend | before | after` 决定位置，before/after 必须提供 anchor。原条目用 `native:<稳定key>`，缺少稳定 key 时可用 `native:#<本次源索引>`；插件条目用 `<插件ID>:<贡献ID>:<条目key>`。`operation: hide | move | replace` 加 target 可暂时隐藏、移动或替换已有呈现；replace 仍保留原 source identity、未覆盖角色及选择映射，不写入源业务数据。不存在、歧义或成环锚点会拒绝。多条贡献对同一目标的结构操作按已有顺序仲裁，撤销后恢复下一层或宿主顺序；源移除锚点时恢复安全原生顺序并报告错误。
+
+原生 QItemSelectionModel 不会被重绑到投影。视图使用独立选择桥，原生行列双向映射到源选择，插件条目以稳定 key 保持自身选择；撤下恢复原选择对象与绑定。同资源的纯字段更新通知原 QML 单元，保留草稿和焦点；结构或资源变更才按需退休。
+
+模型新修订先准备再提交，任何目标不兼容、构造错误或超出容量时拒绝新修订，保留已提交定义、原投影与编辑状态；不会发布部分目标的新修订。首次没有成功修订时返回错误，不能将 active 当作无错误完成。运行期单元错误同样回传句柄和检查器。目标集合/容量变化后重新评估，update 可显式重试；cancel 只取消待提交工作。
+
+### 调用上下文与动态菜单
+
+provider 接收 `UiModelContext`：revision、targetId、surface、resourceKey、active 与有界 values。业务 scope 可通过 `EchoUiScope.modelContext` 提供公开 JSON；宿主共享歌曲菜单已接入现有歌曲上下文。原生模型补充 values.model，包含当前项和最多 64 个源选择行，超出时带 selectionTruncated；不暴露宿主对象或复制完整模型。revision 变化重新调用 provider，返回条目数组、部分定义、null 或 Promise；kind 不可改变，15 秒超时。
+
+```ts
+const commands = ctx.ui.parts.contributeModel(
+  'context-tools',
+  { role: 'model.menu' },
+  { kind: 'menu', entries: [] },
+  (context) => [
+    {
+      key: 'tools',
+      label: '扩展工具',
+      enabled: context.active,
+      group: 'tools',
+      position: 'before',
+      anchor: 'native:#0',
+      children: [{ key: 'inspect', label: '查看当前资源', command: 'inspect-resource' }],
+    },
+  ],
+);
+```
+
+菜单命令参数包含条目 arguments、checked 和捕获的 context。正常点击关闭菜单后，已经接受的命令继续使用原上下文；业务资源/路由/账号变化会取消尚未执行的旧命令。关闭菜单、切资源、账号退休和停用取消旧 provider，晚到 Promise 不发布；provider 本身的外部业务副作用不由 UI 事务回滚。
 
 虚拟单元池化、换资源、隐藏、账号切换及停用会退休呈现作用域，恢复时重新创建；需要保留的业务状态归插件状态/存储，不依赖离屏单元的 QML 对象。
 
 ## 成组界面提交
 
-声明 `ui.transactions`，`applyBatch` 对当前匹配的节点身份执行一次成组准备与发布。每组 1–64 条、至多 256 个目标、定义至多 1 MiB；可见组件先在隐藏作用域中创建，必需属性、目标兼容性、预算或布局容量失败时，更新保留旧组。隐藏内容遵循原有显示时创建的生命周期。组更新不扩大现有 128 个呈现作用域上限。
+声明 `ui.transactions`，`applyBatch` 对当前匹配的节点身份执行一次成组准备与发布。条目可分别包含 model、definition 或 style，三者只能选一个；模型复用普通修订的准备/提交路径，与正文和样式一起成功或拒绝。每组 1–64 条、至多 256 个目标、定义至多 1 MiB；可见组件先在隐藏作用域中创建，必需属性、目标兼容性、预算或布局容量失败时，更新保留旧组。隐藏内容遵循原有显示时创建的生命周期。组更新不扩大现有 128 个呈现作用域上限。
 
 ```ts
 const group = ctx.ui.parts.applyBatch('translation-tools', [
@@ -262,3 +291,5 @@ group?.dispose(); // 撤销整组。
 ```
 
 快照不会自动选中新建页面；持续跟随未来实例使用 contribute/observe。账号切换、停用或作用域退休撤销整组及准备中的工作。事务覆盖界面贡献，组件自身发起的业务命令仍遵循对应 API 的取消与权限契约。
+
+`preflight(selector, definition)` 同时接受视觉定义、模型定义和 `{style}`；`preflightBatch(entries, id?)` 检查整组当前目标、锚点和容量，同 ID 更新会排除被替换的旧记录。预检不执行 provider、不构造插件组件，也不为未来节点预留资源，实际准备仍可能失败。检查器显示原生/投影计数、贡献来源与错误、预算、选择桥及公开上下文。

@@ -2004,23 +2004,42 @@ declare module 'echo:plugin-sdk' {
       readonly persistent: boolean;
       readonly supported: boolean;
       readonly error: string;
+      readonly model?: UiModelDiagnostics & { readonly supported: boolean };
       readonly layoutEngine: string;
       readonly insertionPositions: readonly UiPartPosition[];
     }[];
   }
-  export interface UiModelEntry {
+  /** native:<stable-key> or native:#<source-index>; plugin entries use owner:id:key. */
+  export interface UiModelPlacement {
+    position?: 'append' | 'prepend' | 'before' | 'after';
+    anchor?: string;
+    group?: string;
+  }
+  export interface UiModelStructureEntry extends UiModelPlacement {
+    key: string;
+    operation: 'hide' | 'move';
+    target: string;
+  }
+  export interface UiModelEntry extends UiModelPlacement {
     key: string;
     component: string;
+    operation?: 'insert' | 'replace';
+    target?: string;
     width?: number;
     height?: number;
     label?: string;
     enabled?: boolean;
+    /** Optional column-header sorting command; original source data stays host-owned. */
+    command?: string;
+    arguments?: Readonly<Record<string, JsonValue>>;
     values?: Readonly<Record<string, JsonValue>>;
   }
-  export interface UiMenuActionEntry {
+  export interface UiMenuActionEntry extends UiModelPlacement {
     key: string;
     label: string;
     command: string;
+    operation?: 'insert' | 'replace';
+    target?: string;
     arguments?: Readonly<Record<string, JsonValue>>;
     enabled?: boolean;
     checkable?: boolean;
@@ -2028,10 +2047,18 @@ declare module 'echo:plugin-sdk' {
     danger?: boolean;
     separator?: false;
   }
-  export interface UiMenuSeparatorEntry {
+  export interface UiMenuSeparatorEntry extends UiModelPlacement {
     key: string;
     separator: true;
   }
+  export interface UiSubmenuEntry extends UiModelPlacement {
+    key: string;
+    label: string;
+    enabled?: boolean;
+    children: readonly UiMenuEntry[];
+  }
+  export type UiMenuEntry =
+    UiMenuActionEntry | UiMenuSeparatorEntry | UiSubmenuEntry | UiModelStructureEntry;
   export interface UiTabEntry extends UiModelEntry {
     label: string;
     glyph?: string;
@@ -2045,29 +2072,67 @@ declare module 'echo:plugin-sdk' {
   export type UiModelDefinition =
     | {
         kind: 'rows' | 'columns';
-        entries: readonly UiModelEntry[];
+        entries: readonly (UiModelEntry | UiModelStructureEntry)[];
         priority?: number;
       }
+    | { kind: 'menu'; entries: readonly UiMenuEntry[]; priority?: number }
+    | { kind: 'tabs'; entries: readonly (UiTabEntry | UiModelStructureEntry)[]; priority?: number }
     | {
-        kind: 'menu';
-        entries: readonly (UiMenuActionEntry | UiMenuSeparatorEntry)[];
+        kind: 'settings';
+        entries: readonly (UiSettingsEntry | UiModelStructureEntry)[];
         priority?: number;
-      }
-    | { kind: 'tabs'; entries: readonly UiTabEntry[]; priority?: number }
-    | { kind: 'settings'; entries: readonly UiSettingsEntry[]; priority?: number };
+      };
+  export interface UiModelContext {
+    readonly revision: string;
+    readonly targetId: string;
+    readonly surface: string;
+    readonly resourceKey: string;
+    readonly active: boolean;
+    /** Public scope values (including route and bounded native selection data). */
+    readonly values: Readonly<Record<string, JsonValue>>;
+  }
+  export type UiModelProvider<D extends UiModelDefinition> = (
+    context: UiModelContext,
+  ) => D['entries'] | Partial<D> | null | Promise<D['entries'] | Partial<D> | null>;
+  export interface UiModelDiagnostics {
+    readonly kind: 'rows' | 'columns' | 'menu' | 'tabs' | 'settings' | 'composite' | '';
+    readonly error: string;
+    readonly nativeRows: number;
+    readonly nativeColumns: number;
+    readonly projectedRows: number;
+    readonly projectedColumns: number;
+    readonly selectionBridge: boolean;
+    readonly maxEntries: number;
+    readonly maxRecords: number;
+    readonly context: Readonly<Record<string, JsonValue>>;
+    readonly records: readonly {
+      readonly owner: string;
+      readonly id: string;
+      readonly kind: UiModelDefinition['kind'];
+      readonly entries: number;
+      readonly priority: number;
+      readonly state?: string;
+      readonly error?: string;
+      readonly revision?: string;
+    }[];
+  }
   export interface EchoUiModelContribution {
     readonly active: boolean;
+    readonly pending: boolean;
+    readonly revision: string;
     readonly errorMessage: string;
     readonly matches: readonly {
       readonly id: string;
       readonly address: string;
       readonly kind: UiModelDefinition['kind'];
-      readonly state: 'active' | 'unsupported';
+      readonly state: 'active' | 'unsupported' | 'preparing' | 'suspended' | 'error';
       readonly error: string;
     }[];
+    /** Last committed definition. Rejected updates preserve the old projection. */
     readonly definition: Readonly<UiModelDefinition>;
     readonly changed: QtSignal;
     update(definition: UiModelDefinition): boolean;
+    cancel(): void;
     dispose(): void;
   }
   export interface UiPartSelector {
@@ -2175,8 +2240,9 @@ declare module 'echo:plugin-sdk' {
     id: string;
     selector: UiPartSelector;
   } & (
-    | { definition: UiContributionDefinition; style?: never; priority?: never }
-    | { style: UiStyleProperties; priority?: number; definition?: never }
+    | { definition: UiContributionDefinition; style?: never; model?: never; priority?: never }
+    | { style: UiStyleProperties; priority?: number; definition?: never; model?: never }
+    | { model: UiModelDefinition; style?: never; definition?: never; priority?: never }
   );
   /** Transaction over the current target snapshot; use contribute() for future instances. */
   export interface EchoUiBatch {
@@ -2218,6 +2284,9 @@ declare module 'echo:plugin-sdk' {
   }
   /** Attached Controls metadata for a custom presentation or virtual delegate root. */
   export interface EchoUiScope {
+    modelContext: Readonly<Record<string, JsonValue>>;
+    contextActive: boolean;
+    readonly modelContextChanged: QtSignal;
     owner: string;
     surface: string;
     key: string;
@@ -2228,6 +2297,7 @@ declare module 'echo:plugin-sdk' {
     configure(owner: string, surface: string, key: string): void;
   }
   export interface EchoUiPartRef {
+    readonly modelContext: UiModelContext;
     readonly address: string;
     readonly scope: string;
     readonly resourceKey: string;
@@ -2306,6 +2376,7 @@ declare module 'echo:plugin-sdk' {
       id: string,
       selector: UiPartSelector,
       definition: UiModelDefinition,
+      provider?: UiModelProvider<UiModelDefinition>,
     ): EchoUiModelContribution | null;
     contribute(
       id: string,
@@ -2318,7 +2389,18 @@ declare module 'echo:plugin-sdk' {
     /** Reject zero or ambiguous matches, with errorMessage describing the count. */
     queryUnique(selector: UiPartSelector): EchoUiPartRef | null;
     /** Read-only capability/selector/component checks; runtime construction may still fail. */
-    preflight(selector: UiPartSelector, definition: UiContributionDefinition): UiPreflight;
+    preflight(
+      selector: UiPartSelector,
+      definition: UiContributionDefinition | UiModelDefinition | { style: UiStyleProperties },
+    ): UiPreflight;
+    preflightBatch(
+      entries: readonly UiBatchEntry[],
+      id?: string,
+    ): {
+      readonly valid: boolean;
+      readonly error: string;
+      readonly entries: readonly (UiPreflight & { readonly id: string })[];
+    };
     queryAll(selector?: UiPartSelector): EchoUiPartRef[];
     observe(
       id: string,

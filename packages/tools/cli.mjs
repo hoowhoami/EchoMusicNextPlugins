@@ -136,6 +136,12 @@ try {
       if (values.suite && !['all', 'ui'].includes(values.suite))
         throw new Error('Unknown host test suite');
       const compositionTests = [
+        'nativeUiActionsCommitBusinessIntent',
+        'nativeUiModelSelectionAndLiveCells',
+        'nativeUiModelRelativeOrderAndRejectedRevision',
+        'nativeUiCompositeColumnsVirtualizationAndRecovery',
+        'nativeUiModelContextProvidersAndStaleCommands',
+        'nativeUiMixedModelBatchAndPreflight',
         'nativeUiBatchPreparationCommitAndRollback',
         'nativeUiAdjacentFocusAndCapacity',
         'nativeUiBoundedPublicValues',
