@@ -1,0 +1,29 @@
+{
+  "entry": "src/entry.ts",
+  "assets": [
+    "Autumn.qml",
+    "Prism.qml",
+    "GoldenRibbon.qml",
+    "Willow.qml",
+    "FerrisWheel.qml",
+    "ThemeScene.qml",
+    "FallingLeaves.qml",
+    "SpriteScene.qml",
+    "SceneData.mjs",
+    "Settings.qml",
+    "assets",
+    "shaders"
+  ],
+  "shaders": [
+    {
+      "source": "shaders/prism.frag",
+      "output": "shaders/prism.frag.qsb",
+      "target": "quick"
+    },
+    {
+      "source": "shaders/golden-ribbon.frag",
+      "output": "shaders/golden-ribbon.frag.qsb",
+      "target": "quick"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "format": "echomod",
+  "schemaVersion": 1,
+  "id": "dynamic-themes",
+  "name": "动态主题",
+  "version": "1.0.0",
+  "description": "整窗枫叶、幻彩、金丝带、杨柳与摩天轮主题，使用实时着色器和分层动画。",
+  "author": "hoowhoami",
+  "kind": "qml-js",
+  "entry": "entry.mjs",
+  "requires": {
+    "hostVersion": ">=0.1.0",
+    "sdkVersion": ">=1.0.0 <2.0.0",
+    "features": ["lifecycle", "appearance.themes", "appearance.snapshot"]
+  },
+  "capabilities": ["theme"],
+  "contexts": ["main"],
+  "tags": ["主题", "动态", "特效"]
+}
