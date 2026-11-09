@@ -15,5 +15,9 @@
   },
   "capabilities": ["theme"],
   "contexts": ["main"],
-  "tags": ["主题", "动态", "特效"]
+  "tags": ["主题", "动态", "特效"],
+  "distribution": {
+    "artifact": "artifacts/dynamic-themes-1.0.0.echomod",
+    "sha256": "ec4f513034998962244ba1b5158d368a4c5462fd1ae0afdae87ae90ed2957be0"
+  }
 }

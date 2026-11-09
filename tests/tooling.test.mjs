@@ -73,7 +73,10 @@ test('resource and presentation bindings retain native return types and state', 
 });
 
 test('manifest compatibility, source-only index and comparator intersections', async () => {
-  assert.equal((await localPackages(root)).length, 1);
+  assert.deepEqual(
+    (await localPackages(root)).map(({ manifest }) => manifest.id),
+    ['spectrum-visualizer', 'dynamic-themes'],
+  );
   assert.equal(rangeContains('>=0.1.0 <1.0.0', '0.1.0'), true);
   assert.equal(rangeContains('>=1.0.0', '0.1.0'), false);
   assert.equal(rangeContains('^1.0.0', '1.0.0'), false);

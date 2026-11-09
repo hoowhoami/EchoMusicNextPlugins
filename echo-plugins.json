@@ -29,6 +29,10 @@
       "id": "local-music",
       "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
       "path": "plugins/local-music"
+    },
+    {
+      "id": "dynamic-themes",
+      "path": "plugins/dynamic-themes"
     }
   ]
 }
