@@ -14,6 +14,7 @@ ColumnLayout {
     required property AppearanceConfiguration configuration
     spacing: 16
     RowLayout {
+        objectName: "dynamicThemeEnabledRow"
         Layout.fillWidth: true
         Label {
             Layout.fillWidth: true
@@ -30,14 +31,17 @@ ColumnLayout {
             })
         }
     }
-    Label {
-        Layout.fillWidth: true
-        text: qsTr("动画速度")
-        font: Theme.font(13, Theme.regularWeight)
-        color: Theme.floatingText
-    }
     RowLayout {
+        objectName: "dynamicThemeSpeedRow"
         Layout.fillWidth: true
+        spacing: 16
+        Label {
+            objectName: "dynamicThemeSpeedLabel"
+            Layout.preferredWidth: 104
+            text: qsTr("动画速度")
+            font: Theme.font(13, Theme.regularWeight)
+            color: Theme.floatingText
+        }
         EchoSlider {
             id: speed
             objectName: "dynamicThemeSpeed"
@@ -65,25 +69,5 @@ ColumnLayout {
             font: Theme.font(12, Theme.regularWeight)
             color: Theme.floatingSecondaryText
         }
-    }
-    Label {
-        Layout.fillWidth: true
-        text: qsTr("每款主题单独保存。减少动态效果开启时保持静态画面。")
-        wrapMode: Text.Wrap
-        font: Theme.font(12, Theme.regularWeight)
-        color: Theme.floatingSecondaryText
-    }
-    Label {
-        Layout.fillWidth: true
-        visible: root.configuration.errorMessage !== ""
-        text: root.configuration.errorMessage
-        wrapMode: Text.Wrap
-        font: Theme.font(12, Theme.regularWeight)
-        color: Theme.floatingText
-    }
-    EchoSoftButton {
-        text: qsTr("恢复默认")
-        enabled: !root.configuration.busy
-        onClicked: root.configuration.reset()
     }
 }
