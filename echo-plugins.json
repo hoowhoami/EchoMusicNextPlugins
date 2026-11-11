@@ -33,6 +33,10 @@
     {
       "id": "dynamic-themes",
       "path": "plugins/dynamic-themes"
+    },
+    {
+      "id": "webdav-backup",
+      "path": "plugins/webdav-backup"
     }
   ]
 }

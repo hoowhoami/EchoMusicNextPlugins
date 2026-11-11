@@ -13,6 +13,7 @@ export async function saveBackup(ctx: EchoPluginContext) {
       url: 'https://storage.example/backup',
       method: 'PUT',
       body: archive.data,
+      maxRequestBytes: archive.data.byteLength,
     }),
   );
 }
@@ -41,6 +42,7 @@ export function activate(ctx: EchoPluginContext) {
           url: 'https://storage.example/backup',
           method: 'PUT',
           body: request.data,
+          maxRequestBytes: request.data.byteLength,
         }),
       );
     },
@@ -58,6 +60,7 @@ export function activate(ctx: EchoPluginContext) {
         request.context!.net.request({
           url: 'https://storage.example/backups/' + encodeURIComponent(request.id),
           responseType: 'arrayBuffer',
+          maxResponseBytes: 256 * 1024 * 1024,
         }),
       );
       return response.data as ArrayBuffer;
@@ -84,3 +87,7 @@ export function activate(ctx: EchoPluginContext) {
 每次调用的 `request.context` 是独立作用域，里面启动的请求、文件操作和定时器会在完成、取消或停用时回收。用已有 `ctx` 发起操作时，可通过 `request.track(operation)` 显式关联取消。请求的 `active/canceled/changed` 可用于自定义异步任务；完成后数据缓冲区释放，不保留 request 作为长期状态。一次存储调用最多等待两分钟，晚到结果不会更新已关闭的界面或新注册。
 
 设置 → 数据与安全 → 创建备份/恢复备份中的位置选择器会显示注册项。列表按需读取，支持刷新、选择、删除和恢复；关闭相关界面或停用 provider 会取消在途工作。恢复格式、授权确认、令牌和事务始终由宿主负责。
+
+## WebDAV 备份插件
+
+官方 `webdav-backup` 插件提供服务地址、用户名、密码、远端目录、测试连接和保存/应用设置，注册到同一备份位置选择器。默认不记住密码；勾选后才写入插件私有存储，归档仍未加密。插件使用统一 `net.request` 的显式单次大小参数，不引入独立网络权限或大文件能力。见[插件用法](../plugins/webdav-backup/README.md)。

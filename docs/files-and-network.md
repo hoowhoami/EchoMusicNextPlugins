@@ -81,6 +81,6 @@ const response = await awaitOperation(
 
 唯一入口为`ctx.net.request(options)`。不限制域名，不注入宿主账号凭证；支持自定义HTTP方法、请求头、文本/JSON/ArrayBuffer正文。HTTP状态码（包括4xx/5xx）通过response返回，传输错误使操作失败。返回url/status/statusText/headers/data；responseType为json（默认）、text或arrayBuffer。响应头名称小写，重复值返回数组。
 
-支持maxRedirects（默认5，0关闭）、decompress（默认true）、tls.rejectUnauthorized（默认true）和tls.servername。自动压缩协商由Qt处理；显式Accept-Encoding时由调用方解释对应的wire正文。timeoutMs默认30000、0关闭；maxResponseBytes默认32MiB，可设至128MiB，必须为正数；请求正文最多8MiB、头部32KiB、每scope最多16个在途请求。这些预算防止进程内扩展无限积压，不是域名或请求权限分级。
+支持maxRedirects（默认5，0关闭）、decompress（默认true）、tls.rejectUnauthorized（默认true）和tls.servername。自动压缩协商由Qt处理；显式Accept-Encoding时由调用方解释对应的wire正文。timeoutMs默认30000、0关闭；maxResponseBytes默认32MiB，maxRequestBytes默认8MiB；插件可显式指定任意正的安全整数字节数。请求正文按实际编码字节检查，响应在读取实际数据时检查；不会按声明上限预留或累加内存，也不按二进制大小增加另一种能力。两项大小限制对文本、JSON和ArrayBuffer使用同一参数。头部32KiB、每scope最多16个在途请求保持原行为。内存HTTP响应由调用方选择合适上限；需要流式文件下载时使用已有downloads接口。
 
 网络运行在独立worker，沿用宿主统一代理路由。取消、停用、重载、退出、账号变化会中断实际reply；传revision可绑定切歌，也可使用resolver的request.track(operation)。`ctx.io`只保存插件私有JSON数据。

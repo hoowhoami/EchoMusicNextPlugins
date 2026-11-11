@@ -3043,7 +3043,10 @@ declare module 'echo:plugin-sdk' {
     body?: string | JsonValue[] | { [key: string]: JsonValue } | ArrayBuffer;
     responseType?: 'json' | 'text' | 'arrayBuffer';
     timeoutMs?: number;
+    /** Response byte ceiling; positive safe integer, default 32 MiB. Checked on actual bytes. */
     maxResponseBytes?: number;
+    /** Request byte ceiling; positive safe integer, default 8 MiB. */
+    maxRequestBytes?: number;
     maxRedirects?: number;
     decompress?: boolean;
     tls?: { rejectUnauthorized?: boolean; servername?: string };

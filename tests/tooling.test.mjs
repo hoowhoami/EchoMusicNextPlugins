@@ -75,7 +75,7 @@ test('resource and presentation bindings retain native return types and state', 
 test('manifest compatibility, source-only index and comparator intersections', async () => {
   assert.deepEqual(
     (await localPackages(root)).map(({ manifest }) => manifest.id),
-    ['spectrum-visualizer', 'dynamic-themes'],
+    ['spectrum-visualizer', 'dynamic-themes', 'webdav-backup'],
   );
   assert.equal(rangeContains('>=0.1.0 <1.0.0', '0.1.0'), true);
   assert.equal(rangeContains('>=1.0.0', '0.1.0'), false);

@@ -1,0 +1,4 @@
+{
+  "entry": "src/entry.ts",
+  "assets": ["Settings.qml", "icon.svg", "LICENSE"]
+}

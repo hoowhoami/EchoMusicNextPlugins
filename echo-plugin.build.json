@@ -1,4 +1,4 @@
 {
   "repository": "https://github.com/hoowhoami/EchoMusicNextPlugins",
-  "plugins": ["plugins/spectrum-visualizer", "plugins/dynamic-themes"]
+  "plugins": ["plugins/spectrum-visualizer", "plugins/dynamic-themes", "plugins/webdav-backup"]
 }
