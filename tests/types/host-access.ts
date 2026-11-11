@@ -5,6 +5,27 @@ async function useHost() {
     c.ui.navigation.navigate({ name: 'search', query: { q: 'Echo', tab: 'song' } }),
   );
   const canBack: boolean = page.canGoBack;
+  const network = await awaitOperation(
+    c.settings.update('network', {
+      githubProxyUrl: 'https://mirror.example',
+      apiTimeoutSeconds: 10,
+      playerTimeoutSeconds: 60,
+      playerUserAgent: '',
+    }),
+  );
+  const address: string = network.githubProxyUrl;
+  const networkWatch = await awaitOperation(
+    c.settings.observe('network', 'network', (values) => {
+      const seconds: number = values.apiTimeoutSeconds;
+      void seconds;
+    }),
+  );
+  networkWatch.dispose();
+  // @ts-expect-error no proxy credentials through settings
+  c.settings.update('network', { proxyPassword: 'secret' });
+  // @ts-expect-error snapshots are readonly
+  network.githubProxyUrl = '';
+  void address;
   const prefs = await awaitOperation(c.settings.read('playback'));
   const fade: number = prefs.volumeFadeMs;
   await awaitOperation(c.settings.update('mini', { fontWeight: 780, alwaysOnTop: true }));

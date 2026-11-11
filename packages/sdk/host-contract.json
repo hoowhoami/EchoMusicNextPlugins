@@ -150,6 +150,7 @@
     "graphics.readback",
     "ui.navigation",
     "settings.host",
+    "settings.network",
     "ui.actions",
     "cover.themed",
     "ui.cover",
@@ -239,7 +240,7 @@
     "ui.dialogs",
     "clipboard.write"
   ],
-  "hostVersion": "0.1.0",
+  "hostVersion": "0.1.3",
   "module": "echo:plugin-sdk",
   "packageFormat": "echomod",
   "qmlModule": "EchoMusic.PluginSdk",

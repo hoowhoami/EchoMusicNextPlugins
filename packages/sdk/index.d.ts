@@ -2581,6 +2581,17 @@ declare module 'echo:plugin-sdk' {
     fontWeight: 400 | 600 | 780;
     backgroundBlur: boolean;
   }
+  /** settings.network feature; values are owned and saved by NetworkPreferences. */
+  export interface HostNetworkSettings {
+    /** Empty disables acceleration; otherwise a credential-free HTTP(S) base URL (max 4096 chars). */
+    githubProxyUrl: string;
+    /** Seconds, 0–300; 0 uses the API default. */
+    apiTimeoutSeconds: number;
+    /** Seconds, 1–300. Existing audio readers retain their captured timeout. */
+    playerTimeoutSeconds: number;
+    /** Up to 512 printable ASCII characters; trimmed, empty sends no header. */
+    playerUserAgent: string;
+  }
   export interface HostSettingDescriptor {
     readonly key: string;
     readonly type: 'boolean' | 'string' | 'number';
@@ -2593,12 +2604,17 @@ declare module 'echo:plugin-sdk' {
   export interface EchoPluginSettings {
     readonly sourceChanged: QtSignal;
     catalog(): { domain: string; properties: HostSettingDescriptor[] }[];
+    read(domain: 'network'): EchoPluginOperation<Readonly<HostNetworkSettings>>;
     read(domain: 'playback'): EchoPluginOperation<Readonly<HostPlaybackSettings>>;
     read(domain: 'shell'): EchoPluginOperation<Readonly<HostShellSettings>>;
     read(domain: 'appearance'): EchoPluginOperation<Readonly<HostAppearanceSettings>>;
     read(domain: 'lyrics'): EchoPluginOperation<Readonly<HostLyricSettings>>;
     read(domain: 'mini'): EchoPluginOperation<Readonly<HostMiniSettings>>;
     read(domain: 'desktop'): EchoPluginOperation<Readonly<HostDesktopSettings>>;
+    update(
+      domain: 'network',
+      patch: Partial<HostNetworkSettings>,
+    ): EchoPluginOperation<Readonly<HostNetworkSettings>>;
     update(
       domain: 'playback',
       patch: Partial<HostPlaybackSettings>,
@@ -2623,6 +2639,11 @@ declare module 'echo:plugin-sdk' {
       domain: 'desktop',
       patch: Partial<HostDesktopSettings>,
     ): EchoPluginOperation<Readonly<HostDesktopSettings>>;
+    observe(
+      id: string,
+      domain: 'network',
+      callback: (values: Readonly<HostNetworkSettings>) => void,
+    ): EchoPluginOperation<EchoPluginRegistration>;
     observe(
       id: string,
       domain: 'playback',

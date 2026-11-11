@@ -47,7 +47,7 @@ test:host重建包、比对真实契约，隔离smoke加载并排空；runtime-t
 
 正式开发用--plugin-dir加载构建目录，runtime.reload可先停旧scope再采集新代码；管理页提供安装、启停、更新、卸载、依赖状态和设置；手动安全模式阻止执行但保留偏好。
 
-宿主页面导航、六域偏好、动态工具栏操作和全局封面回退参见[宿主扩展](host-access.md)。
+宿主页面导航、含网络设置的分域偏好、动态工具栏操作和全局封面回退参见[宿主扩展](host-access.md)。
 
 独立作者可用 `echo-plugin test-host dist/plugin-1.0.0.echomod --host /absolute/echomusicnext` 验证实际包，不需要官方源的本地构建清单。SDK 导出 `PluginSourceEntry` 和 `PluginSourceIndex` 索引类型。
 

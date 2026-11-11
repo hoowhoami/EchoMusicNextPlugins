@@ -1,6 +1,6 @@
 # 宿主导航、设置、工具栏与封面
 
-manifest 的 `requires.features` 可声明 `ui.navigation`、`settings.host`、`ui.actions`、`cover.themed`、`ui.cover`。导航、设置读写/订阅、全局封面回退分别需要 `navigation`、`hostSettings`、`cover` capability；首次调用请求用户授权，可在插件管理的授权入口撤销。授权绑定安装及包内容。普通工具栏贡献沿用已有 UI 注册协议。
+manifest 的 `requires.features` 可声明 `ui.navigation`、`settings.host`、`settings.network`、`ui.actions`、`cover.themed`、`ui.cover`。导航、设置读写/订阅、全局封面回退分别需要 `navigation`、`hostSettings`、`cover` capability；首次调用请求用户授权，可在插件管理的授权入口撤销。授权绑定安装及包内容。普通工具栏贡献沿用已有 UI 注册协议。
 
 ## 页面导航
 
@@ -23,7 +23,7 @@ await awaitOperation(ctx.ui.navigation.history('back'));
 
 ## 宿主偏好
 
-`ctx.settings.catalog()` 返回可用域、字段类型、枚举与数值范围。`read(domain)` 读取当前值，`update(domain, patch)` 经整份参数校验后调用原设置所有者并返回实际保存值。支持 playback、shell、appearance、lyrics、mini、desktop 六域；缺失的浮窗域不会假成功。SDK 为每个域提供独立类型。
+`ctx.settings.catalog()` 返回可用域、字段类型、枚举与数值范围。`read(domain)` 读取当前值，`update(domain, patch)` 经整份参数校验后调用原设置所有者并返回实际保存值。支持 playback、shell、appearance、lyrics、mini、desktop 和 network；缺失的所有者不会假成功。SDK 为每个域提供独立类型。
 
 ```ts
 const prefs = await awaitOperation(ctx.settings.read('playback'));
@@ -38,6 +38,33 @@ watch.dispose();
 ```
 
 订阅在提交后发送当前快照，之后合并同一轮变化，仅在该域实际值变化时回调。撤权、账号变化及停用撤销订阅，取消尚未执行的写入。已完成的设置写入作为用户偏好持久保留。账号凭证、任意 QSettings 路径、协议接受状态和任意本地文件路径不属于此接口。背景资源仍使用主题/文件授权 API。
+
+### 网络设置
+
+网络域自宿主 0.1.3 提供，manifest 可用 `requires.hostVersion: ">=0.1.3"` 限定版本；同时声明 `settings.network` feature（保留 `settings.host`）及 `hostSettings` capability。`HostNetworkSettings` 包含以下四项，读写和订阅使用同一个 `NetworkPreferences` 所有者：
+
+| 字段                   | 值                                                                   |
+| ---------------------- | -------------------------------------------------------------------- |
+| `githubProxyUrl`       | 空字符串关闭加速，或不含用户名密码的 HTTP(S) 前缀，最多 4096 字符    |
+| `apiTimeoutSeconds`    | 0–300 秒，0 使用 API 默认值                                          |
+| `playerTimeoutSeconds` | 1–300 秒                                                             |
+| `playerUserAgent`      | 最多 512 个可打印 ASCII 字符，保存时去除首尾空格；空字符串不发送该头 |
+
+```ts
+const network = await awaitOperation(ctx.settings.read('network'));
+await awaitOperation(ctx.settings.update('network', { githubProxyUrl: 'https://mirror.example' }));
+const watch = await awaitOperation(
+  ctx.settings.observe('network', 'network', (value) => {
+    console.info(value.githubProxyUrl);
+  }),
+);
+// 结束观察；不撤回已经保存的地址。
+watch.dispose();
+```
+
+更新沿宿主原保存流程返回实际结果，保存失败以操作错误交付；所有参数先整份校验，无效参数不会写入其中的其它字段。该接口不是跨字段磁盘事务。宿主正在保存网络配置时返回 `Busy`。超时和 User-Agent 只影响新打开的连接/音频 reader，不打断当前播放。GitHub 加速和原站回退继续服从宿主统一代理策略。
+
+本域不提供代理模式、PAC、规则或代理凭证操作，也不暴露任意 QSettings 路径。撤权、账号变化和停用取消尚未执行的操作并撤销订阅；已完成的写入持久保留。插件可用 `ui.parts` 的隐藏与相邻插入贡献展示接管状态，贡献必须随其设置授权租约撤下；不通过编辑输入框保存配置。
 
 ## 工具栏操作
 
