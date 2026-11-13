@@ -8,6 +8,8 @@
 
 ## 业务与验证
 
+`userHistory` 使用可选的 `{ cursor?: string }`，空游标从最新记录开始，最多4096个UTF-8字节；超限返回 `InvalidArgument`。结果为 `HistoryPage`，下一页使用返回的 `cursor`。`finished`、`has_more` 和每行 `play_count` 未知时为 `null`，仅 `finished === true` 表示确定结束；未知状态或重复游标应停止自动分页并提示数据不完整，不要无限请求。成功响应必要数据解码失败会报 `decode`，不返回伪造空页。
+
 `ctx.kugou.request(method, arguments)` 调用宿主类型化业务服务。编辑器按 method 提示准确的参数和结果字段；方法目录见 `KugouMethods`。目前提供 99 个正式命令（含 `userHistory` 听歌历史与 `bp` 分页游标），覆盖搜索、推荐/榜单、专辑/歌手、歌单、收藏、云盘、社交、评论/弹幕、音效、歌词、媒体和一起听。结果使用宿主已经转换的领域数据，字段保留其真实单位和可空性。业务 ID 使用十进制字符串，避免 JavaScript 大整数精度损失。
 
 ```ts

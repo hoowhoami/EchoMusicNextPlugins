@@ -241,7 +241,7 @@
     "ui.dialogs",
     "clipboard.write"
   ],
-  "hostVersion": "0.1.3",
+  "hostVersion": "0.1.5",
   "module": "echo:plugin-sdk",
   "packageFormat": "echomod",
   "qmlModule": "EchoMusic.PluginSdk",

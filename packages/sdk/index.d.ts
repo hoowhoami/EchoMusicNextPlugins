@@ -4217,8 +4217,9 @@ declare module 'echo:plugin-sdk' {
   export interface KugouDto_user_history_HistoryPage {
     readonly user_id: string;
     readonly cursor: string | null;
-    readonly finished: boolean;
-    readonly has_more: boolean;
+    /** null when the provider did not return a usable pagination flag. */
+    readonly finished: boolean | null;
+    readonly has_more: boolean | null;
     readonly items: KugouDto_user_history_HistoryItem[];
   }
   export interface KugouDto_user_history_HistoryItem {
@@ -4232,7 +4233,8 @@ declare module 'echo:plugin-sdk' {
     readonly cover: string | null;
     readonly duration_ms: number | null;
     readonly bitrate: number | null;
-    readonly play_count: number;
+    /** null means unknown; an explicit zero remains 0. */
+    readonly play_count: number | null;
     readonly last_played_at: number | null;
   }
   export interface KugouDto_user_follow_add_FollowChange {
