@@ -2762,6 +2762,9 @@ declare module 'echo:plugin-sdk' {
   export interface EchoPluginClipboard {
     /** Text-only system clipboard, at most 1 MiB UTF-8. */
     write(text: string): EchoPluginOperation<void>;
+    /** Encoded image (PNG/JPEG/BMP/WebP, at most 8 MiB). The host decodes it off
+     * the GUI thread with a 4096-per-edge and 16M-pixel budget. */
+    writeImage(bytes: ArrayBuffer): EchoPluginOperation<void>;
   }
   export interface EchoPluginUi {
     /** Main-window overlay; completes when its QML content is ready. */
@@ -5283,6 +5286,10 @@ declare module 'echo:plugin-sdk' {
       arguments: { userId?: string; automaticVerification?: boolean };
       result: KugouDto_user_grade_info_ListeningGrade;
     };
+    userHistory: {
+      arguments: { cursor?: string };
+      result: JsonValue;
+    };
     userInfo: { arguments: {}; result: KugouDto_user_info_UserIdentity };
     userPlaylists: {
       arguments: { page?: number; pageSize?: number };
@@ -5699,6 +5706,10 @@ declare module 'echo:plugin-sdk' {
       method: 'userGradeInfo',
       arguments: { userId?: string; automaticVerification?: boolean },
     ): EchoPluginOperation<KugouMethods['userGradeInfo']['result']>;
+    request(
+      method: 'userHistory',
+      arguments: { cursor?: string },
+    ): EchoPluginOperation<KugouMethods['userHistory']['result']>;
     request(
       method: 'userInfo',
       arguments?: {},
