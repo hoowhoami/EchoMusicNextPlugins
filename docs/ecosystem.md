@@ -8,7 +8,7 @@
 
 ## 业务与验证
 
-`ctx.kugou.request(method, arguments)` 调用宿主类型化业务服务。编辑器按 method 提示准确的参数和结果字段；方法目录见 `KugouMethods`。目前提供 98 个正式命令，覆盖搜索、推荐/榜单、专辑/歌手、歌单、收藏、云盘、社交、评论/弹幕、音效、歌词、媒体和一起听。结果使用宿主已经转换的领域数据，字段保留其真实单位和可空性。业务 ID 使用十进制字符串，避免 JavaScript 大整数精度损失。
+`ctx.kugou.request(method, arguments)` 调用宿主类型化业务服务。编辑器按 method 提示准确的参数和结果字段；方法目录见 `KugouMethods`。目前提供 99 个正式命令（含 `userHistory` 听歌历史与 `bp` 分页游标），覆盖搜索、推荐/榜单、专辑/歌手、歌单、收藏、云盘、社交、评论/弹幕、音效、歌词、媒体和一起听。结果使用宿主已经转换的领域数据，字段保留其真实单位和可空性。业务 ID 使用十进制字符串，避免 JavaScript 大整数精度损失。
 
 ```ts
 const result = await awaitOperation(

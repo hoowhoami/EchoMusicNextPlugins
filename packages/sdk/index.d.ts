@@ -2762,6 +2762,9 @@ declare module 'echo:plugin-sdk' {
   export interface EchoPluginClipboard {
     /** Text-only system clipboard, at most 1 MiB UTF-8. */
     write(text: string): EchoPluginOperation<void>;
+    /** Encoded image (PNG/JPEG/BMP/WebP, at most 8 MiB). The host decodes it off
+     * the GUI thread with a 4096-per-edge and 16M-pixel budget. */
+    writeImage(bytes: ArrayBuffer): EchoPluginOperation<void>;
   }
   export interface EchoPluginUi {
     /** Main-window overlay; completes when its QML content is ready. */
@@ -4211,6 +4214,27 @@ declare module 'echo:plugin-sdk' {
     readonly next_grade_points: number | null;
     readonly next_grade: number | null;
   }
+  export interface KugouDto_user_history_HistoryPage {
+    readonly user_id: string;
+    readonly cursor: string | null;
+    readonly finished: boolean;
+    readonly has_more: boolean;
+    readonly items: KugouDto_user_history_HistoryItem[];
+  }
+  export interface KugouDto_user_history_HistoryItem {
+    readonly song_id: string;
+    readonly name: string;
+    readonly artist: string;
+    readonly album: string;
+    readonly album_id: string | null;
+    readonly audio_id: string | null;
+    readonly hash: string;
+    readonly cover: string | null;
+    readonly duration_ms: number | null;
+    readonly bitrate: number | null;
+    readonly play_count: number;
+    readonly last_played_at: number | null;
+  }
   export interface KugouDto_user_follow_add_FollowChange {
     readonly following: boolean;
     readonly mutual: boolean | null;
@@ -5283,6 +5307,10 @@ declare module 'echo:plugin-sdk' {
       arguments: { userId?: string; automaticVerification?: boolean };
       result: KugouDto_user_grade_info_ListeningGrade;
     };
+    userHistory: {
+      arguments: { cursor?: string };
+      result: KugouDto_user_history_HistoryPage;
+    };
     userInfo: { arguments: {}; result: KugouDto_user_info_UserIdentity };
     userPlaylists: {
       arguments: { page?: number; pageSize?: number };
@@ -5699,6 +5727,10 @@ declare module 'echo:plugin-sdk' {
       method: 'userGradeInfo',
       arguments: { userId?: string; automaticVerification?: boolean },
     ): EchoPluginOperation<KugouMethods['userGradeInfo']['result']>;
+    request(
+      method: 'userHistory',
+      arguments: { cursor?: string },
+    ): EchoPluginOperation<KugouMethods['userHistory']['result']>;
     request(
       method: 'userInfo',
       arguments?: {},

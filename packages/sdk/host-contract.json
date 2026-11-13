@@ -89,6 +89,7 @@
     "userCloudDelete",
     "userDetail",
     "userGradeInfo",
+    "userHistory",
     "userInfo",
     "userPlaylists",
     "userVerify",
@@ -1267,6 +1268,12 @@
         {
           "name": "write",
           "parameters": ["QString"],
+          "returnType": "EchoMusic::EchoPluginOperation*",
+          "signal": false
+        },
+        {
+          "name": "writeImage",
+          "parameters": ["QByteArray"],
           "returnType": "EchoMusic::EchoPluginOperation*",
           "signal": false
         }
