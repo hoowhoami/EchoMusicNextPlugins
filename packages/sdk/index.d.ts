@@ -4214,6 +4214,27 @@ declare module 'echo:plugin-sdk' {
     readonly next_grade_points: number | null;
     readonly next_grade: number | null;
   }
+  export interface KugouDto_user_history_HistoryPage {
+    readonly user_id: string;
+    readonly cursor: string | null;
+    readonly finished: boolean;
+    readonly has_more: boolean;
+    readonly items: KugouDto_user_history_HistoryItem[];
+  }
+  export interface KugouDto_user_history_HistoryItem {
+    readonly song_id: string;
+    readonly name: string;
+    readonly artist: string;
+    readonly album: string;
+    readonly album_id: string | null;
+    readonly audio_id: string | null;
+    readonly hash: string;
+    readonly cover: string | null;
+    readonly duration_ms: number | null;
+    readonly bitrate: number | null;
+    readonly play_count: number;
+    readonly last_played_at: number | null;
+  }
   export interface KugouDto_user_follow_add_FollowChange {
     readonly following: boolean;
     readonly mutual: boolean | null;
@@ -5288,7 +5309,7 @@ declare module 'echo:plugin-sdk' {
     };
     userHistory: {
       arguments: { cursor?: string };
-      result: JsonValue;
+      result: KugouDto_user_history_HistoryPage;
     };
     userInfo: { arguments: {}; result: KugouDto_user_info_UserIdentity };
     userPlaylists: {
