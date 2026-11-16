@@ -37,6 +37,11 @@
     {
       "id": "webdav-backup",
       "path": "plugins/webdav-backup"
+    },
+    {
+      "id": "apple-music-style",
+      "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
+      "path": "plugins/apple-music-style"
     }
   ]
 }
