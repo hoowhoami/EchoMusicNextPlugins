@@ -129,6 +129,7 @@
   ],
   "contexts": ["main"],
   "features": [
+    "manifest.platforms",
     "playback.clock",
     "appearance.overrides",
     "app.icons",
@@ -241,9 +242,10 @@
     "ui.dialogs",
     "clipboard.write"
   ],
-  "hostVersion": "0.1.5",
+  "hostVersion": "0.1.7",
   "module": "echo:plugin-sdk",
   "packageFormat": "echomod",
+  "platform": "macos",
   "qmlModule": "EchoMusic.PluginSdk",
   "qtVersion": "6.12.0",
   "schemaVersion": 1,

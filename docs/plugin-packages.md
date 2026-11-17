@@ -2,7 +2,7 @@
 
 SDK/tools1.0.0正式生成`.echomod`文件；普通开发目录仍用于编辑器和独立调试，不以普通ZIP作为正式分发入口。包为根manifest/ES2016入口/QML/资产/许可组成的确定性ZIP，manifest必须声明`format: "echomod"`。
 
-插件是唯一扩展单元，产品界面、类型化SDK与开发工具统一使用插件 / Plugin 命名。`.echomod` 是插件安装包格式；`ctx.plugins` / `pluginService` 提供插件间依赖查询与服务协作，使用同一运行时和生命周期。SDK、工具与官方插件保持1.0.0，版本字段用于兼容性与依赖匹配。
+插件是唯一扩展单元，产品界面、类型化SDK与开发工具统一使用插件 / Plugin 命名。`.echomod` 是插件安装包格式；`ctx.plugins` / `pluginService` 提供插件间依赖查询与服务协作，使用同一运行时和生命周期。SDK、工具和插件分别管理版本，版本字段用于兼容性与依赖匹配。
 
 ## 统一命名
 
@@ -63,6 +63,27 @@ echo-plugin index-entry dist/my-plugin-1.0.0.echomod \
 `publish-manifest` 从实际包提取清单并计算哈希，原子写入指定 manifest；省略 `--out` 输出 JSON。上述命令不上传或推送。后续版本只需更新作者仓库的包与 manifest，官方索引不动；先确保包地址可下载，再提交新 manifest，历史版本包应保留以便已刷新客户端完成安装。
 
 本仓库的 `echo-plugin.build.json` 明确本地构建集合。`prepare-index` 构建本地插件，将包复制到 `artifacts/`，自动更新作者 manifest 的 `distribution`，首次添加本地定位并保留第三方条目。`check-index` 离线校验定位；`check-published` 联网校验每个作者 manifest、包哈希与包内完整清单。频谱继续同仓维护，第三方无需将源码迁入官方源。
+
+## 支持平台
+
+仅支持部分系统的插件在 `manifest.json` 中声明：
+
+```json
+"requires": {
+  "hostVersion": ">=0.1.0",
+  "sdkVersion": ">=1.0.0",
+  "features": ["lifecycle", "manifest.platforms"],
+  "platforms": ["windows"]
+}
+```
+
+`platforms` 为 `windows`、`macos`、`linux` 的非空、不重复组合；省略表示所有平台。声明时必须同时要求 `manifest.platforms`，旧宿主会因缺少该 feature 拒绝加载。
+
+在线与已安装卡片显示支持平台及不兼容原因；目录缓存按当前宿主重新判断。本地目录、`.echomod`、启动、分享安装及更新共用检查。不兼容更新保留现有版本；已安装插件在另一系统启动时不执行入口，保留数据与启用偏好。必需依赖和已启用的可选依赖传播提供者的不兼容原因，未启用的可选依赖不阻塞。
+
+发布工具允许跨平台构建和发布，例如在 macOS 上生成 Windows 专用的 `.echomod`。`test-host` 按指定真实宿主导出的 `platform` 判断，不用 Node 所在系统推断目标；不适用时报错，不跳过后宣称验收成功。
+
+## 依赖声明
 
 manifest支持dependencies/optionalDependencies/conflicts（ID到版本范围）及loadAfter/loadBefore（ID数组）。范围使用`>=1.0.0 <2.0.0`等比较交集；拒绝自依赖和矛盾声明。完整源索引构建验证依赖闭包、版本、冲突与循环；单独build允许声明由其它可信来源提供的依赖，最终由宿主基于实际安装集合检查。
 

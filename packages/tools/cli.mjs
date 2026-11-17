@@ -14,6 +14,7 @@ import {
   buildIndex,
   localPackages,
   validatePackage,
+  validateHostPlatform,
   prepareIndex,
 } from './packages.mjs';
 
@@ -95,10 +96,9 @@ try {
     console.info('Synchronized actual Qt contract; review and commit the snapshot');
   } else if (command === 'test-host' && values.host) {
     const host = path.resolve(values.host);
-    await checkHost(host);
+    const contract = await checkHost(host);
     let destinations;
     if (input) {
-      await validatePackage(path.resolve(input));
       destinations = [path.resolve(input)];
     } else {
       const directories = await buildIndex(root);
@@ -111,6 +111,8 @@ try {
     }
     if (!destinations.length)
       throw new Error('Host acceptance requires at least one actual package');
+    for (const destination of destinations)
+      validateHostPlatform(await validatePackage(destination), contract);
     const logDirectory = path.join(root, 'build/host-smoke-logs');
     await mkdir(logDirectory, { recursive: true });
     const execute = promisify(execFile);
@@ -182,6 +184,11 @@ try {
       const result = await execute(
         path.resolve(values['runtime-test']),
         [
+          'platformManifestValidationAndDependencies',
+          'platformInstallationUpdateAndStartup',
+          'platformCatalogCacheAndProductionCard',
+          'pluginCardStateChangesPreserveDelegateAndScroll',
+          'pluginCardPresentationStates',
           ...compositionTests,
           ...(spectrum ? ['builtAuthorPackageCommands'] : []),
           ...(values.suite === 'ui'

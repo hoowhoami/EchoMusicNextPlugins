@@ -56,6 +56,13 @@
       "type": "object",
       "required": ["hostVersion", "sdkVersion", "features"],
       "additionalProperties": false,
+      "dependentSchemas": {
+        "platforms": {
+          "properties": {
+            "features": { "type": "array", "contains": { "const": "manifest.platforms" } }
+          }
+        }
+      },
       "properties": {
         "hostVersion": {
           "$ref": "#/$defs/range"
@@ -65,6 +72,13 @@
         },
         "features": {
           "$ref": "#/$defs/strings"
+        },
+        "platforms": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": { "enum": ["windows", "macos", "linux"] }
         }
       }
     },

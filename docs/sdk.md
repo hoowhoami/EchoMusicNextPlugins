@@ -28,8 +28,7 @@ SDK协议当前1.0.0，QML模块URI保留EchoMusic.PluginSdk 1.0。
 
 版本约束支持空格分隔的 `>=`、`>`、`<=`、`<`、`=` 三段数值版本比较交集，不接受 npm 的完整 range 语法。必需 feature、capability、context 或版本不受支持时，包进入 Incompatible，入口不会执行。当前只提供 `main` context；其它窗口 scope 随相应宿主窗口接入。
 
-通过正式可执行文件的 `--plugin-dir /absolute/package/path` 导入并启用可信本地包，可重复传入。包在工作线程验证和复制，发布到应用数据目录的 `plugins/packages/<installationUuid>/<sha256>/`；每个版本独立 URL。拒绝包内符号链接、路径越界、qmldir 原生 plugin 声明、超过 128 MiB 或 4096 文件的包。代码文件只读，插件数据在独立安装身份下的 `plugins/data/<installationUuid>/values.sqlite`，启用/来源/崩溃日志归宿主 QSettings；不同来源的同名 ID 不共享身份或数据，重复有效 ID 会拒绝激活。
-
+通过正式可执行文件的 `--plugin-dir /absolute/package/path` 导入可信本地目录或 `.echomod`，可重复传入。包在工作线程验证和复制；安装目录、私有数据、发布和平台声明见[包与依赖](plugin-packages.md)。拒绝包内符号链接、路径越界、qmldir 原生 plugin 声明、超过 128 MiB 或 4096 文件的包。
 退出后从安装副本恢复，不需要原始源码目录继续存在。`PluginRuntime.reload(installationId)` 会先停用和排空旧 scope，再重新采集该来源，按摘要发布新版本；启用偏好和安装身份保留。不提供旧Vue/Electron插件兼容。正式管理/源/分享及开发目录/.echomod/批量安装、更新/卸载已接入；更新失败同时回滚安装代码和私有数据，外部授权目录不回滚。
 
 ## 类型与作用域

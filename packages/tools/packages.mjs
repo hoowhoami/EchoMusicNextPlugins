@@ -88,6 +88,16 @@ export async function validateManifest(manifest, contract) {
   return packaged;
 }
 
+// Packaging is platform-neutral; only acceptance against an actual host checks
+// its exported platform. Never infer the target from the author's Node process.
+export function validateHostPlatform(manifest, contract) {
+  const platforms = manifest.requires.platforms;
+  if (platforms && !platforms.includes(contract.platform))
+    throw new Error(
+      `Plugin ${manifest.id} supports ${platforms.join(', ')}; host platform is ${contract.platform ?? 'unknown'}`,
+    );
+}
+
 export function relativePath(value) {
   if (
     typeof value !== 'string' ||

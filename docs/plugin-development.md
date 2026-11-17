@@ -14,9 +14,7 @@ manifest.entry指产物路径，plugin.config.json声明源码和静态资源：
 
 资源按原相对路径复制，不自动复制源码/依赖/账号数据/仓库文件。禁止链接、路径越界和资源覆盖entry/manifest/构建标记。纯JS依赖可bundle，其许可证由作者随包保留；原生QML plugin声明拒绝，DSP产品SDK仍待接入。
 
-跨仓库收录使用 schema2：`id` 为预期插件 ID，`repo` 为作者 GitHub 仓库（省略为当前源），`ref` 默认为 HEAD，`path` 为 manifest 目录（空字符串表示根），`artifact` 为仓库根的相对 .echomod 路径或 HTTPS 下载地址，`sha256` 绑定包字节。名称、描述、版本和能力来自 manifest；下载后同时核对哈希与完整清单。官方收录源与作者仓库分别记录，仓库按钮打开作者地址。
-
-作者构建后运行 `echo-plugin index-entry dist/plugin-1.0.0.echomod --repo https://github.com/author/plugin --ref v1.0.0 --path "" --artifact https://github.com/author/plugin/releases/download/v1.0.0/plugin-1.0.0.echomod` 生成条目，提交到官方源的 plugins 数组即可。命令不上传或发布。
+跨仓库索引只收录 `id/repo/ref/path`，作者清单的 `distribution` 提供包地址和哈希。发布命令及平台声明见 [包与依赖](plugin-packages.md)；`requires.platforms` 可限制支持的系统，省略表示所有平台。
 
 本地构建清单在 `echo-plugin.build.json`，与公开索引分开。`build-index` 构建其中明确列出的本地插件；`prepare-index` 更新同仓插件的 artifacts 与索引，保留第三方条目；`check-index` 不读取第三方本地源码；`check-published` 联网校验每条作者清单和实际包。频谱仍在本仓库维护，第三方可独立维护仓库。生成入口只需放在 .echomod 内。
 

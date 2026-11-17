@@ -19,6 +19,8 @@ export async function contractFromHost(host) {
   const contract = JSON.parse(stdout);
   if (contract.schemaVersion !== 1 || contract.module !== 'echo:plugin-sdk')
     throw new Error('Host did not export an SDK v1 contract');
+  if (!['windows', 'macos', 'linux'].includes(contract.platform))
+    throw new Error('Host did not export a supported platform');
   return contract;
 }
 
@@ -279,7 +281,10 @@ export async function checkHost(host, sync = false) {
   await checkBindings(current);
   if (sync) {
     await writeFile(`${sdkRoot}host-contract.json`, `${JSON.stringify(current, null, 2)}\n`);
-  } else if (JSON.stringify(ordered(current)) !== JSON.stringify(ordered(await loadContract()))) {
+  } else if (
+    JSON.stringify(ordered({ ...current, platform: undefined })) !==
+    JSON.stringify(ordered({ ...(await loadContract()), platform: undefined }))
+  ) {
     throw new Error('Qt host contract changed; update SDK bindings and run sdk-sync deliberately');
   }
   return current;

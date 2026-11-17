@@ -9,6 +9,7 @@ declare module 'echo:plugin-sdk' {
     ref?: string;
     path?: string;
   }
+  export type PluginPlatform = 'windows' | 'macos' | 'linux';
   export interface PluginManifest {
     schemaVersion: 1;
     id: string;
@@ -17,7 +18,13 @@ declare module 'echo:plugin-sdk' {
     kind: 'qml-js';
     entry: string;
     format: 'echomod';
-    requires: { hostVersion: string; sdkVersion: string; features: string[] };
+    requires: {
+      hostVersion: string;
+      sdkVersion: string;
+      features: string[];
+      /** Omit for all platforms. Requires the manifest.platforms feature. */
+      platforms?: PluginPlatform[];
+    };
     capabilities: string[];
     contexts: ['main'];
     description?: string;
