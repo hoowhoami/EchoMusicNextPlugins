@@ -9,6 +9,7 @@
   "description": "Folia 原生歌词页面，在页面内选择歌词样式。",
   "author": "hoowhoami",
   "license": "AGPL-3.0-only",
+  "tags": ["播放页", "歌词", "皮肤", "Folia"],
   "requires": {
     "hostVersion": ">=0.1.7",
     "sdkVersion": ">=1.0.0 <2.0.0",
@@ -63,6 +64,6 @@
   },
   "distribution": {
     "artifact": "artifacts/folia-lyrics-skin-1.0.0.echomod",
-    "sha256": "c8042f6fadc53e4624a0bf8392a1140ff436bd49c844f36ea974dccae45f34b2"
+    "sha256": "bf70b73d92dd5ba1bece47071a68650c83bab5f3ba0697484149cfd0da74954f"
   }
 }
