@@ -27,15 +27,16 @@ Item {
     property font baseFont
     property real resolution: 1
     property bool live: true
+    property bool retainCompletedFrames: false
     property bool forceRaster: false
     property int samples: 1
-    readonly property bool raster: forceRaster || resolution !== Screen.devicePixelRatio
+    readonly property bool raster: retainCompletedFrames || forceRaster || resolution !== Screen.devicePixelRatio
     readonly property int rasterWidth: Math.round(width * resolution)
     readonly property int rasterHeight: Math.round(height * resolution)
     readonly property real plannedRasterBytes: raster ? Quality.colorAttachmentBytes(rasterWidth, rasterHeight, samples) : 0
     readonly property string rasterError: raster && (rasterWidth > 8192 || rasterHeight > 8192 || plannedRasterBytes >= maxCacheBytes) ? 'Lumiere viewport raster exceeds budget' : ''
     readonly property real rasterBytes: contents.item ? plannedRasterBytes : 0
-    layer.enabled: live && visible && frame !== null && raster && !rasterError
+    layer.enabled: !retainCompletedFrames && live && visible && frame !== null && raster && !rasterError
     layer.textureSize: Qt.size(rasterWidth, rasterHeight)
     layer.smooth: true
     layer.samples: samples
@@ -308,9 +309,9 @@ Item {
                                 spec: value
                             });
                             actor.errorStringChanged.connect(queueAudit);
-                            if (text)
+                            if (actor.readyChanged)
                                 actor.readyChanged.connect(queueAudit);
-                            else
+                            if (actor.paintCountChanged)
                                 actor.paintCountChanged.connect(queueAudit);
                             actor.cacheBytesChanged.connect(queueAudit);
                             break;
@@ -400,6 +401,25 @@ Item {
                 // Keep the retained vector geometry alive while a texture is baking.
                 visible: root.eagerPreparation || body.ready
                 opacity: body.ready ? 1 : 0
+            }
+            ShaderEffectSource {
+                id: completedFrame
+                property bool published: false
+                anchors.fill: parent
+                sourceItem: root.retainCompletedFrames ? canvas : null
+                textureSize: Qt.size(root.rasterWidth, root.rasterHeight)
+                samples: root.samples
+                smooth: true
+                hideSource: root.retainCompletedFrames
+                visible: root.retainCompletedFrames
+                live: body.ready || !published
+                Connections {
+                    target: body
+                    function onReadyChanged(): void {
+                        if (body.ready)
+                            completedFrame.published = true;
+                    }
+                }
             }
             Item {
                 id: resources

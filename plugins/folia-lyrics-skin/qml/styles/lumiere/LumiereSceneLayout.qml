@@ -190,14 +190,16 @@ Item {
             for (const event of result.frame.events) {
                 for (const item of [event, ...(event.streams || [])]) {
                     for (const key of ["vertex", "index", "data"])
-                        if (typeof item[key] === "number") item[key] = data[item[key]];
+                        if (typeof item[key] === "number")
+                            item[key] = data[item[key]];
                 }
             }
         }
         if (message.objectRows) {
             const rows = message.objectRows;
             for (let i = 0; i < rows.length; ++i)
-                if (rows[i]) result.frame.passes[i].objects = rows[i];
+                if (rows[i])
+                    result.frame.passes[i].objects = rows[i];
         }
         workerFrameTiming = message.timing ? Object.assign({}, message.timing, {
             parseMs: Date.now() - parseStarted
@@ -277,9 +279,14 @@ Item {
                     return;
                 }
             _measured.push({
-                key: _queries[_cursor].key, advance: metric.advance,
-                inkLeft: metric.inkLeft, inkRight: metric.inkRight, inkTop: metric.inkTop,
-                inkBottom: metric.inkBottom, emAscent: metric.emAscent, emDescent: metric.emDescent
+                key: _queries[_cursor].key,
+                advance: metric.advance,
+                inkLeft: metric.inkLeft,
+                inkRight: metric.inkRight,
+                inkTop: metric.inkTop,
+                inkBottom: metric.inkBottom,
+                emAscent: metric.emAscent,
+                emDescent: metric.emDescent
             });
             ++measurementCount;
             ++_cursor;

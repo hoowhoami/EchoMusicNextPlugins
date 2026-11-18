@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Layouts
+import QtQuick.Effects
 import EchoMusic.Controls
 import EchoMusic.Theme
 
@@ -32,7 +33,7 @@ ColumnLayout {
         clip: true
         model: root.choices
         cellWidth: width / (root.wide ? 7 : 4)
-        cellHeight: cellWidth * .6 + 28
+        cellHeight: (cellWidth - 8) * .625 + 8
         boundsBehavior: Flickable.StopAtBounds
         reuseItems: true
         delegate: EchoActionButton {
@@ -40,43 +41,79 @@ ColumnLayout {
             required property var modelData
             required property int index
             objectName: "foliaStudioStyle-" + modelData.id
+            padding: 4
             width: grid.cellWidth
             height: grid.cellHeight
             readonly property bool selected: root.settings.randomVisualizerModePerSong ? modelData.id === "__random__" : modelData.id === root.settings.mode
             text: modelData.title
             onClicked: root.selected(modelData.id)
-            background: Rectangle {
-                anchors.fill: parent
-                anchors.margins: 3
-                radius: Theme.itemRadius
-                color: choice.selected ? Theme.floating.selected : choice.hovered ? Theme.floating.mutedSurface : Theme.floating.card
-                border.width: 1
-                border.color: choice.selected ? Theme.floating.accent : Theme.floatingBorder
+            background: Item {}
+            Rectangle {
+                id: cardMask
+                width: choice.availableWidth
+                height: choice.availableHeight
+                radius: 12
+                color: "white"
+                layer.enabled: true
+                visible: false
             }
-            contentItem: ColumnLayout {
-                spacing: 3
+            contentItem: Rectangle {
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    maskEnabled: true
+                    maskSource: cardMask
+                    maskThresholdMin: .5
+                    maskSpreadAtMin: 1
+                }
+                radius: 12
+                color: Theme.floating.card
+                border.width: choice.selected ? 2 : 1
+                border.color: choice.selected ? Theme.floating.accent : choice.hovered ? Theme.floating.secondaryText : Theme.floatingBorder
+                clip: true
                 Image {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                    anchors.fill: parent
+                    anchors.margins: choice.selected ? 2 : 1
                     source: choice.modelData.id === "__random__" ? "" : Qt.resolvedUrl("../../assets/previews/" + choice.modelData.id + ".png")
                     asynchronous: true
-                    sourceSize: Qt.size(280, 180)
-                    fillMode: Image.PreserveAspectFit
+                    sourceSize: Qt.size(280, 175)
+                    fillMode: Image.PreserveAspectCrop
                     visible: choice.modelData.id !== "__random__"
                 }
                 EchoIcon {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
+                    anchors.centerIn: parent
+                    width: 24
+                    height: 24
                     name: "shuffle"
                     color: Theme.floating.accent
                     visible: choice.modelData.id === "__random__"
                 }
-                Label {
-                    Layout.fillWidth: true
-                    text: choice.text
-                    horizontalAlignment: Text.AlignHCenter
-                    color: Theme.floatingText
-                    font: Theme.font(12, choice.selected ? 600 : 400)
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    height: 32
+                    gradient: Gradient {
+                        GradientStop {
+                            position: 0
+                            color: "transparent"
+                        }
+                        GradientStop {
+                            position: 1
+                            color: Qt.rgba(0, 0, 0, .68)
+                        }
+                    }
+                    Label {
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 5
+                        anchors.margins: 4
+                        text: choice.text
+                        elide: Text.ElideRight
+                        horizontalAlignment: Text.AlignHCenter
+                        color: "white"
+                        font: Theme.font(10.5, choice.selected ? 600 : 400)
+                    }
                 }
             }
         }

@@ -4,12 +4,14 @@ import QtQuick
 import QtQml.WorkerScript
 import EchoMusic.PluginSdk
 import "../../shared/lyricAdapter.mjs" as Adapter
+import "../../shared/preparedSceneCache.mjs" as ProgramCache
 import "../../shared"
 
 Item {
     id: root
     property LyricProjection lyricSource: null
     property var previewRows: null
+    property bool previewMode: false
     property int lyricCount: 0
     property real lyricOffsetMs: 0
     property string trackRevision: ""
@@ -30,6 +32,10 @@ Item {
     property var _pending: null
     property var _operation: null
     property var _lines: []
+    property var _sourceRows: []
+    property int _sourceBytes: 0
+    property var _cachedProgram: null
+    readonly property string cacheKey: JSON.stringify([String(workerSource), trackRevision, seed, seamless, lyricCount, lyricOffsetMs])
     property int _row: 0
     property int _generation: 0
     property bool _completed: false
@@ -42,6 +48,10 @@ Item {
         retry.stop();
         step.stop();
         debounce.stop();
+        verifyCache.stop();
+        _cachedProgram = null;
+        _sourceRows = [];
+        _sourceBytes = 0;
         _pending = null;
         _lines = [];
         busy = false;
@@ -81,6 +91,41 @@ Item {
         if (!live || !busy)
             return;
         _row = 0;
+        _cachedProgram = previewMode ? null : ProgramCache.get(cacheKey);
+        if (_cachedProgram) {
+            verifyCache.restart();
+            return;
+        }
+        readProgram();
+    }
+    function verifyProgram(): void {
+        if (!live || !busy || !_cachedProgram)
+            return;
+        const end = Math.min(lyricCount, _row + 64);
+        for (; _row < end; ++_row) {
+            const row = previewRows !== null ? previewRows[_row] : lyricSource.row(_row);
+            if (JSON.stringify(row) !== _cachedProgram.rows[_row]) {
+                _cachedProgram = null;
+                readProgram();
+                return;
+            }
+        }
+        if (_row < lyricCount) {
+            verifyCache.restart();
+            return;
+        }
+        const result = _cachedProgram.result;
+        signature = result.signature;
+        program = result.program;
+        sourceIndices = result.sourceIndices;
+        _cachedProgram = null;
+        busy = false;
+        ++revision;
+    }
+    function readProgram(): void {
+        _row = 0;
+        _sourceRows = [];
+        _sourceBytes = 0;
         send({
             phase: "reset",
             seed,
@@ -115,6 +160,10 @@ Item {
         if (result.phase === 'reset' || result.phase === 'appended')
             step.restart();
         else if (result.phase === 'program') {
+            if (!previewMode && _sourceRows !== null)
+                ProgramCache.remember(cacheKey, _sourceRows, result);
+            _sourceRows = [];
+            _sourceBytes = 0;
             signature = result.signature;
             program = result.program;
             sourceIndices = result.sourceIndices;
@@ -145,6 +194,14 @@ Item {
             }
             if (read && units + row.lineText.length > 65536)
                 break;
+            if (_sourceRows !== null) {
+                const sourceRow = JSON.stringify(row);
+                _sourceBytes += sourceRow.length * 2;
+                if (_sourceBytes <= 2 * 1024 * 1024)
+                    _sourceRows.push(sourceRow);
+                else
+                    _sourceRows = null;
+            }
             const line = Adapter.toFoliaLine(row, lyricOffsetMs, _row);
             for (const key of ['isChorus', 'songPart', 'blockIndex'])
                 if (row[key] !== undefined)
@@ -201,6 +258,7 @@ Item {
     }
     onLyricSourceChanged: invalidate()
     onPreviewRowsChanged: invalidate()
+    onPreviewModeChanged: invalidate()
     onLyricCountChanged: invalidate()
     onLyricOffsetMsChanged: invalidate()
     onTrackRevisionChanged: invalidate()
@@ -215,6 +273,11 @@ Item {
     Component.onDestruction: {
         _completed = false;
         stop();
+    }
+    Timer {
+        id: verifyCache
+        interval: 0
+        onTriggered: root.verifyProgram()
     }
     Timer {
         id: piecesCompletion

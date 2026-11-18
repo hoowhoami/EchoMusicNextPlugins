@@ -144,6 +144,15 @@ export function createHanabiRuntime(options) {
         options.resolution,
       );
     },
+    refreshMeasurements() {
+      // Only the lyric scene depends on newly measured text. The sky, frame
+      // and immutable common textures belong to this runtime, across paragraphs.
+      if (entry) destroyHanabiSceneEntry(entry);
+      entry = null;
+      // Discovery frames are never published. Republish their source programs
+      // with the first real frame instead of sending bare unseen revisions.
+      textureCache.clear();
+    },
     destroy() {
       if (destroyed) return;
       destroyed = true;

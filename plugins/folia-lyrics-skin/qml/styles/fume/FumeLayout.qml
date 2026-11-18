@@ -6,12 +6,14 @@ import EchoMusic.PluginSdk
 import "../../shared/article-measure.mjs" as TextMetrics
 import "../../shared/lyricAdapter.mjs" as Adapter
 import "native-measure.mjs" as Input
+import "../../shared/preparedSceneCache.mjs" as SourceCache
 import "../../shared"
 
 Item {
     id: root
     property LyricProjection lyricSource: null
     property var previewRows: null
+    property bool previewMode: false
     property int lyricCount: 0
     property real lyricOffsetMs: 0
     property string trackRevision: ""
@@ -37,6 +39,9 @@ Item {
     property var _operation: null
     property int _row: 0
     property var _lines: []
+    property var _rawRows: []
+    property int _rawBytes: 0
+    property var _cachedArticle: null
     property var _requests: []
     property var _measurements: []
     property int _cursor: 0
@@ -50,6 +55,10 @@ Item {
         if (_operation)
             _operation.cancel();
         _operation = null;
+        verifyCache.stop();
+        _cachedArticle = null;
+        _rawRows = [];
+        _rawBytes = 0;
         step.stop();
         piecesTask.stop();
         nextMeasurementTask.stop();
@@ -109,6 +118,13 @@ Item {
             return;
         }
         busy = true;
+        if (!keepPrevious && !checkPrevious) {
+            _cachedArticle = previewMode ? null : SourceCache.get(_key);
+            if (_cachedArticle) {
+                verifyCache.restart();
+                return;
+            }
+        }
         if (keepPrevious)
             debounce.restart();
         else
@@ -170,18 +186,47 @@ Item {
             _lines = [];
             _requests = [];
             _measurements = [];
-            const value = reply.article;
-            if (value) {
-                value.blockBySourceLineIndex = new Map(value.blocks.map(block => [block.sourceLineIndex, block]));
-                value.chronologicalBlocks = value.blocks.slice().sort((a, b) => a.sourceLineIndex - b.sourceLineIndex);
-            }
-            article = value;
-            _acceptedIdentity = value ? _preparationIdentity : "";
-            busy = false;
-            measure.runs = [];
-            ++layoutRevision;
-            ready(value);
+            if (!previewMode && _rawRows !== null)
+                SourceCache.remember(_key, _rawRows, reply.article);
+            _rawRows = [];
+            acceptArticle(reply.article);
         }
+    }
+    function acceptArticle(value: var): void {
+        if (value) {
+            value.blockBySourceLineIndex = new Map(value.blocks.map(block => [block.sourceLineIndex, block]));
+            value.chronologicalBlocks = value.blocks.slice().sort((a, b) => a.sourceLineIndex - b.sourceLineIndex);
+        }
+        article = value;
+        _acceptedIdentity = value ? _preparationIdentity : "";
+        busy = false;
+        measure.runs = [];
+        ++layoutRevision;
+        ready(value);
+    }
+    function verifyArticle(): void {
+        if (!live || !busy || !_cachedArticle)
+            return;
+        const end = Math.min(lyricCount, _row + 64);
+        for (; _row < end; ++_row) {
+            const row = previewRows !== null ? previewRows[_row] : lyricSource.row(_row);
+            if (JSON.stringify(row) !== _cachedArticle.rows[_row]) {
+                _cachedArticle = null;
+                _row = 0;
+                send({
+                    phase: "reset"
+                });
+                return;
+            }
+        }
+        if (_row < lyricCount) {
+            verifyCache.restart();
+            return;
+        }
+        // Rebuild Maps only on this page's copy, leaving the cached JSON immutable.
+        const value = JSON.parse(JSON.stringify(_cachedArticle.result));
+        _cachedArticle = null;
+        acceptArticle(value);
     }
     function readNext(): void {
         if ((!busy && !_checkingSource) || !live)
@@ -223,6 +268,14 @@ Item {
             }
             if (read && units + row.lineText.length > 65536)
                 break;
+            if (_rawRows !== null && !_checkingSource) {
+                const raw = JSON.stringify(row);
+                _rawBytes += raw.length * 2;
+                if (_rawBytes <= 2 * 1024 * 1024)
+                    _rawRows.push(raw);
+                else
+                    _rawRows = null;
+            }
             const line = Adapter.toFoliaLine(row, lyricOffsetMs, _row);
             if (typeof row.isChorus === "boolean")
                 line.isChorus = row.isChorus;
@@ -309,6 +362,7 @@ Item {
     }
     onLyricSourceChanged: invalidateSource(true, true)
     onPreviewRowsChanged: invalidate(true)
+    onPreviewModeChanged: invalidate(true)
     onLyricCountChanged: invalidate(true)
     onLyricOffsetMsChanged: invalidate(true)
     onTrackRevisionChanged: invalidateSource(true, true)
@@ -328,6 +382,11 @@ Item {
         nextMeasurementTask.stop();
         if (_operation)
             _operation.cancel();
+    }
+    Timer {
+        id: verifyCache
+        interval: 0
+        onTriggered: root.verifyArticle()
     }
     Timer {
         id: debounce

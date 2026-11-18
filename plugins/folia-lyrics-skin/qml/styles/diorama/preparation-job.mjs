@@ -36,7 +36,14 @@ class ProgramPreparation {
   window(time) {
     let center = 0;
     for (let i = 0; i < this.lines.length && this.lines[i].startTime <= time; i++) center = i;
-    const values = this.lines.slice(Math.max(0, center - 3), center + 5);
+    // A newly created scene initializes its first lyric before seeking to the
+    // current position. Reopening midway still needs those exact native metrics.
+    const values = Array.from(
+      new Set([
+        ...this.lines.slice(Math.max(0, center - 3), center + 5),
+        ...this.lines.slice(0, 4),
+      ]),
+    );
     if (this.scene.output.state) {
       const state = this.scene.output.state;
       for (const segment of state.seq.segments)

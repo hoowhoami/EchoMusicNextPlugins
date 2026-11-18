@@ -1184,6 +1184,8 @@ function getSharedWordSegmenter() {
   return sharedWordSegmenter;
 }
 function clearAnalysisCaches() {
+  analysisMemo.clear();
+  analysisMemoUnits = 0;
   sharedGraphemeSegmenter = null;
   sharedWordSegmenter = null;
 }
@@ -3756,16 +3758,28 @@ function measureAnalysis(analysis, font, includeSegments, wordBreak, letterSpaci
     chunks,
   };
 }
+// Text analysis is independent of font size. Keep it only within one native
+// refinement round; exact widths and all caches reset at its boundary.
+// Bound distinct inputs and source units in this page-owned Worker.
+var analysisMemo = new Map(),
+  analysisMemoUnits = 0;
 function prepareInternal(text, font, includeSegments, options) {
   var _a, _b;
   const wordBreak = (_a = options == null ? void 0 : options.wordBreak) != null ? _a : 'normal';
   const letterSpacing = (_b = options == null ? void 0 : options.letterSpacing) != null ? _b : 0;
-  const analysis = analyzeText(
-    text,
-    getEngineProfile(),
-    options == null ? void 0 : options.whiteSpace,
-    wordBreak,
-  );
+  const key = JSON.stringify([text, options?.whiteSpace || 'normal', wordBreak]);
+  let analysis = analysisMemo.get(key);
+  if (!analysis) {
+    analysis = analyzeText(text, getEngineProfile(), options?.whiteSpace, wordBreak);
+    if (key.length <= 65536) {
+      if (analysisMemo.size >= 1024 || analysisMemoUnits + key.length > 65536) {
+        analysisMemo.clear();
+        analysisMemoUnits = 0;
+      }
+      analysisMemo.set(key, analysis);
+      analysisMemoUnits += key.length;
+    }
+  }
   return measureAnalysis(analysis, font, includeSegments, wordBreak, letterSpacing);
 }
 function prepare(text, font, options) {

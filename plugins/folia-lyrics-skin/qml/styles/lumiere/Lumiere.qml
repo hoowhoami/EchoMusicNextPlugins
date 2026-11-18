@@ -29,6 +29,7 @@ Item {
     property string songAlbum: ""
     property var lyricsIcons: []
     property LyricProjection lyricSource: null
+    property bool previewMode: false
     property var previewRows: null
     property int lyricCount: 0
     property real lyricOffsetMs: 0
@@ -227,6 +228,7 @@ Item {
         id: program
         lyricSource: root.lyricSource
         previewRows: root.previewRows
+        previewMode: root.previewMode
         lyricCount: root.lyricCount
         lyricOffsetMs: root.lyricOffsetMs
         trackRevision: root.trackRevision
@@ -276,6 +278,7 @@ Item {
     LumiereSceneView {
         id: view
         eagerPreparation: true
+        retainCompletedFrames: true
         forceRaster: root.quality.antialiasEnabled || root.viewport.raster
         samples: root.quality.antialiasEnabled ? 4 : 1
         width: root.viewport.width

@@ -146,3 +146,20 @@ test('article shaping batches publish only the current generation and the reques
     /match/,
   );
 });
+
+test('prepared scene cache owns plain snapshots and retires the previous song within its memory budget', async () => {
+  const cache = await import('../plugins/folia-lyrics-skin/qml/shared/preparedSceneCache.mjs');
+  const rows = ['original lyric row'];
+  const result = { program: { words: ['山河'] } };
+  cache.remember('first', rows, result);
+  rows[0] = 'changed';
+  result.program.words.push('月光');
+  assert.deepEqual(cache.get('first').rows, ['original lyric row']);
+  assert.deepEqual(cache.get('first').result.program.words, ['山河']);
+  cache.remember('second', [], { program: 'next song' });
+  assert.equal(cache.get('first'), null);
+  assert.equal(cache.get('second').result.program, 'next song');
+  cache.remember('oversized', [], { program: 'x'.repeat(2 * 1024 * 1024) });
+  assert.equal(cache.get('second'), null);
+  assert.equal(cache.get('oversized'), null);
+});

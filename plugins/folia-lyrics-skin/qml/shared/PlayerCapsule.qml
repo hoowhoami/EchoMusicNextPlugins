@@ -13,6 +13,7 @@ import "queueNeighbors.mjs" as QueueNeighbors
 Item {
     id: root
     required property EchoPluginViewContext page
+    property Item backdropSource: null
     property var settings: ({})
     property var appearance: ({})
     property font baseFont: Theme.font(14, 500)
@@ -338,8 +339,11 @@ Item {
                     else
                         capsuleState.pointerLeft()
                 }
-                EchoFloatingSurface {
+                CapsuleSurface {
                     id: capsule
+                    backdropSource: root.backdropSource
+                    captureWidth: capsuleState.expandedWidth + 4
+                    captureHeight: (capsuleState.wideLayout ? 72 : 127) + 4
                     objectName: "foliaPlayerCapsule"
                     anchors.horizontalCenter: parent.horizontalCenter
                     width: Math.max(0, capsuleWidth.value)

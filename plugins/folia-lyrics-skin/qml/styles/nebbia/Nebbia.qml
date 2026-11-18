@@ -34,6 +34,7 @@ Item {
     property string songAlbum: ""
     property var lyricsIcons: []
     property LyricProjection lyricSource: null
+    property bool previewMode: false
     property var previewRows: null
     property int lyricCount: 0
     property real lyricOffsetMs: 0
@@ -121,6 +122,7 @@ Item {
         workerSource: Qt.resolvedUrl('program-worker.mjs')
         lyricSource: root.lyricSource
         previewRows: root.previewRows
+        previewMode: root.previewMode
         lyricCount: root.lyricCount
         lyricOffsetMs: root.lyricOffsetMs
         trackRevision: root.trackRevision

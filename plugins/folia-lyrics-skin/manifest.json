@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "folia-lyrics-skin",
   "name": "Folia 歌词皮肤",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "format": "echomod",
   "kind": "qml-js",
   "entry": "entry.mjs",
@@ -63,7 +63,7 @@
     "maxCommands": 128
   },
   "distribution": {
-    "artifact": "artifacts/folia-lyrics-skin-1.0.0.echomod",
-    "sha256": "bf70b73d92dd5ba1bece47071a68650c83bab5f3ba0697484149cfd0da74954f"
+    "artifact": "artifacts/folia-lyrics-skin-1.0.1.echomod",
+    "sha256": "3cda13c3cc83323507100049a39a07b5f4abb6baded345e17327d12bb255c3a2"
   }
 }

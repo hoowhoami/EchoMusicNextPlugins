@@ -34,6 +34,7 @@ Item {
     property var nextStartBySourceIndex: ({})
     property EchoPluginText textService: null
     property LyricProjection lyricSource: null
+    property bool previewMode: false
     property var previewRows: null
     property int lyricCount: 0
     property real lyricOffsetMs: 0
@@ -288,8 +289,7 @@ Item {
                     const next = _nextStart.get(block.id);
                     const isWaiting = timeSeconds < block.line.startTime;
                     const previous = _staticBlocks.get(block.id);
-                    const reuse = previous && (previous.timing.staticState === "waiting" ? isWaiting :
-                        timeSeconds >= previous.reusableFrom && (previous.restore === undefined || previous.restore === restore));
+                    const reuse = previous && (previous.timing.staticState === "waiting" ? isWaiting : timeSeconds >= previous.reusableFrom && (previous.restore === undefined || previous.restore === restore));
                     const recorded = reuse ? previous : Frame.recordBlock(block, {
                         time: timeSeconds,
                         theme: theme,
@@ -308,16 +308,19 @@ Item {
                         textHoldRatio: tuning.textHoldRatio
                     });
                     if (isWaiting) {
-                        if (!reuse) for (const command of recorded.text) command.retainedPose = true;
+                        if (!reuse)
+                            for (const command of recorded.text)
+                                command.retainedPose = true;
                         retained.set(block.id, recorded);
                     } else if (recorded.timing.staticState === "passed") {
                         const timing = recorded.timing;
                         const dimmed = timing.effectiveTextHoldStyle === "dimmed";
-                        recorded.reusableFrom = timing.lineEndTime + timing.colorTrailDuration +
-                            (dimmed && Number.isFinite(_fadeDuration) ? Math.max(0, _fadeDuration) : 0);
+                        recorded.reusableFrom = timing.lineEndTime + timing.colorTrailDuration + (dimmed && Number.isFinite(_fadeDuration) ? Math.max(0, _fadeDuration) : 0);
                         recorded.restore = dimmed ? restore : undefined;
                         if (timeSeconds >= recorded.reusableFrom) {
-                            if (!reuse) for (const command of recorded.text) command.retainedPose = true;
+                            if (!reuse)
+                                for (const command of recorded.text)
+                                    command.retainedPose = true;
                             retained.set(block.id, recorded);
                         }
                     }
@@ -401,6 +404,7 @@ Item {
         id: preparation
         lyricSource: root.lyricSource
         previewRows: root.previewRows
+        previewMode: root.previewMode
         lyricCount: root.lyricCount
         lyricOffsetMs: root.lyricOffsetMs
         trackRevision: root.trackRevision

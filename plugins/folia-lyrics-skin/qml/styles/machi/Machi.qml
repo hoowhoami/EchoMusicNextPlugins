@@ -280,6 +280,7 @@ Item {
         workerSource: Qt.resolvedUrl('program-worker.mjs')
         lyricSource: root.lyricSource
         previewRows: root.previewRows
+        previewMode: root.previewMode
         lyricCount: root.lyricCount
         lyricOffsetMs: root.lyricOffsetMs
         trackRevision: root.trackRevision
