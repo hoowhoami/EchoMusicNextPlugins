@@ -1,0 +1,16 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "pretext": "0.0.9",
+  "unicode": "17.0.0",
+  "sha256": {
+    "src/components/visualizer/VisualizerHarmonyOverlay.tsx": "ce50a40a190e2bfcb91874342d2e783658c99956799e649e58718de380d315ca",
+    "src/utils/lyrics/alternateText.ts": "9eb306681021f599c6e010b4b07d8507b67adfae44ec4a6d1b6e6382b97c498f",
+    "src/components/visualizer/harmonyRuntime.ts": "13d1896098565cf82761a4d5bd6c0cb6fa60c34559f33197d6ba678a8d2cdcd7",
+    "src/components/visualizer/wordColoring.ts": "8264e518c1278a63759f9ebd7a6e172da4fd908de1aaaa0510c1031cc12415e9",
+    "src/utils/lyrics/graphemeTiming.ts": "76ca4929c7658486a793545114c249b5c7178d4ac6fa905a2d06b066576ede35",
+    "src/components/visualizer/textMeasureCache.ts": "6c08e5469611a06c97ffbebb8096d90935bdf963b769dbd7c534a215e1edcd82",
+    "src/components/visualizer/monet/monetLyricsModel.ts": "5dba25f9db4230df41f5e4a0a46049ff0f2a8b242551e7da4d7ac0d87e985c3b",
+    "src/utils/fontStacks.ts": "2f7e3f0a97e73fdc57e9a76a14f06a2cf94648737ae4b14670b00ff1282c702f",
+    "src/components/app/presentation/buildVisualizerTheme.ts": "2fa1565db72efff64b33073265899942f6549ece2dbf2876a5ddbeb22093308a"
+  }
+}

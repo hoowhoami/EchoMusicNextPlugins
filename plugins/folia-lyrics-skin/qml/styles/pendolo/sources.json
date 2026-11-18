@@ -1,0 +1,30 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "pretext": "0.0.9",
+  "unicode": "17.0.0",
+  "sha256": {
+    "src/components/visualizer/pendolo/pendoloGeometry.ts": "896e277de978909cb46f9c1b53e91c6fff3158fbd6b599feeb54fc36c587d14d",
+    "src/components/visualizer/pendolo/pendoloTimeline.ts": "1eee502dd0a2f42da279195b3e4ba7e57b67448eedc2f1635117ec005f4240f6",
+    "src/components/visualizer/pendolo/pendoloMotionProfile.ts": "cf8cd1afcb0e9c22e8229fb405b8eccdf2da6042962943c2bc9f6bf01e9f1200",
+    "src/components/visualizer/pendolo/pendoloClockworkMotion.ts": "47dcf1cd3d80e459f0e192a39bf7d5f9ea4408c3d8ab6cd40e27ba68c9a74c83",
+    "src/components/visualizer/pendolo/pendoloClockworkScene.ts": "30b41281fefa61a6decc4154de288ec376d883d2c8b826c53d211163ae62de14",
+    "src/components/visualizer/pendolo/pendoloClockworkMeshes.ts": "35bc353d99597598d84d099d04a8c7726bb72b93506377d48867135f7e109ab0",
+    "src/components/visualizer/pendolo/pendoloTextLayout.ts": "f4aab6b5f8edc823cffba77cd756eabaa41e8975c5cb4379d55347ad37772e8c",
+    "src/components/visualizer/pendolo/pendoloColorRuns.ts": "1c5b5b3607e0702470a14d52be98990bc8ce47a15de9caaf06e5391e62b7ef5f",
+    "src/components/visualizer/pendolo/pendoloSubtitleTracks.ts": "197bf82eb05e44fd650c21242087a604781822d6bec6b9f8a9baa0624a09a909",
+    "src/utils/lyrics/alternateText.ts": "9eb306681021f599c6e010b4b07d8507b67adfae44ec4a6d1b6e6382b97c498f",
+    "src/utils/lyrics/subtitleTrackStyle.ts": "eac619bc4085edfeee04369fbc6b7452fb2f64b4a86fe1e08deb935855839f66",
+    "src/components/visualizer/pendolo/VisualizerPendolo.tsx": "4d8ec05a787230a8284351b9449ba71655af1fbd30645d94fb930cde5b520575",
+    "src/components/visualizer/pendolo/PendoloClockworkCanvas.tsx": "c1eb893b52d7ea86c6078bb91cf75cfdd906c369b106cb74c5a057712d813d4e",
+    "src/components/visualizer/pendolo/PendoloActiveLyricSweep.tsx": "c54a40d6ce52146c1c31f94bb1ca8934dea519e317bd0ee9c01409daa1ff85f3",
+    "src/components/visualizer/pendolo/PendoloRotatingLine.tsx": "b3657b73759bd017d576187de05fc3562481454176a92c5f672bb6a87b8be7eb",
+    "src/components/visualizer/pendolo/pendoloClockworkDraw2d.ts": "52be6394ece743f3c3e97066b597000ee2d3d8ee0a172cb654e85aaf872a05c3",
+    "src/components/visualizer/pendolo/pendoloClockworkWebGL.ts": "a0dbd5ca8311df27d362e74fffb8a53d5aeb3a6b292d43a42eb5d2df00533d30",
+    "src/components/visualizer/pendolo/PendoloSettingsPanel.tsx": "19129e3b835caa39b349b603141661f31c8ccf213886fb5085eeb64418e53a98",
+    "src/components/visualizer/pendolo/tuning.ts": "5c567b51f57586fdcf2ef5c6dccb0802a5c6cb007a082e3f713a8a1063c22a71",
+    "src/components/visualizer/pendolo/entry.tsx": "fab8faf30c95a6d44b9da959a380310d760ddc076f6065e271720f46debee1e0",
+    "src/components/app/presentation/buildVisualizerTheme.ts": "2fa1565db72efff64b33073265899942f6549ece2dbf2876a5ddbeb22093308a",
+    "src/utils/fontStacks.ts": "2f7e3f0a97e73fdc57e9a76a14f06a2cf94648737ae4b14670b00ff1282c702f",
+    "src/types.ts": "27e9dafb319bbdcf6b518cc7aaae06ef932f54c315742fa1c82cb612b79b8625"
+  }
+}

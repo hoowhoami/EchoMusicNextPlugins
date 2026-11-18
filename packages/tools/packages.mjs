@@ -15,7 +15,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import Ajv from 'ajv/dist/2020.js';
 import { parse } from 'acorn';
-import { build } from 'esbuild';
+import { build, transform } from 'esbuild';
 import ts from 'typescript';
 import { sdkRoot, readJson, loadContract, rangeContains } from './contract.mjs';
 import { packPluginArchive, unpackPluginArchive } from './archives.mjs';
@@ -243,10 +243,14 @@ export async function buildPackage(source, outputRoot) {
   const config = await readJson(path.join(source, 'plugin.config.json'));
   if (
     !config ||
-    Object.keys(config).some((key) => !['entry', 'assets', 'shaders'].includes(key)) ||
+    Object.keys(config).some((key) => !['entry', 'assets', 'shaders', 'modules'].includes(key)) ||
     !Array.isArray(config.assets)
   )
-    throw new Error('plugin.config.json requires entry, assets and optional shaders');
+    throw new Error('plugin.config.json requires entry, assets and optional shaders/modules');
+  const modules = config.modules ?? [];
+  if (!Array.isArray(modules) || modules.length > 32)
+    throw new Error('modules must contain at most 32 package-relative input paths');
+  for (const module of modules) await containedFile(source, relativePath(module));
   if (relativePath(config.entry) === manifest.entry)
     throw new Error('Author entry must differ from the published entry');
   const entry = await containedFile(source, config.entry);
@@ -300,7 +304,21 @@ export async function buildPackage(source, outputRoot) {
         if (await exists(target)) throw new Error(`Asset overwrites generated file: ${relative}`);
         if (stat.size > maximumBytes) throw new Error('Asset exceeds package limit');
         await mkdir(path.dirname(target), { recursive: true });
-        await writeFile(target, await readFile(file), { mode: 0o644 | (stat.mode & 0o111) });
+        let contents = await readFile(file);
+        if (
+          relative.endsWith('.mjs') &&
+          modules.some((module) => relative === module || relative.startsWith(module + '/'))
+        ) {
+          const compiled = await transform(contents.toString('utf8'), {
+            sourcefile: relative,
+            target: 'es2016',
+            format: 'esm',
+            charset: 'utf8',
+            legalComments: 'inline',
+          });
+          contents = compiled.code;
+        }
+        await writeFile(target, contents, { mode: 0o644 | (stat.mode & 0o111) });
       } else throw new Error(`Unsupported asset: ${relative}`);
     };
     for (const asset of config.assets) await copy(relativePath(asset));

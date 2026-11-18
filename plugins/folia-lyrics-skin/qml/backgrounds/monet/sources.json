@@ -1,0 +1,28 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "width": 1920,
+  "height": 1080,
+  "jpegQuality": 0.92,
+  "driftFrames": 157,
+  "driftDurationMs": 240000,
+  "pipelineDebounceMs": 180,
+  "transitionMs": 800,
+  "thirdParty": {
+    "typescript": {
+      "version": "5.9.3",
+      "license": "Apache-2.0",
+      "file": "LICENSE.TypeScript.txt",
+      "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47"
+    }
+  },
+  "sha256": {
+    "src/types.ts": "27e9dafb319bbdcf6b518cc7aaae06ef932f54c315742fa1c82cb612b79b8625",
+    "src/components/visualizer/backgrounds/monet/tuning.ts": "88762ec8e4bde986cca6c126ad4c150371b188f746c1b744f2b03fda884c9f61",
+    "src/components/visualizer/monet/monetBackgroundPipeline.ts": "0a2a4c87a273b6b52f0cc3dae7ee4d495b40213ac3b3ba7d1314f528b5a864c1",
+    "src/components/visualizer/backgrounds/monet/MonetBackgroundLayer.tsx": "a60ff680f4107d2721fd34b652cd1860f7faed8a4e597c6210f97d3197085402",
+    "src/components/visualizer/backgrounds/monet/MonetBackgroundSettingsCard.tsx": "0ee4db9c6539ae622719cab0c71b3390eb50cfc3d659486bf06a69512ce5066d",
+    "src/components/visualizer/backgrounds/monet/monetBackgroundDrift.ts": "b3f7e7b8940fbccd86d8fe8976e158b1ae02ef6b7add26e42875014127dfaf29",
+    "src/components/visualizer/monet/monetBackgroundPaint.ts": "5ea38b15a058bd8ba99047dbd7f52ad4279ffda3ccb809009253d7a59ed5c885",
+    "src/components/visualizer/monet/monetBackground.worker.ts": "7c93bbcea5a6544d4e0586349d9a483cd344025f9fa1a98591f8ee81cf655f12"
+  }
+}

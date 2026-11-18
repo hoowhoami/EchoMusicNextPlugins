@@ -1,0 +1,8 @@
+#version 440
+layout(location=0)in vec4 qt_Vertex;
+layout(location=1)in vec2 qt_MultiTexCoord0;
+layout(location=0)out vec2 vPoint;
+layout(location=1)out float vFogDepth;
+layout(std140,binding=0)uniform buf{mat4 qt_Matrix;float qt_Opacity;mat4 viewMatrix;mat4 projectionMatrix;vec2 viewport;vec3 offset;vec3 color;vec3 fogColor;float alpha;float size;float resolution;float pointCount;float metalPointRaster;};
+layout(binding=1)uniform sampler2D pointData;
+void main(){float row=floor(qt_MultiTexCoord0.y*(pointCount*4.0-1.0)+.5),part=mod(row,4.0);int index=int(min(pointCount-1.0,floor(row/4.0)+(part>2.5?1.0:0.0)));vec2 corner=part<.5?vec2(qt_MultiTexCoord0.x,1):part<1.5?vec2(qt_MultiTexCoord0.x,0):part<2.5?vec2(1,0):vec2(0,1);vPoint=corner;vec3 position=texelFetch(pointData,ivec2(0,index),0).xyz+offset;vec4 mv=viewMatrix*vec4(position,1),clip=projectionMatrix*mv;vFogDepth=-mv.z;float pointSize=max(1.0,size*resolution*viewport.y*.5/max(-mv.z,.0001));vec2 pixel=vec2((clip.x+clip.w)*.5*viewport.x,(clip.w-clip.y)*.5*viewport.y);if(metalPointRaster>.5){pointSize=min(511.0,pointSize);vec2 center=(clip.xy/clip.w*.5+.5)*viewport*resolution;vec2 low=center-pointSize*.5;vec2 high=center+pointSize*.5;vec2 origin=floor(low*256.0+.5)/256.0;vec2 span=(floor(high*16.0+.5)-floor(low*16.0+.5))/16.0;vec2 physical=origin+corner*span;pixel=vec2(physical.x,viewport.y*resolution-physical.y)/resolution*clip.w;vPoint=vec2(corner.x,1.0-corner.y);}else{pixel+=(corner-vec2(.5))*vec2(1,-1)*(pointSize/resolution)*clip.w;}gl_Position=qt_Matrix*vec4(pixel,0,clip.w);if(clip.z < -clip.w||clip.z>clip.w||mv.z>=0)gl_Position=vec4(2,2,2,1);}

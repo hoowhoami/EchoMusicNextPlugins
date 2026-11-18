@@ -42,6 +42,10 @@
       "id": "apple-music-style",
       "repo": "https://github.com/oneday5799/EchoMusicNextPlugins",
       "path": "plugins/apple-music-style"
+    },
+    {
+      "id": "folia-lyrics-skin",
+      "path": "plugins/folia-lyrics-skin"
     }
   ]
 }

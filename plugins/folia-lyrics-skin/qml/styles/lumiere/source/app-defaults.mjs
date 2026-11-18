@@ -1,0 +1,27 @@
+// Derived from Folia a8da4437 (AGPL-3.0-only). See docs/folia/lumiere-reference.md.
+const DEFAULT_LUMIERE_TUNING = {
+  lightIntensity: 1,
+  audioResponse: 1,
+  fogDensity: 1,
+  darkField: 0.75,
+  moteAmount: 1,
+  bloom: 1,
+  textBloom: 1,
+  unlitOpacity: 0.22,
+  windowNeighbors: 2,
+  decay: 1,
+  echo: 1,
+  fogOctaves: 5,
+  lineArt: true,
+  frontBokeh: true,
+  trails: true,
+  hideTrails: false,
+  seamlessTransitions: true,
+  overlayFrame: true,
+  textOnly: false,
+  keywordColors: true,
+  themeIcons: true,
+  themeColorMix: 0.3,
+  renderQuality: 'full',
+};
+export { DEFAULT_LUMIERE_TUNING };

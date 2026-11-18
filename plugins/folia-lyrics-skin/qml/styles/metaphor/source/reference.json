@@ -1,0 +1,28 @@
+{
+  "repository": "https://github.com/chthollyphile/folia-major",
+  "revision": "8006b40f6e7b26198ac964e9e1255c3ca23bd935",
+  "license": "AGPL-3.0-only",
+  "inputs": {
+    "src/components/visualizer/metaphor/metaphorProgram.ts": "315d47e499dc25976d681cd32b94323b8576af59fb45bd99d2d6b77c9bb61b96",
+    "src/components/visualizer/metaphor/metaphorCamera.ts": "e058fe592d17924d563b603b890828826cfa02881f446cb25df1cb591138ed09",
+    "src/components/visualizer/metaphor/metaphorLayout.ts": "54dbde7dd3d38a657acf3342c89b2e966f4a96fd3a380f2112ada62014115137",
+    "src/components/visualizer/metaphor/metaphorFigures.ts": "d7e2bbc2783c0a2e1051965c729189f573728bbde50b78467b64225b722659d7",
+    "src/components/visualizer/metaphor/metaphorShapes.ts": "4b02bff297707d16cd3520ec717cdcea8644e0fb07815bac9b24626585be674c",
+    "src/components/visualizer/metaphor/metaphorPalette.ts": "ca2a1012f3f2891a6cfa8fa0cb1f14dd9615a803d8c1637733484e072da22f2e",
+    "src/components/visualizer/metaphor/metaphorShaders.ts": "0de31aacf4f2423519adfad13af38c317991a1965deae57f0006d35d16ff9bdb",
+    "src/components/visualizer/metaphor/types.ts": "70077d094b5678b31d5e5c7b99b8e9a784e22af80c0fd8eb1b60a89f1a1d67fd",
+    "src/components/visualizer/visualizerSeedHash.ts": "c0979fdcaf18506f780f6ac8f0deb92942d19ae2f34892d1b3499210b1545bdc",
+    "src/components/visualizer/colorMix.ts": "4299d90fed4be18474e5f63c3ad8b6ca1cdc841a1ef334e717135546ecd148bb",
+    "src/components/visualizer/textMeasureCache.ts": "6c08e5469611a06c97ffbebb8096d90935bdf963b769dbd7c534a215e1edcd82",
+    "src/components/visualizer/wordColoring.ts": "8264e518c1278a63759f9ebd7a6e172da4fd908de1aaaa0510c1031cc12415e9",
+    "src/components/visualizer/metaphor/createMetaphorRuntime.ts": "2575d11c9fb2ea7ba9e69157082cd0a4591d0ff06e59aac9e44586ca3633e222",
+    "src/components/visualizer/metaphor/metaphorGlyphs.ts": "8dc64e4d6f946cb9929df357b0734445fc90966dd12e01ebf3e1905f548d31f5",
+    "src/utils/lyricRenderQuality.ts": "e294ced40dcff02fc3b0173747b6342cc04b3f9b82bb5a9b35d4595b82811c10"
+  },
+  "adaptations": [
+    "Imports point to native prepared lyric segmentation and timing.",
+    "Array.at uses a local ES2016 helper.",
+    "Camera tracking is stored as a non-enumerable property of its cue layout and retires with that layout.",
+    "Rendering override default is extracted verbatim; no browser rendering quality service is loaded."
+  ]
+}

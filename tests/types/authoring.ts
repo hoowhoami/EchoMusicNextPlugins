@@ -65,6 +65,12 @@ export function spectrumTypes(ctx: EchoPluginContext) {
     scale: 'mel',
     includeWaveform: true,
   });
+  const bins: Float64Array | undefined = sub?.currentFrame.copyBins();
+  const waveform: Float64Array | undefined = sub?.currentFrame.copyWaveform();
+  const summary = ctx.audio.spectrum.subscribe({ scale: 'linear', rangesHz: [[20, 150]] });
+  const energy: number | undefined = summary?.currentFrame.bandMeans[0];
+  void [bins, waveform, energy];
+  summary?.dispose();
   sub?.setPaused(true);
   // @ts-expect-error unknown frequency scale must not silently enter the API
   ctx.audio.spectrum.subscribe({ scale: 'custom' });

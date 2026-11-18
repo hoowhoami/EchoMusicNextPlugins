@@ -75,7 +75,7 @@ test('resource and presentation bindings retain native return types and state', 
 test('manifest compatibility, source-only index and comparator intersections', async () => {
   assert.deepEqual(
     (await localPackages(root)).map(({ manifest }) => manifest.id),
-    ['spectrum-visualizer', 'dynamic-themes', 'webdav-backup'],
+    ['spectrum-visualizer', 'dynamic-themes', 'webdav-backup', 'folia-lyrics-skin'],
   );
   assert.equal(rangeContains('>=0.1.0 <1.0.0', '0.1.0'), true);
   assert.equal(rangeContains('>=1.0.0', '0.1.0'), false);
@@ -392,4 +392,69 @@ test('glyph atlas bindings retain native producer, readonly pages and unsigned g
   badCounter.types.EchoGpuGlyphAtlas.properties.find((value) => value.name === 'generation').type =
     'QString';
   await assert.rejects(checkBindings(badCounter), /property type differs/);
+});
+
+test('opt-in QML modules preserve relative imports and semantics and publish atomically', async (t) => {
+  const { source, output } = await author(t);
+  const configFile = path.join(source, 'plugin.config.json');
+  const config = JSON.parse(await readFile(configFile, 'utf8'));
+  config.assets.push('modules');
+  config.modules = ['modules'];
+  await import('node:fs/promises').then(({ mkdir }) => mkdir(path.join(source, 'modules')));
+  await writeFile(path.join(source, 'modules/value.mjs'), 'export const value = 7;');
+  const input =
+    '/*! @license MIT test fixture */\nimport {value} from "./value.mjs";\nexport async function sample() { return {...{value}, total:value+2}; }';
+  await writeFile(path.join(source, 'modules/sample.mjs'), input);
+  await writeFile(configFile, JSON.stringify(config));
+  const built = await buildPackage(source, output);
+  const compiled = await readFile(path.join(built, 'modules/sample.mjs'), 'utf8');
+  assert.match(compiled, /@license MIT test fixture/);
+  assert.match(compiled, /\.\/value\.mjs/);
+  assert.doesNotMatch(compiled, /async function|\.\.\./);
+  const loaded = await import(path.join(built, 'modules/sample.mjs'));
+  assert.deepEqual(await loaded.sample(), { value: 7, total: 9 });
+  assert.equal(await readFile(path.join(source, 'modules/sample.mjs'), 'utf8'), input);
+  await writeFile(path.join(source, 'modules/sample.mjs'), 'export const invalid = ;');
+  await assert.rejects(buildPackage(source, output));
+  assert.equal(await readFile(path.join(built, 'modules/sample.mjs'), 'utf8'), compiled);
+  config.modules = ['../escape'];
+  await writeFile(configFile, JSON.stringify(config));
+  await assert.rejects(buildPackage(source, output), /contained relative path/);
+});
+
+test('graphics limits use explicit bounded integers, a required feature and capability', async () => {
+  const source = JSON.parse(
+    await readFile(path.join(root, 'plugins/spectrum-visualizer/manifest.json'), 'utf8'),
+  );
+  const graphicsLimits = {
+    logicalBytes: 192 * 1024 * 1024,
+    nativeBytes: 384 * 1024 * 1024,
+    renderTargetBytes: 640 * 1024 * 1024,
+    maxCommands: 73,
+  };
+  const manifest = {
+    ...source,
+    graphicsLimits,
+    requires: { ...source.requires, features: [...source.requires.features, 'graphics.limits'] },
+  };
+  await validateManifest(manifest);
+  for (const logicalBytes of [true, 0, -1, 1.5, 1024 * 1024 * 1024])
+    await assert.rejects(
+      validateManifest({ ...manifest, graphicsLimits: { ...graphicsLimits, logicalBytes } }),
+      /manifest/i,
+    );
+  await assert.rejects(
+    validateManifest({ ...manifest, graphicsLimits: { ...graphicsLimits, maxCommands: 129 } }),
+    /manifest/i,
+  );
+  await assert.rejects(validateManifest({ ...manifest, capabilities: [] }), /manifest/i);
+  await assert.rejects(
+    validateManifest({
+      ...manifest,
+      requires: { ...manifest.requires, features: source.requires.features },
+    }),
+    /manifest/i,
+  );
+  const { nativeBytes: _native, ...incomplete } = graphicsLimits;
+  await assert.rejects(validateManifest({ ...manifest, graphicsLimits: incomplete }), /manifest/i);
 });

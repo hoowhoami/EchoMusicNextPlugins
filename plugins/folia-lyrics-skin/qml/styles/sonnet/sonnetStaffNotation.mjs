@@ -1,0 +1,28 @@
+// Derived from Folia a8da4437 (AGPL-3.0-only). See sonnet-reference.md.
+const LA_FOLIA_STAFF_NOTES = [
+    { pitch: 'D5', staffStep: 6, beats: 1 },
+    { pitch: 'D5', staffStep: 6, beats: 1.5 },
+    { pitch: 'E5', staffStep: 7, beats: 0.5 },
+    { pitch: 'C#5', staffStep: 5, beats: 1, accidental: 'sharp' },
+    { pitch: 'C#5', staffStep: 5, beats: 1, accidental: 'sharp' },
+    { pitch: 'C#5', staffStep: 5, beats: 1, accidental: 'sharp' },
+    { pitch: 'D5', staffStep: 6, beats: 1 },
+    { pitch: 'D5', staffStep: 6, beats: 1.5 },
+    { pitch: 'D5', staffStep: 6, beats: 0.5 },
+    { pitch: 'E5', staffStep: 7, beats: 1 },
+    { pitch: 'E5', staffStep: 7, beats: 1 },
+    { pitch: 'E5', staffStep: 7, beats: 1 },
+    { pitch: 'F5', staffStep: 8, beats: 1 },
+    { pitch: 'F5', staffStep: 8, beats: 1.5 },
+    { pitch: 'F5', staffStep: 8, beats: 0.5 },
+    { pitch: 'E5', staffStep: 7, beats: 1 },
+    { pitch: 'E5', staffStep: 7, beats: 1 },
+    { pitch: 'E5', staffStep: 7, beats: 1 },
+    { pitch: 'D5', staffStep: 6, beats: 1 },
+    { pitch: 'D5', staffStep: 6, beats: 1.5 },
+    { pitch: 'C#5', staffStep: 5, beats: 0.5, accidental: 'sharp' },
+    { pitch: 'D5', staffStep: 6, beats: 3 },
+  ],
+  LA_FOLIA_TOTAL_BEATS = LA_FOLIA_STAFF_NOTES.reduce((total, note) => total + note.beats, 0),
+  LA_FOLIA_CYCLE_SECONDS = 8;
+export { LA_FOLIA_CYCLE_SECONDS, LA_FOLIA_STAFF_NOTES, LA_FOLIA_TOTAL_BEATS };

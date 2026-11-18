@@ -4,6 +4,14 @@
 
 manifest 声明 capability `graphics`，按使用情况声明 `graphics.rhi`、`graphics.compute`、`graphics.readback`。feature 表示宿主实现了接口；实际后端、计算支持和 HDR 输出应读取 `surface.status`。没有 GPU 的软件/Null 后端会明确返回不可用，作者可提供 QML 矢量回退。
 
+## 作用域与就绪
+
+`graphics.active` 是只读生命周期状态，`activeChanged` 仅在实际变化时通知。作用域有效、声明了 `graphics` 能力且服务未关闭时为 true；第一个 GPU 画布创建之前也可以为 true，适合安排逻辑资源准备。
+
+它不表示窗口可见、设备可用或纹理已上传。设备和后端状态看画布的 `status` / `capabilities`，上传看纹理的 `ready` / `errorString`。每次操作仍会在宿主重新验证作用域；不要把预先读到的 true 当作后续操作必定成功。
+
+账号切换时，激活 façade 会关闭后重新开放；旧 presentation、资源句柄及数据保持失效，不能等 active 再次变 true 后继续使用。active 不是账号 epoch 或取消令牌。隐藏/关闭页面仍按该 presentation 的既有生命周期处理。
+
 ## 资源与命令
 
 - `createBuffer({size, usage, format?}, data?)`：uniform、vertex、index、storage 缓冲区。size 按 4 字节对齐；uniform 不与其它 usage 混用。format 为 float32/float16/uint8/uint16/uint32，默认 float32。
@@ -96,3 +104,47 @@ Qt 官方说明普通场景不是逐资产色彩管理管线，并建议用专�
 资源分享、同RHI设备边界及多流布局见[gpu-submissions](gpu-submissions.md)。
 
 Qt组件layer/texture provider的只读GPU借用见[纹理源](gpu-texture-sources.md)；原生字体 ink/UV/指标直导见[字形图集](gpu-glyph-atlases.md)。持久图像捕获继续归图像导出路径。
+
+## ShaderEffect 的原始浮点输入与混合
+
+`graphics.floatTexture` 提供 `FloatTexture`，将原始 RGBA32F 数据直接作为 Qt `ShaderEffect` 纹理源，不进行图像编码或颜色转换。先绑定当前插件的 `graphics`；`upload(width, height, arrayBuffer)` 只接受 ArrayBuffer，`uploadPacked(width, height, utf16Words)` 接受按小端 uint16 打包的相同字节。每像素严格 16 字节，所有 float32 必须有限；每轴 1–8192、每纹理最多 16 MiB，共享当前 scope 的 128 MiB native 预算，最多 256 个在用或待退休的纹理。拒绝的输入保留上一份有效内容。
+
+`sourceBytes` 表示保留的源字节，`cacheBytes` 表示已上传 GPU 字节，`ready` 表示存在已上传且没有错误的纹理。更新排队期间仍可使用上一份纹理，`ready` 不保证最新数据已经呈现；同尺寸更新复用原生分配。纹理在被 ShaderEffect 采样时上传，因此不要用 `ready` 来阻止唯一采样者的创建。`textureUploads` 累计实际上传数，`errorString` 提供错误。相同数据不会重复上传。数据源本身不画像素，其坐标可在裁切视口外；离屏回收按最近有尺寸的父呈现项判断。隐藏、全透明、最小化、停用和会话失效会清理数据；恢复后由调用者重新上传，不能用失效账号的数据自动恢复。`clear()` 主动释放，GPU 资源在所属渲染线程退休。
+
+`graphics.shaderComposition` 提供 `NativeShaderEffect`，沿用原生 ShaderEffect 的 shader、mesh、uniform 与 sampler 绑定。`composition` 支持 `source-over`（默认）、`additive` 和 `screen`，输入使用预乘 alpha；RGB 分别计算 `S + D*(1-Sa)`、`S+D`、`S+D*(1-S)`。alpha 对 source-over/screen 使用 `Sa+Da*(1-Sa)`，additive 使用 `Sa+Da`。它只改变该绘图项的混合，不改变窗口合成或 HDR 设置。
+
+`graphics.blendEquations` adds `max` and `exclusion` to both
+`NativeShaderEffect.composition` and RHI pipeline `blend`/`blends`.
+`max` takes the componentwise maximum of premultiplied RGBA. `exclusion`
+computes RGB `S*(1-D)+D*(1-S)` and alpha `Sa+Da*(1-Sa)`.
+Declare the feature when either mode is required. Per-attachment modes retain
+the existing MRT and independent blending checks.
+
+## 离屏深度与多重采样
+
+需要这些接口时声明 `graphics.depthMsaa`。`createTexture` 的 `depth32f`
+只支持基础二维纹理，usage 必须包含 `render-target`，可同时包含 `sampled`。
+不接受 CPU 初始数据、writeTexture、storage、mipmap、传输或直接 readback；
+尚未绘制的深度纹理会在 GPU 上初始化为远平面 1。
+
+离屏 render pass 可指定 `depthTarget: { texture: depth.id }`，与颜色附件尺寸相同。
+`colorTargets: []` 加显式深度附件可执行仅深度绘制，此时片元着色器不得输出颜色。
+显式深度和颜色附件均不能与同一 pass 的 shader binding 别名。
+默认 `surface` 不接受显式深度或额外 samples。
+
+`samples: 1 | 2 | 4 | 8` 默认 1，实际支持见 `surface.status.sampleCounts`。
+深度采样支持见 `depthTextures`，多重采样深度解析另需 `depthResolve`。
+颜色和显式深度解析到调用者提供的单采样纹理，之后的 pass 可以采样。
+设备不支持的组合会明确失败；插件应按实际能力选择其支持的质量配置。
+多重采样附件及隐式深度均计入现有原生 GPU 预算，随隐藏、作用域和账号退休释放。
+
+同一组附件、相同 samples 的连续 `loadOp: 'load'` pass 组成绘制序列，
+解析在序列末尾执行。解析后的 MSAA 深度内容已失效，不能跨不相邻 pass
+或跨帧从该 MSAA 深度继续 load；下一组应从 clear 开始。
+单采样解析结果仍可正常采样。隐藏后恢复也从 clear 重建 GPU 内容。
+
+Render pipelines accept `depthCompare` (`less` by default; also `less-equal`, `greater`, `greater-equal`, `equal`, `not-equal`, `always`, `never`) and `frontFace` (`ccw` by default, or `cw`). `depthCompare` only applies with `depthTest: true`; `depthWrite` remains independent. Unknown values are rejected. `graphics.pipelineState` indicates these optional pipeline fields.
+
+`graphicsLimits` can declare four explicit positive integer limits: `logicalBytes`, `nativeBytes`, `renderTargetBytes`, and `maxCommands`. The hard maxima are 256 MiB, 512 MiB, 768 MiB, and 128 respectively. All four fields are required when this object is present, together with the `graphics` capability and `graphics.limits` feature. Omission uses the host defaults of 64 / 128 / 256 MiB and 32 commands. Limits are fixed when the activation is created; account and presentation children share that activation's budget. `graphics.capabilities.limits` reports the actual values. Declared limits do not preallocate memory.
+
+Resource count (256), surfaces (16), texture axis (4096), readback (32 MiB) and submission snapshots (64 MiB) retain their separate fixed limits. Snapshots charge actual retained CPU upload data, shader bytes and conservative bounded command metadata. GPU-only target capacity is charged by the separate GPU budgets. A large empty target therefore does not itself consume the CPU snapshot quota; queued upload data still can exhaust it and are rejected. There are no named profiles or legacy accounting branches.

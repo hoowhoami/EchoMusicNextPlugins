@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480">
+<!-- Original authored preview cover, AGPL-3.0-only; no photographic source. -->
+<defs><linearGradient id="sky" x2="1" y2="1"><stop stop-color="#18344c"/><stop offset="1" stop-color="#b5d5c0"/></linearGradient></defs>
+<path fill="url(#sky)" d="M0 0h480v480H0z"/><circle cx="325" cy="148" r="66" fill="#f6e7b1"/>
+<path d="M0 350Q120 220 250 360T480 315V480H0Z" fill="#356765"/><path d="M0 405Q170 310 330 405T480 380V480H0Z" fill="#1d454b"/>
+<path d="M52 60v210M78 60v210M52 85h165M52 115h130" fill="none" stroke="#e8f5e9" stroke-width="5" opacity=".65"/>
+</svg>

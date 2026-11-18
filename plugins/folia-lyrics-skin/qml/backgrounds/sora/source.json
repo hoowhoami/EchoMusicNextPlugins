@@ -1,0 +1,8 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "sourcePath": "src/components/visualizer/backgrounds/sora/SoraBackground.tsx",
+  "sourceSha256": "ae6b38062123bdd96f6af2390a6710d4dec03db21c3a36ff9ec06fa3962cf6e1",
+  "particleCount": 150,
+  "gridColumns": 597,
+  "adaptation": "Original GLSL formulas. Metal retains 150 point primitives in the source render-target direction; other backends retain the ordered independent quad transport."
+}

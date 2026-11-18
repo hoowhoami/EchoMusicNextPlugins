@@ -1,0 +1,947 @@
+{
+  "entry": "src/entry.ts",
+  "assets": ["qml", "assets", "LICENSE", "THIRD_PARTY_NOTICES.md", "README.md"],
+  "modules": ["qml"],
+  "shaders": [
+    {
+      "source": "qml/styles/metaphor/blur.frag",
+      "output": "qml/styles/metaphor/blur.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/metaphor/copy.frag",
+      "output": "qml/styles/metaphor/copy.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/metaphor/develop.frag",
+      "output": "qml/styles/metaphor/develop.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/metaphor/glyph.frag",
+      "output": "qml/styles/metaphor/glyph.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/metaphor/glyph.vert",
+      "output": "qml/styles/metaphor/glyph.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/metaphor/shape.frag",
+      "output": "qml/styles/metaphor/shape.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/metaphor/shape.vert",
+      "output": "qml/styles/metaphor/shape.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/hanabi/sprites.vert",
+      "output": "qml/styles/hanabi/sprites.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/hanabi/sprites.frag",
+      "output": "qml/styles/hanabi/sprites.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-dew-fog.frag",
+      "output": "qml/styles/nebbia/shaders/aquarium-dew-fog.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-dew-fog.vert",
+      "output": "qml/styles/nebbia/shaders/aquarium-dew-fog.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-dew-main.frag",
+      "output": "qml/styles/nebbia/shaders/aquarium-dew-main.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-dew-main.vert",
+      "output": "qml/styles/nebbia/shaders/aquarium-dew-main.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-dew-mainFallback.frag",
+      "output": "qml/styles/nebbia/shaders/aquarium-dew-mainFallback.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-dew-mainFallback.vert",
+      "output": "qml/styles/nebbia/shaders/aquarium-dew-mainFallback.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-rain-fog.frag",
+      "output": "qml/styles/nebbia/shaders/aquarium-rain-fog.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-rain-fog.vert",
+      "output": "qml/styles/nebbia/shaders/aquarium-rain-fog.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-rain-main.frag",
+      "output": "qml/styles/nebbia/shaders/aquarium-rain-main.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-rain-main.vert",
+      "output": "qml/styles/nebbia/shaders/aquarium-rain-main.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-rain-mainFallback.frag",
+      "output": "qml/styles/nebbia/shaders/aquarium-rain-mainFallback.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-rain-mainFallback.vert",
+      "output": "qml/styles/nebbia/shaders/aquarium-rain-mainFallback.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-snow-fog.frag",
+      "output": "qml/styles/nebbia/shaders/aquarium-snow-fog.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-snow-fog.vert",
+      "output": "qml/styles/nebbia/shaders/aquarium-snow-fog.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-snow-main.frag",
+      "output": "qml/styles/nebbia/shaders/aquarium-snow-main.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-snow-main.vert",
+      "output": "qml/styles/nebbia/shaders/aquarium-snow-main.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-snow-mainFallback.frag",
+      "output": "qml/styles/nebbia/shaders/aquarium-snow-mainFallback.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/aquarium-snow-mainFallback.vert",
+      "output": "qml/styles/nebbia/shaders/aquarium-snow-mainFallback.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/breath.frag",
+      "output": "qml/styles/nebbia/shaders/breath.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/breath.vert",
+      "output": "qml/styles/nebbia/shaders/breath.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/buildings.frag",
+      "output": "qml/styles/nebbia/shaders/buildings.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/buildings.vert",
+      "output": "qml/styles/nebbia/shaders/buildings.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/clear.frag",
+      "output": "qml/styles/nebbia/shaders/clear.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/firefly.frag",
+      "output": "qml/styles/nebbia/shaders/firefly.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/firefly.vert",
+      "output": "qml/styles/nebbia/shaders/firefly.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/flake.frag",
+      "output": "qml/styles/nebbia/shaders/flake.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/flake.vert",
+      "output": "qml/styles/nebbia/shaders/flake.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/mask.frag",
+      "output": "qml/styles/nebbia/shaders/mask.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/mask.vert",
+      "output": "qml/styles/nebbia/shaders/mask.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/native.vert",
+      "output": "qml/styles/nebbia/shaders/native.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-dew-fog.frag",
+      "output": "qml/styles/nebbia/shaders/night-dew-fog.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-dew-fog.vert",
+      "output": "qml/styles/nebbia/shaders/night-dew-fog.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-dew-main.frag",
+      "output": "qml/styles/nebbia/shaders/night-dew-main.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-dew-main.vert",
+      "output": "qml/styles/nebbia/shaders/night-dew-main.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-dew-mainFallback.frag",
+      "output": "qml/styles/nebbia/shaders/night-dew-mainFallback.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-dew-mainFallback.vert",
+      "output": "qml/styles/nebbia/shaders/night-dew-mainFallback.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-rain-fog.frag",
+      "output": "qml/styles/nebbia/shaders/night-rain-fog.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-rain-fog.vert",
+      "output": "qml/styles/nebbia/shaders/night-rain-fog.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-rain-main.frag",
+      "output": "qml/styles/nebbia/shaders/night-rain-main.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-rain-main.vert",
+      "output": "qml/styles/nebbia/shaders/night-rain-main.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-rain-mainFallback.frag",
+      "output": "qml/styles/nebbia/shaders/night-rain-mainFallback.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-rain-mainFallback.vert",
+      "output": "qml/styles/nebbia/shaders/night-rain-mainFallback.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-snow-fog.frag",
+      "output": "qml/styles/nebbia/shaders/night-snow-fog.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-snow-fog.vert",
+      "output": "qml/styles/nebbia/shaders/night-snow-fog.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-snow-main.frag",
+      "output": "qml/styles/nebbia/shaders/night-snow-main.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-snow-main.vert",
+      "output": "qml/styles/nebbia/shaders/night-snow-main.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-snow-mainFallback.frag",
+      "output": "qml/styles/nebbia/shaders/night-snow-mainFallback.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/night-snow-mainFallback.vert",
+      "output": "qml/styles/nebbia/shaders/night-snow-mainFallback.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/noise.frag",
+      "output": "qml/styles/nebbia/shaders/noise.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/noise.vert",
+      "output": "qml/styles/nebbia/shaders/noise.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/present.frag",
+      "output": "qml/styles/nebbia/shaders/present.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/sprite.frag",
+      "output": "qml/styles/nebbia/shaders/sprite.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/nebbia/shaders/sprite.vert",
+      "output": "qml/styles/nebbia/shaders/sprite.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-c5fcf46e96361ecb8a3ed7bb.vert",
+      "output": "qml/styles/machi/shaders/stage-c5fcf46e96361ecb8a3ed7bb.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-11453ca8ede616463823a8d7.frag",
+      "output": "qml/styles/machi/shaders/stage-11453ca8ede616463823a8d7.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-bfd3f997798057076eabc559.vert",
+      "output": "qml/styles/machi/shaders/stage-bfd3f997798057076eabc559.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-eb236403cfa2c692b3133f87.frag",
+      "output": "qml/styles/machi/shaders/stage-eb236403cfa2c692b3133f87.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-2e5ffd6b76149079e6ffc8e9.vert",
+      "output": "qml/styles/machi/shaders/stage-2e5ffd6b76149079e6ffc8e9.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-8bbb5f34f2ae799c3b6033fc.frag",
+      "output": "qml/styles/machi/shaders/stage-8bbb5f34f2ae799c3b6033fc.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-d84c3df406ed52e90f147977.vert",
+      "output": "qml/styles/machi/shaders/stage-d84c3df406ed52e90f147977.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-64fce3b861048b55d0c3b3de.frag",
+      "output": "qml/styles/machi/shaders/stage-64fce3b861048b55d0c3b3de.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-b0c7fce658f7e1a15cfb45a5.vert",
+      "output": "qml/styles/machi/shaders/stage-b0c7fce658f7e1a15cfb45a5.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-a75c80b463e67ba9cf84072c.frag",
+      "output": "qml/styles/machi/shaders/stage-a75c80b463e67ba9cf84072c.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-a210c3a03572fa1ad4226180.vert",
+      "output": "qml/styles/machi/shaders/stage-a210c3a03572fa1ad4226180.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-daad7b3b224a0df03647492b.frag",
+      "output": "qml/styles/machi/shaders/stage-daad7b3b224a0df03647492b.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-26ead3399b58fdde64514d6d.vert",
+      "output": "qml/styles/machi/shaders/stage-26ead3399b58fdde64514d6d.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-a3d65fb9bb966bc22efe4a03.frag",
+      "output": "qml/styles/machi/shaders/stage-a3d65fb9bb966bc22efe4a03.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-64801767119147ec824a9c6f.vert",
+      "output": "qml/styles/machi/shaders/stage-64801767119147ec824a9c6f.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-8cb6755aa1d33a87b422ca46.frag",
+      "output": "qml/styles/machi/shaders/stage-8cb6755aa1d33a87b422ca46.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-d2f4efc1dbe9cc1467309c11.vert",
+      "output": "qml/styles/machi/shaders/stage-d2f4efc1dbe9cc1467309c11.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-38d979aaaba44afce32bcddc.frag",
+      "output": "qml/styles/machi/shaders/stage-38d979aaaba44afce32bcddc.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-ae6e003f9abee4cec58aab49.frag",
+      "output": "qml/styles/machi/shaders/stage-ae6e003f9abee4cec58aab49.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-04c9c72998cf5063c3a86af4.frag",
+      "output": "qml/styles/machi/shaders/stage-04c9c72998cf5063c3a86af4.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-224299841434969d54dfb62a.vert",
+      "output": "qml/styles/machi/shaders/stage-224299841434969d54dfb62a.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-abf9b07c7aeab48cfd26a1a1.frag",
+      "output": "qml/styles/machi/shaders/stage-abf9b07c7aeab48cfd26a1a1.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-92612c8c07a4c1722048605c.vert",
+      "output": "qml/styles/machi/shaders/stage-92612c8c07a4c1722048605c.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-cd7061976e13d599e1a6fbd7.frag",
+      "output": "qml/styles/machi/shaders/stage-cd7061976e13d599e1a6fbd7.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-2a01596de0df5e638881204a.vert",
+      "output": "qml/styles/machi/shaders/stage-2a01596de0df5e638881204a.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-5257cd08d9f2ce3cf57f6243.frag",
+      "output": "qml/styles/machi/shaders/stage-5257cd08d9f2ce3cf57f6243.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-7f7cd371a9be68efda67793e.vert",
+      "output": "qml/styles/machi/shaders/stage-7f7cd371a9be68efda67793e.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-5391bd8a50fe71fc2cd372fe.frag",
+      "output": "qml/styles/machi/shaders/stage-5391bd8a50fe71fc2cd372fe.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-027ce8d47e8fe1698bf9e304.vert",
+      "output": "qml/styles/machi/shaders/stage-027ce8d47e8fe1698bf9e304.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-fa25f68bcafd5d4806c79df7.frag",
+      "output": "qml/styles/machi/shaders/stage-fa25f68bcafd5d4806c79df7.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-81ce18f8ac87b25934bbcf24.vert",
+      "output": "qml/styles/machi/shaders/stage-81ce18f8ac87b25934bbcf24.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-454384847edb2f847e80c48c.frag",
+      "output": "qml/styles/machi/shaders/stage-454384847edb2f847e80c48c.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-0c4da6fb1a623a4a934dedb9.vert",
+      "output": "qml/styles/machi/shaders/stage-0c4da6fb1a623a4a934dedb9.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-504003256c26e5556cfd2c09.frag",
+      "output": "qml/styles/machi/shaders/stage-504003256c26e5556cfd2c09.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-fd7af5d1db90dce3a3e7a450.vert",
+      "output": "qml/styles/machi/shaders/stage-fd7af5d1db90dce3a3e7a450.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-1a23d3abc243986da69d17ed.frag",
+      "output": "qml/styles/machi/shaders/stage-1a23d3abc243986da69d17ed.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-043e71331a28ee0fdd0cb4fd.vert",
+      "output": "qml/styles/machi/shaders/stage-043e71331a28ee0fdd0cb4fd.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-1fb543cef6a748840cbd18d0.frag",
+      "output": "qml/styles/machi/shaders/stage-1fb543cef6a748840cbd18d0.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-99025080e3bad9b153e84689.vert",
+      "output": "qml/styles/machi/shaders/stage-99025080e3bad9b153e84689.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-3e591a6dff733ce7c619a374.frag",
+      "output": "qml/styles/machi/shaders/stage-3e591a6dff733ce7c619a374.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-ad74db3c42bd37b6c59e5bce.vert",
+      "output": "qml/styles/machi/shaders/stage-ad74db3c42bd37b6c59e5bce.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-31af814d988dc05c1629cf81.frag",
+      "output": "qml/styles/machi/shaders/stage-31af814d988dc05c1629cf81.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-e6c60200eb228ae1a0a2231c.vert",
+      "output": "qml/styles/machi/shaders/stage-e6c60200eb228ae1a0a2231c.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-aa7f34887cd83f162596a489.frag",
+      "output": "qml/styles/machi/shaders/stage-aa7f34887cd83f162596a489.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-ed0b6ab8cfa147d014a4d82e.vert",
+      "output": "qml/styles/machi/shaders/stage-ed0b6ab8cfa147d014a4d82e.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-63e89181b3babc196cfcab1d.frag",
+      "output": "qml/styles/machi/shaders/stage-63e89181b3babc196cfcab1d.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-928745d7861989ffc0cfba43.vert",
+      "output": "qml/styles/machi/shaders/stage-928745d7861989ffc0cfba43.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-dbeb0ee1cdeb7519caca2ddd.frag",
+      "output": "qml/styles/machi/shaders/stage-dbeb0ee1cdeb7519caca2ddd.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-0e8af56a9eac70b858c23a79.vert",
+      "output": "qml/styles/machi/shaders/stage-0e8af56a9eac70b858c23a79.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-a39cfd138adadcabbb065301.frag",
+      "output": "qml/styles/machi/shaders/stage-a39cfd138adadcabbb065301.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-e01c83bbd14934b7898806c8.vert",
+      "output": "qml/styles/machi/shaders/stage-e01c83bbd14934b7898806c8.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-7ad7ba6da1ed45fc5b457346.frag",
+      "output": "qml/styles/machi/shaders/stage-7ad7ba6da1ed45fc5b457346.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-fac0fac098db5e9b32d1101d.vert",
+      "output": "qml/styles/machi/shaders/stage-fac0fac098db5e9b32d1101d.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-4d4ffbc1e64c28b84e70520e.frag",
+      "output": "qml/styles/machi/shaders/stage-4d4ffbc1e64c28b84e70520e.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-af3b54dcdd3e6f14a7b15206.vert",
+      "output": "qml/styles/machi/shaders/stage-af3b54dcdd3e6f14a7b15206.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-ba6a70b61aebae9ef388c0d4.frag",
+      "output": "qml/styles/machi/shaders/stage-ba6a70b61aebae9ef388c0d4.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-3aaf595091f105f51135927e.vert",
+      "output": "qml/styles/machi/shaders/stage-3aaf595091f105f51135927e.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-c621d23a62b266044925f4c2.frag",
+      "output": "qml/styles/machi/shaders/stage-c621d23a62b266044925f4c2.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-34845b9466ae984fe6b278c7.vert",
+      "output": "qml/styles/machi/shaders/stage-34845b9466ae984fe6b278c7.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-d272da7f2723c2eea234b67f.frag",
+      "output": "qml/styles/machi/shaders/stage-d272da7f2723c2eea234b67f.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-869473973caa6dd90c73e325.vert",
+      "output": "qml/styles/machi/shaders/stage-869473973caa6dd90c73e325.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-fa27bd54be91343c28e8a701.frag",
+      "output": "qml/styles/machi/shaders/stage-fa27bd54be91343c28e8a701.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-b3940d29a774d2c62ca9e0a2.vert",
+      "output": "qml/styles/machi/shaders/stage-b3940d29a774d2c62ca9e0a2.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-7c3db750347bb2fe0b731e73.frag",
+      "output": "qml/styles/machi/shaders/stage-7c3db750347bb2fe0b731e73.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-1009cc198643ff9f0558ed8f.vert",
+      "output": "qml/styles/machi/shaders/stage-1009cc198643ff9f0558ed8f.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-02b6429657a4616b25c723df.frag",
+      "output": "qml/styles/machi/shaders/stage-02b6429657a4616b25c723df.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-0ac870c0a1fd89df6d1e9bd5.vert",
+      "output": "qml/styles/machi/shaders/stage-0ac870c0a1fd89df6d1e9bd5.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-75c78891f5029db0d48411ce.frag",
+      "output": "qml/styles/machi/shaders/stage-75c78891f5029db0d48411ce.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-cf27413e0211ebf5a9ccd561.vert",
+      "output": "qml/styles/machi/shaders/stage-cf27413e0211ebf5a9ccd561.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-9239eef4448a6bd062c0f306.frag",
+      "output": "qml/styles/machi/shaders/stage-9239eef4448a6bd062c0f306.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-8be3f454ddd40d10d6b5ffea.vert",
+      "output": "qml/styles/machi/shaders/stage-8be3f454ddd40d10d6b5ffea.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-e7558626accdd40b2bcdf17e.vert",
+      "output": "qml/styles/machi/shaders/stage-e7558626accdd40b2bcdf17e.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-a0145eea12bedf4f5a19a48f.vert",
+      "output": "qml/styles/machi/shaders/stage-a0145eea12bedf4f5a19a48f.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-88ed2b1381b823ffe0811b5f.frag",
+      "output": "qml/styles/machi/shaders/stage-88ed2b1381b823ffe0811b5f.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-634a522dae4257ce1f322053.vert",
+      "output": "qml/styles/machi/shaders/stage-634a522dae4257ce1f322053.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-9d67b7f0d15e420f1dc22caf.frag",
+      "output": "qml/styles/machi/shaders/stage-9d67b7f0d15e420f1dc22caf.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-61a9771f33ded0985f576b8d.frag",
+      "output": "qml/styles/machi/shaders/stage-61a9771f33ded0985f576b8d.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-dfc656908cb6c7bd10b61e50.vert",
+      "output": "qml/styles/machi/shaders/stage-dfc656908cb6c7bd10b61e50.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-051351cdeb2fc98370cedfb0.frag",
+      "output": "qml/styles/machi/shaders/stage-051351cdeb2fc98370cedfb0.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-d2b63e4b5844367adb9cf9b5.vert",
+      "output": "qml/styles/machi/shaders/stage-d2b63e4b5844367adb9cf9b5.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-5413b24f5472175484facb19.frag",
+      "output": "qml/styles/machi/shaders/stage-5413b24f5472175484facb19.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-aae6532db3e682c6d33e8847.vert",
+      "output": "qml/styles/machi/shaders/stage-aae6532db3e682c6d33e8847.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-c30df929891b4dee29e8b956.frag",
+      "output": "qml/styles/machi/shaders/stage-c30df929891b4dee29e8b956.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-d1b33c5f89556ccedafa4c6b.vert",
+      "output": "qml/styles/machi/shaders/stage-d1b33c5f89556ccedafa4c6b.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-61f839390bb23d7204514ec3.frag",
+      "output": "qml/styles/machi/shaders/stage-61f839390bb23d7204514ec3.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-7f7954d1e5dae9cc80f7eeb4.vert",
+      "output": "qml/styles/machi/shaders/stage-7f7954d1e5dae9cc80f7eeb4.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-fddd16d5bc3125b03802bb1c.frag",
+      "output": "qml/styles/machi/shaders/stage-fddd16d5bc3125b03802bb1c.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-7b12053f213e9c8a009315a4.vert",
+      "output": "qml/styles/machi/shaders/stage-7b12053f213e9c8a009315a4.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-dad87df0fe5e079c916170b6.frag",
+      "output": "qml/styles/machi/shaders/stage-dad87df0fe5e079c916170b6.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-538b214e26288c4290dde104.vert",
+      "output": "qml/styles/machi/shaders/stage-538b214e26288c4290dde104.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-7b3f8b1ccf9d690bdbfc521b.frag",
+      "output": "qml/styles/machi/shaders/stage-7b3f8b1ccf9d690bdbfc521b.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-95db50bb8173a34b629cd40f.vert",
+      "output": "qml/styles/machi/shaders/stage-95db50bb8173a34b629cd40f.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-53cc14a8dbeed00aeb4b44f0.frag",
+      "output": "qml/styles/machi/shaders/stage-53cc14a8dbeed00aeb4b44f0.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-23129d962f5a47ce5ff015f5.vert",
+      "output": "qml/styles/machi/shaders/stage-23129d962f5a47ce5ff015f5.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-e1c2a76f014ac4fd20ec923c.frag",
+      "output": "qml/styles/machi/shaders/stage-e1c2a76f014ac4fd20ec923c.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-cff4e467c6c144308626bed7.vert",
+      "output": "qml/styles/machi/shaders/stage-cff4e467c6c144308626bed7.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-4cbae2fbcc86971915c94a6c.frag",
+      "output": "qml/styles/machi/shaders/stage-4cbae2fbcc86971915c94a6c.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-54f29d6691ae8321587a7343.vert",
+      "output": "qml/styles/machi/shaders/stage-54f29d6691ae8321587a7343.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-2382397277d2b92387babdf8.frag",
+      "output": "qml/styles/machi/shaders/stage-2382397277d2b92387babdf8.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-690155b61a1c556357496606.vert",
+      "output": "qml/styles/machi/shaders/stage-690155b61a1c556357496606.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-fbf2826bd9b6300220f7b85c.frag",
+      "output": "qml/styles/machi/shaders/stage-fbf2826bd9b6300220f7b85c.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-5cea25e6045e8ac4011fcd27.vert",
+      "output": "qml/styles/machi/shaders/stage-5cea25e6045e8ac4011fcd27.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-331f699031d93a9c227b5b05.frag",
+      "output": "qml/styles/machi/shaders/stage-331f699031d93a9c227b5b05.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-eeb5daa16cb510994688e7af.vert",
+      "output": "qml/styles/machi/shaders/stage-eeb5daa16cb510994688e7af.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-15b3e3a3ab3ef0ad236ca7bf.vert",
+      "output": "qml/styles/machi/shaders/stage-15b3e3a3ab3ef0ad236ca7bf.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-e492d5810c8780f1c423d4c1.frag",
+      "output": "qml/styles/machi/shaders/stage-e492d5810c8780f1c423d4c1.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-ec55301bee34aa001d69caa5.vert",
+      "output": "qml/styles/machi/shaders/stage-ec55301bee34aa001d69caa5.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-94a7b22b0198d8841fc0028f.frag",
+      "output": "qml/styles/machi/shaders/stage-94a7b22b0198d8841fc0028f.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-548a64424e205698d229f103.frag",
+      "output": "qml/styles/machi/shaders/stage-548a64424e205698d229f103.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-4371c0f9f3f2e16b3e0794ca.vert",
+      "output": "qml/styles/machi/shaders/stage-4371c0f9f3f2e16b3e0794ca.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-9a23596f01ebe52c3c9ba93e.frag",
+      "output": "qml/styles/machi/shaders/stage-9a23596f01ebe52c3c9ba93e.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-1f3030600648b2d6a0ec4871.vert",
+      "output": "qml/styles/machi/shaders/stage-1f3030600648b2d6a0ec4871.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-7ee7c8783f04b37ab1032739.frag",
+      "output": "qml/styles/machi/shaders/stage-7ee7c8783f04b37ab1032739.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-bd14c7b3bc75fa0281252848.vert",
+      "output": "qml/styles/machi/shaders/stage-bd14c7b3bc75fa0281252848.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-7a466d413ee4b8dfafd57809.frag",
+      "output": "qml/styles/machi/shaders/stage-7a466d413ee4b8dfafd57809.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-83206650029879201aaf08be.vert",
+      "output": "qml/styles/machi/shaders/stage-83206650029879201aaf08be.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-22daa985da5da2ba81bf0dc7.frag",
+      "output": "qml/styles/machi/shaders/stage-22daa985da5da2ba81bf0dc7.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-9bf09b958c1cfd5c74ec0924.frag",
+      "output": "qml/styles/machi/shaders/stage-9bf09b958c1cfd5c74ec0924.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-8cbc2252eb03f1b3387c282a.vert",
+      "output": "qml/styles/machi/shaders/stage-8cbc2252eb03f1b3387c282a.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-322c52fe62949315c4d05a09.frag",
+      "output": "qml/styles/machi/shaders/stage-322c52fe62949315c4d05a09.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/prepare.vert",
+      "output": "qml/styles/machi/shaders/prepare.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/canvas.frag",
+      "output": "qml/styles/machi/shaders/canvas.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/gradient.frag",
+      "output": "qml/styles/machi/shaders/gradient.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/background.frag",
+      "output": "qml/styles/machi/shaders/background.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/present.vert",
+      "output": "qml/styles/machi/shaders/present.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/present.frag",
+      "output": "qml/styles/machi/shaders/present.frag.qsb",
+      "target": "rhi"
+    }
+  ]
+}

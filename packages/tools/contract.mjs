@@ -49,6 +49,7 @@ export function rangeContains(range, version) {
 
 const nativeScriptDefinitions = new Set([
   'GpuData',
+  'FloatTextureData',
   'HostActionDefinition',
   'HostTitlebarActionDefinition',
   'HostPlayerbarActionDefinition',
@@ -157,6 +158,7 @@ function compatibleType(qtType, type, depth = 0) {
     return (
       ts.isFunctionTypeNode(type) ||
       (record && ts.isFunctionTypeNode(type.typeArguments[1])) ||
+      text === 'Float64Array' ||
       nativeScriptDefinitions.has(text)
     );
   // QVariant carries API-specific JSON or operation generic results.

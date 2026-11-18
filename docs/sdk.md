@@ -95,7 +95,9 @@ Promise adapter 同时处理已经完成和延迟完成的操作。账号会话�
 `ctx.audio.spectrum.status/getStatus()`返回available/running/provider/reason/subscriberCount。
 声明feature `audio.spectrum`与capability `audioSpectrum`后，`subscribe(options)`返回类型化订阅：active、paused、frame、status与frameChanged/statusChanged；setPaused/dispose控制投递。dispose后宿主销毁完整订阅，不能继续使用旧句柄。
 
-选项fps0（不额外限帧）或1..60、binCount8..512、fftSize256/512/1024/2048/4096/8192、smoothing0..0.95、scale log/linear/mel、minFrequency/maxFrequency、includeWaveform。frame含source(player/silence/unavailable)、state、timestamp毫秒、timePos秒、sampleRate、fftSize、bins、可选waveform、peak/rms和频率边界。取播放器实际输出后的PCM，不采集系统混音；FFI控制队列最多一帧在途，Qt投递合并最新帧，音频回调仅try_lock写入有界环形缓冲。当前帧通过有界JSON事件传输，尚未实现迁移设计的零复制二进制buffer。
+选项fps0（不额外限帧）或1..60、binCount8..512、fftSize256/512/1024/2048/4096/8192、smoothing0..0.95、scale log/linear/mel、minFrequency/maxFrequency、includeWaveform。frame含source(player/silence/unavailable)、state、timestamp毫秒、timePos秒、sampleRate、fftSize、bins、可选waveform、peak/rms和频率边界。取播放器实际输出后的PCM，不采集系统混音；FFI控制队列最多一帧在途，Qt投递合并最新帧，音频回调仅try_lock写入有界环形缓冲。原生 FFT 数组由 Rust 持有，Qt 读取有生命周期的只读视图。
+
+声明 `audio.spectrum.frames` 后，在 `frameChanged` 中读取 `subscription.currentFrame`。同一个对象随新帧更新，提供 `sequence`、`binCount`、`waveformCount` 和上述标量。需要保留数组时调用 `copyBins()` 或 `copyWaveform()` 获取独立的 `Float64Array`，暂停或释放订阅后副本仍有效。只需要音量或频段均值时直接读取 `rms`、`peak` 或 `bandMeans`。线性订阅可用 `rangesHz: [[20, 150], [150, 400]]` 声明最多 32 个区间，均值按线性频带与区间的重叠宽度加权，结果顺序与声明一致。原有 `subscription.frame` 在访问时才构造。
 
 多个活跃订阅共用一次分析，合并帧率/FFT/频段/波形需求，再按订阅频率投递、映射频带。暂停或没有可见订阅时停止采集与FFT请求；曲目/配置世代阻止迟到帧。播放状态始终只读宿主PlaybackService。
 

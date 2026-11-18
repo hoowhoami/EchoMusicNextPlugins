@@ -68,7 +68,11 @@ Item {
         function onFrameChanged(): void {
             if (visualizer.subscription) {
                 visualizer.centerSettled = false;
-                visualizer.frame = visualizer.subscription.frame;
+                const current = visualizer.subscription.currentFrame;
+                visualizer.frame = current.state ? {
+                    state: current.state, source: current.source, rms: current.rms,
+                    bins: current.copyBins(), waveform: current.waveformCount ? current.copyWaveform() : []
+                } : null;
             }
         }
     }

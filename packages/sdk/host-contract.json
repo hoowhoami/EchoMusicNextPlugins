@@ -129,6 +129,12 @@
   ],
   "contexts": ["main"],
   "features": [
+    "graphics.floatTexture",
+    "graphics.shaderComposition",
+    "graphics.blendEquations",
+    "graphics.depthMsaa",
+    "graphics.pipelineState",
+    "graphics.limits",
     "manifest.platforms",
     "playback.clock",
     "appearance.overrides",
@@ -206,6 +212,7 @@
     "plugins.catalog",
     "plugins.commands",
     "audio.spectrum",
+    "audio.spectrum.frames",
     "ui.surfaces",
     "ui.state",
     "ui.parts",
@@ -225,6 +232,7 @@
     "playback.context",
     "playback.lyrics.metadata",
     "assets.images",
+    "assets.imageDrop",
     "assets.imageBatches",
     "assets.fonts",
     "assets.sampleImage",
@@ -240,7 +248,8 @@
     "ui.presentationVisibility",
     "kugou.authSnapshot",
     "ui.dialogs",
-    "clipboard.write"
+    "clipboard.write",
+    "text.segmentation"
   ],
   "hostVersion": "0.1.7",
   "module": "echo:plugin-sdk",
@@ -2137,6 +2146,12 @@
       "enums": [],
       "methods": [
         {
+          "name": "activeChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
           "name": "changed",
           "parameters": [],
           "returnType": "void",
@@ -2254,6 +2269,12 @@
       "properties": [
         {
           "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
           "name": "capabilities",
           "type": "QVariantMap",
           "writable": false
@@ -2262,6 +2283,85 @@
           "constant": false,
           "name": "errorMessage",
           "type": "QString",
+          "writable": false
+        }
+      ]
+    },
+    "EchoPluginImageDropArea": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "assetsChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "configurationChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "activeChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "containsDragChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "importStarted",
+          "parameters": ["EchoMusic::EchoPluginOperation*"],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "archiveDropped",
+          "parameters": ["EchoMusic::EchoPluginAssetArchive*"],
+          "returnType": "void",
+          "signal": true
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "assets",
+          "type": "EchoMusic::EchoPluginAssets*",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "collection",
+          "type": "QString",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "maxCount",
+          "type": "int",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "archiveJsonPaths",
+          "type": "QStringList",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "containsDrag",
+          "type": "bool",
           "writable": false
         }
       ]
@@ -3497,6 +3597,115 @@
         }
       ]
     },
+    "EchoPluginSpectrumFrame": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "changed",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "copyBins",
+          "parameters": [],
+          "returnType": "QJSValue",
+          "signal": false
+        },
+        {
+          "name": "copyWaveform",
+          "parameters": [],
+          "returnType": "QJSValue",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "state",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "source",
+          "type": "QString",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "sequence",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "peak",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "rms",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "timestamp",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "timePos",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "minFrequency",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "maxFrequency",
+          "type": "double",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "sampleRate",
+          "type": "int",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "fftSize",
+          "type": "int",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "binCount",
+          "type": "int",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "waveformCount",
+          "type": "int",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "bandMeans",
+          "type": "QVariantList",
+          "writable": false
+        }
+      ]
+    },
     "EchoPluginSpectrumSubscription": {
       "enums": [],
       "methods": [
@@ -3549,6 +3758,12 @@
           "name": "paused",
           "type": "bool",
           "writable": true
+        },
+        {
+          "constant": true,
+          "name": "currentFrame",
+          "type": "EchoMusic::EchoPluginSpectrumFrame*",
+          "writable": false
         },
         {
           "constant": false,
@@ -5257,6 +5472,115 @@
         }
       ]
     },
+    "FloatTexture": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "graphicsChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "activeChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "contentChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "renderingChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "errorChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        },
+        {
+          "name": "upload",
+          "parameters": ["int", "int", "QJSValue"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "uploadPacked",
+          "parameters": ["int", "int", "QString"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "clear",
+          "parameters": [],
+          "returnType": "void",
+          "signal": false
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "graphics",
+          "type": "EchoMusic::EchoPluginGraphics*",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "active",
+          "type": "bool",
+          "writable": true
+        },
+        {
+          "constant": false,
+          "name": "textureWidth",
+          "type": "int",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "textureHeight",
+          "type": "int",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "sourceBytes",
+          "type": "qlonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "cacheBytes",
+          "type": "qlonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "ready",
+          "type": "bool",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "textureUploads",
+          "type": "qulonglong",
+          "writable": false
+        },
+        {
+          "constant": false,
+          "name": "errorString",
+          "type": "QString",
+          "writable": false
+        }
+      ]
+    },
     "GlyphRun": {
       "enums": [],
       "methods": [
@@ -5575,6 +5899,25 @@
           "name": "height",
           "type": "int",
           "writable": false
+        }
+      ]
+    },
+    "NativeShaderEffect": {
+      "enums": [],
+      "methods": [
+        {
+          "name": "compositionChanged",
+          "parameters": [],
+          "returnType": "void",
+          "signal": true
+        }
+      ],
+      "properties": [
+        {
+          "constant": false,
+          "name": "composition",
+          "type": "QString",
+          "writable": true
         }
       ]
     },

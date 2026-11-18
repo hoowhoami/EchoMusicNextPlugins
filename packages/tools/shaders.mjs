@@ -27,8 +27,8 @@ export async function bakeShaders(
   contract,
 ) {
   if (definitions === undefined) return;
-  if (!Array.isArray(definitions) || definitions.length > 64)
-    throw new Error('shaders must contain at most 64 entries');
+  if (!Array.isArray(definitions) || definitions.length > 256)
+    throw new Error('shaders must contain at most 256 entries');
   const compiler = await compilerFor(contract);
   const outputs = new Set();
   for (const definition of definitions) {

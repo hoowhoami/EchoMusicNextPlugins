@@ -186,9 +186,9 @@ export function volumes(c: EchoPluginContext, surface: EchoGpuSurface, pipeline:
   c.graphics.createTexture({ dimension: '3d', width: 4, height: 4, usage: ['sampled'] });
   // @ts-expect-error Cube storage uses per-face rendering or copies from a storage-capable texture.
   c.graphics.createTexture({ dimension: 'cube', width: 4, height: 4, usage: ['storage'] });
-  // @ts-expect-error Cube face count is fixed at six.
   c.graphics.createTexture({
     dimension: 'cube',
+    // @ts-expect-error Cube face count is fixed at six.
     layers: 6,
     width: 4,
     height: 4,

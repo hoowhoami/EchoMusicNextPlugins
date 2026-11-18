@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/EchoMusic-org/folia-style",
+  "revision": "7506e1f3a054e1c4739c1fde09cfc8fa80e3000d",
+  "inputs": {
+    "folia/runtime/dual-theme.js": "2e3aed93f2df654b5e1ff98da1bd6e465fe39dd835fa6d43d0f5f0d32e4c13dd",
+    "folia/runtime/theme-color-math.js": "d0edb5725690a1c6ca55aef9757b1ea938615bf3eb3599a326dd490d13ebc282"
+  },
+  "adaptations": [
+    "Pure math/sanitizer/generator extracted; no browser, storage or DOM runtime.",
+    "Native public sampleImage supplies the original 50x50 RGBA pixel input.",
+    "Persistence stays in the skin configuration; no host theme preference is changed.",
+    "String padStart replaced with equivalent two-digit hex expression."
+  ]
+}

@@ -59,7 +59,12 @@
       "dependentSchemas": {
         "platforms": {
           "properties": {
-            "features": { "type": "array", "contains": { "const": "manifest.platforms" } }
+            "features": {
+              "type": "array",
+              "contains": {
+                "const": "manifest.platforms"
+              }
+            }
           }
         }
       },
@@ -78,7 +83,9 @@
           "minItems": 1,
           "maxItems": 3,
           "uniqueItems": true,
-          "items": { "enum": ["windows", "macos", "linux"] }
+          "items": {
+            "enum": ["windows", "macos", "linux"]
+          }
         }
       }
     },
@@ -250,6 +257,33 @@
           "pattern": "^[a-f0-9]{64}$"
         }
       }
+    },
+    "graphicsLimits": {
+      "type": "object",
+      "required": ["logicalBytes", "nativeBytes", "renderTargetBytes", "maxCommands"],
+      "additionalProperties": false,
+      "properties": {
+        "logicalBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 268435456
+        },
+        "nativeBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 536870912
+        },
+        "renderTargetBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 805306368
+        },
+        "maxCommands": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 128
+        }
+      }
     }
   },
   "$defs": {
@@ -263,6 +297,29 @@
       "items": {
         "type": "string",
         "minLength": 1
+      }
+    }
+  },
+  "dependentSchemas": {
+    "graphicsLimits": {
+      "properties": {
+        "requires": {
+          "type": "object",
+          "properties": {
+            "features": {
+              "type": "array",
+              "contains": {
+                "const": "graphics.limits"
+              }
+            }
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "contains": {
+            "const": "graphics"
+          }
+        }
       }
     }
   }

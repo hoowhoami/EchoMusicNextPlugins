@@ -50,3 +50,30 @@ test:host重建包、比对真实契约，隔离smoke加载并排空；runtime-t
 独立作者可用 `echo-plugin test-host dist/plugin-1.0.0.echomod --host /absolute/echomusicnext` 验证实际包，不需要官方源的本地构建清单。SDK 导出 `PluginSourceEntry` 和 `PluginSourceIndex` 索引类型。
 
 备份由宿主按存储归属自动收集：插件 KV、全部命名 SQLite 和持久私有文件均使用同一快照链路，无需提供备份文件名名单；缓存与外部授权目录不自动进入归档。provider 继续负责归档的 save/list/load/remove，使用宿主生成的归档字节；恢复确认、取消及停用回收仍由宿主处理。
+
+## 独立 QML 模块的构建
+
+当 QML 或 WorkerScript 直接导入 `.mjs` 时，在 `plugin.config.json` 用 `"modules": ["qml"]` 选择需要编译的资产目录，也可指定单个 `.mjs` 文件（最多32个相对路径）。工具将这些模块转换为包要求的 ES2016，保留相对导入和法定许可注释，不打包为入口、不修改引擎原型，也不改写源文件；其余资产原样复制。路径和符号链接沿用包内检查。语法/导入或shader失败会保留上一次完整产物。现代API如Intl或Unicode属性正则仍须在作者侧转换或使用宿主接口，语法转换不会补齐运行时能力。
+
+QML `ImageDropArea` (`EchoMusic.PluginSdk`, feature `assets.imageDrop`) accepts
+native local image drops into the existing managed asset collection:
+
+```qml
+ImageDropArea {
+    anchors.fill: parent
+    assets: plugin.assets
+    collection: "images"
+    maxCount: 16
+    archiveJsonPaths: ["meta.json"]
+    onImportStarted: operation => handleImport(operation)
+    onArchiveDropped: archive => inspectArchive(archive)
+}
+```
+
+`containsDrag` is read-only. `active`, enabled state, actual presentation and
+asset scope lifetime gate acceptance; hiding or retiring the owner clears drag
+state. A single ZIP uses the same bounded archive lease as `openImageArchive`.
+Image batches retain partial import results and the 0–16 remaining capacity.
+There is no method for injecting arbitrary file paths.
+
+A plugin build can declare at most 256 shader stages. Each source and each package-contained include remains limited to 1 MiB, with at most 16 nested includes. Outputs remain unique and generated atomically through the Qt version matched compiler.

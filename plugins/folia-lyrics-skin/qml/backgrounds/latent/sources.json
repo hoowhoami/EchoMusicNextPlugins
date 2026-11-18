@@ -1,0 +1,18 @@
+{
+  "revision": "a8da4437cf19723555bd75e4685ca20815fe5b82",
+  "paper": "0.0.80",
+  "sha256": {
+    "src/components/visualizer/backgrounds/latent/LatentBackground.tsx": "1866c2e97659366c41bbf15f504de6388fd0e2fb5e4268d450372aa8bc09e4ef",
+    "src/utils/colorPalette.ts": "c6b6324d1f09f007531a89513c6be7727378204a1bff6926b6c335d86cb67888",
+    "src/types.ts": "27e9dafb319bbdcf6b518cc7aaae06ef932f54c315742fa1c82cb612b79b8625",
+    "src/components/visualizer/backgrounds/latent/tuning.ts": "dc94eea678c0a5ad916bdcfff8a23e2905b84cbf799de92b397d2ddefa387fe5",
+    "src/utils/colorExtractor.ts": "0d0a89b78ca0fbd974bc40546d45583c860d12f398d3f31eb6b4dc477638b088",
+    "node_modules/@paper-design/shaders/dist/vertex-shader.js": "cd9856f2e071e0c18794dd9c5a1663c11d72cbc68b0403b555d190f412b3e8db",
+    "node_modules/@paper-design/shaders/dist/shader-utils.js": "26ba187ff4b02715bd98d8ff409c508efcc3881a1f45ceeb08d00b71b145eb2e",
+    "node_modules/@paper-design/shaders/dist/shader-sizing.js": "db0eb176c9a66c03653770a542adcf4cf8efc07b0929d9e257f49c05d82013fe",
+    "node_modules/@paper-design/shaders-react/dist/shaders/dithering.js": "27ad0dfd06f20a624a14e4fc2bf965cd1d671451f8a892b9a25c4ef64047b895",
+    "node_modules/@paper-design/shaders/package.json": "7a18cc68852f6a433da6e8168ef7e07b28d57405ba44c8ec49bd56df288646ff",
+    "node_modules/@paper-design/shaders/dist/shaders/dithering.js": "affcb28b90283e736d2ce347fb562ce180cc9a66ad78db56b2fa3fea537943cc",
+    "node_modules/@paper-design/shaders/dist/shaders/mesh-gradient.js": "474a8232726f5d925a86878af6f73c2de153eb6b0f482be88e5fe7d9f66461e1"
+  }
+}

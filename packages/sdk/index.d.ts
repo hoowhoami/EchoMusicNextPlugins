@@ -26,6 +26,13 @@ declare module 'echo:plugin-sdk' {
       platforms?: PluginPlatform[];
     };
     capabilities: string[];
+    /** Explicit per-activation limits. Requires graphics and graphics.limits. */
+    graphicsLimits?: {
+      logicalBytes: number;
+      nativeBytes: number;
+      renderTargetBytes: number;
+      maxCommands: number;
+    };
     contexts: ['main'];
     description?: string;
     author?: string;
@@ -1464,6 +1471,8 @@ declare module 'echo:plugin-sdk' {
     maxFrequency?: number;
     scale?: 'log' | 'linear' | 'mel';
     includeWaveform?: boolean;
+    /** Linear scale. Up to 32 half-open intervals, in Hz. */
+    rangesHz?: [number, number][];
   }
   export interface SpectrumFrame {
     source: 'player' | 'silence' | 'unavailable';
@@ -1486,9 +1495,29 @@ declare module 'echo:plugin-sdk' {
     reason: string;
     subscriberCount: number;
   }
+  export interface EchoPluginSpectrumFrame {
+    readonly state: string;
+    readonly source: string;
+    readonly sequence: number;
+    readonly timestamp: number;
+    readonly timePos: number;
+    readonly sampleRate: number;
+    readonly fftSize: number;
+    readonly minFrequency: number;
+    readonly maxFrequency: number;
+    readonly peak: number;
+    readonly rms: number;
+    readonly binCount: number;
+    readonly waveformCount: number;
+    readonly bandMeans: number[];
+    readonly changed: QtSignal;
+    copyBins(): Float64Array;
+    copyWaveform(): Float64Array;
+  }
   export interface EchoPluginSpectrumSubscription {
     readonly active: boolean;
     paused: boolean;
+    readonly currentFrame: EchoPluginSpectrumFrame;
     readonly frame: SpectrumFrame | null;
     readonly status: SpectrumStatus;
     readonly activeChanged: QtSignal;
@@ -1523,7 +1552,17 @@ declare module 'echo:plugin-sdk' {
     /** QRhi mip chain based on width/height. Volume depth shrinks at each level. */
     mipmaps?: boolean;
   }
+  /** Base 2D depth attachment. No CPU data, transfers, storage or direct readback. */
+  export interface GpuDepthTextureDefinition {
+    width: number;
+    height: number;
+    format: 'depth32f';
+    dimension?: '2d';
+    mipmaps?: false;
+    usage: readonly ('sampled' | 'render-target')[];
+  }
   export type GpuTextureDefinition =
+    | GpuDepthTextureDefinition
     | (GpuTextureExtent &
         (
           | { dimension?: '2d'; layers?: never; depth?: never }
@@ -1556,12 +1595,24 @@ declare module 'echo:plugin-sdk' {
     vertexShader: string;
     fragmentShader: string;
     topology?: 'triangles' | 'triangle-strip' | 'lines' | 'line-strip' | 'points';
-    blend?: 'none' | 'alpha' | 'add';
+    blend?: 'none' | 'alpha' | 'add' | 'max' | 'exclusion';
     /** One entry per color target; distinct modes require independentBlend. */
-    blends?: readonly ('none' | 'alpha' | 'add')[];
+    blends?: readonly ('none' | 'alpha' | 'add' | 'max' | 'exclusion')[];
     cull?: 'none' | 'back' | 'front';
     depthTest?: boolean;
     depthWrite?: boolean;
+    /** Comparison used when depthTest is true; default less. */
+    depthCompare?:
+      | 'less'
+      | 'less-equal'
+      | 'greater'
+      | 'greater-equal'
+      | 'equal'
+      | 'not-equal'
+      | 'always'
+      | 'never';
+    /** Front-face winding before culling; default ccw. */
+    frontFace?: 'ccw' | 'cw';
     vertexLayout?: GpuVertexLayout;
   }
   export type GpuVertexFormat =
@@ -1661,6 +1712,10 @@ declare module 'echo:plugin-sdk' {
     target?: string;
     /** Mutually exclusive with target; distinct textures with matching mip extents. */
     colorTargets?: readonly { texture: string; level?: number; layer?: number }[];
+    /** Explicit depth32f base 2D attachment; offscreen only. */
+    depthTarget?: { texture: string };
+    /** Offscreen samples, subject to sampleCounts and depthResolve. */
+    samples?: 1 | 2 | 4 | 8;
     loadOp?: 'clear' | 'load';
     /** Physical framebuffer pixels, top-left origin. */
     viewport?: readonly [number, number, number, number];
@@ -1738,6 +1793,9 @@ declare module 'echo:plugin-sdk' {
     readonly integerAttributes?: boolean;
     readonly halfAttributes?: boolean;
     readonly compute: boolean;
+    readonly depthTextures?: boolean;
+    readonly depthResolve?: boolean;
+    readonly sampleCounts?: readonly number[];
     readonly multipleRenderTargets?: boolean;
     readonly independentBlend?: boolean;
     readonly renderMipmaps?: boolean;
@@ -1798,6 +1856,9 @@ declare module 'echo:plugin-sdk' {
   }
   /** Handles are scoped to this presentation, account and activation. */
   export interface EchoPluginGraphics {
+    /** Scope permits graphics operations; independent of device/texture readiness. */
+    readonly active: boolean;
+    readonly activeChanged: QtSignal;
     shareResource(resource: EchoGpuResource, access?: 'read' | 'read-write'): string;
     importResource(token: string, access?: 'read' | 'read-write'): EchoGpuResource | null;
     revokeSharing(resource: EchoGpuResource): boolean;
@@ -1822,6 +1883,49 @@ declare module 'echo:plugin-sdk' {
     readonly width: number;
     readonly height: number;
     readonly visible: boolean;
+  }
+  /** QML ImageDropArea: native user drops only, routed to scoped managed asset imports. */
+  export interface EchoPluginImageDropArea extends QtQuickItem {
+    assets: EchoPluginAssets | null;
+    collection: string;
+    maxCount: number;
+    archiveJsonPaths: string[];
+    active: boolean;
+    readonly containsDrag: boolean;
+    readonly assetsChanged: QtSignal;
+    readonly configurationChanged: QtSignal;
+    readonly activeChanged: QtSignal;
+    readonly containsDragChanged: QtSignal;
+    readonly importStarted: QtSignal<[operation: EchoPluginOperation]>;
+    readonly archiveDropped: QtSignal<[archive: EchoPluginAssetArchive]>;
+  }
+  /** Read-only float32 RGBA data sampled by Qt ShaderEffect; requires graphics. */
+  /** Raw RGBA32F bytes; typed arrays must pass their exact ArrayBuffer slice. */
+  export type FloatTextureData = ArrayBuffer;
+  export interface FloatTexture extends QtQuickItem {
+    graphics: EchoPluginGraphics | null;
+    active: boolean;
+    readonly textureWidth: number;
+    readonly textureHeight: number;
+    readonly sourceBytes: number;
+    readonly cacheBytes: number;
+    /** A usable uploaded texture exists; queued updates may still await presentation. */
+    readonly ready: boolean;
+    readonly textureUploads: number;
+    readonly errorString: string;
+    upload(width: number, height: number, arrayBuffer: FloatTextureData): boolean;
+    uploadPacked(width: number, height: number, utf16Words: string): boolean;
+    clear(): void;
+    readonly graphicsChanged: QtSignal;
+    readonly activeChanged: QtSignal;
+    readonly contentChanged: QtSignal;
+    readonly renderingChanged: QtSignal;
+    readonly errorChanged: QtSignal;
+  }
+  /** ShaderEffect bindings/mesh with explicit premultiplied scene-graph blending. */
+  export interface NativeShaderEffect extends QtQuickItem {
+    composition: 'source-over' | 'additive' | 'screen' | 'max' | 'exclusion';
+    readonly compositionChanged: QtSignal;
   }
   /** Full native shaping context; positions and ranges use UTF-16 source indices. */
   export interface GlyphRunDefinition {

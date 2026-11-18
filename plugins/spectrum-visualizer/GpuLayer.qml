@@ -22,6 +22,8 @@ Item {
     property EchoGpuResource computePipeline: null
     property var parameterData: new Float32Array(544)
     property var waveData: new Float32Array(8192)
+    property var uploadedWaveform: null
+    readonly property string samplingKey: JSON.stringify([settings.fps, settings.binCount, settings.fftSize, settings.smoothing, settings.scale, settings.mode])
     property bool settled: true
     property bool haveSignal: false
     property string previousSamplingKey: ""
@@ -67,12 +69,12 @@ Item {
             failure = gpu.errorMessage;
             return;
         }
+        gpu.writeTexture(waveform, waveData.buffer);
         repaint();
     }
     function repaint(): void {
         if (!parameters || !waveform || !profile || !sampler || !renderPipeline || !computePipeline || !live)
             return;
-        const samplingKey = JSON.stringify([settings.fps, settings.binCount, settings.fftSize, settings.smoothing, settings.scale, settings.mode]);
         if (samplingKey !== previousSamplingKey) {
             plugin.graphics.writeTexture(profile, new ArrayBuffer(4096 * 8));
             previousSamplingKey = samplingKey;
@@ -105,16 +107,19 @@ Item {
         }
         p[29] = frame?.rms || 0;
         p[31] = Math.max(0.01, Number(settings.opacity || 56) / 100);
-        for (let i = 0; i < Math.min(512, bins.length); i++) {
-            p[32 + i] = bins[i];
-            if (bins[i] > 0)
-                haveSignal = true;
+        p.set(bins.length > 512 ? bins.slice(0, 512) : bins, 32);
+        if (!haveSignal && bins.some(value => value > 0))
+            haveSignal = true;
+        // The compute shader bounds every fetch by the current sample count.
+        // Resizing or recoloring can redraw the same frame without another upload.
+        if (p[3] > 0 && wave !== uploadedWaveform) {
+            waveData.set(wave.length > waveData.length ? wave.slice(0, waveData.length) : wave);
+            plugin.graphics.writeTexture(waveform, waveData.buffer);
+            uploadedWaveform = wave;
+        } else if (!p[3]) {
+            uploadedWaveform = null;
         }
-        waveData.fill(0);
-        for (let i = 0; i < p[3]; i++)
-            waveData[i] = wave[i];
         plugin.graphics.writeBuffer(parameters, p.buffer);
-        plugin.graphics.writeTexture(waveform, waveData.buffer);
         const uniforms = [
             {
                 binding: 0,
