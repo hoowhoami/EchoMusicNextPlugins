@@ -17,6 +17,7 @@
       "lifecycle",
       "ui.lyricsPage",
       "ui.state",
+      "ui.parts",
       "ui.dialogs",
       "ui.dialogs.height",
       "ui.presentationClosing",
@@ -66,6 +67,6 @@
   },
   "distribution": {
     "artifact": "artifacts/folia-lyrics-skin-1.0.1.echomod",
-    "sha256": "e26ef8f6a7ebc576cb69e23c38638c113838bec3f7f92e9c028015e78484129e"
+    "sha256": "d1321bbd60dc9abe3ab458caa89361724bff186b1b60a034135ac08daf2300e9"
   }
 }

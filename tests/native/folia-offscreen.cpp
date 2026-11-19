@@ -1,6 +1,7 @@
 // No Cocoa windows or activation calls. Verify real Metal pixels before using
 // this harness for any plugin cost measurement.
 #include "FloatTexture.h"
+#include "EchoGpuSurface.h"
 #include "folia-benchmark-support.h"
 #include <QAbstractAnimation>
 #include <QGuiApplication>
@@ -30,6 +31,7 @@ private slots:
     void floatTextureCodecPixels();
     void virtualPresentationState();
     void installedPlaybackPage();
+    void staticGlyphAtlasConsumerRecovery();
 };
 
 void FoliaOffscreenTest::metalTexturePixels()
@@ -244,6 +246,130 @@ public:
         }
     }
 };
+void FoliaOffscreenTest::staticGlyphAtlasConsumerRecovery()
+{
+    const auto shaders = qEnvironmentVariable("FOLIA_GPU_FIXTURE_SHADERS");
+    if (shaders.isEmpty())
+        QSKIP("Set FOLIA_GPU_FIXTURE_SHADERS to the host's built GPU fixture shaders");
+    QTest::failOnWarning(QRegularExpression("No QSGTexture provided"));
+    Host host;
+    const auto directory =
+        package(host.temporary.path(), "export function activate(c) {}",
+                {"lifecycle", "operations", "graphics.rhi", "graphics.glyphAtlases", "text.glyphs"},
+                {"graphics"});
+    for (const auto *name : {"fixture.vert", "glyph.frag"}) {
+        QFile file(shaders + "/" + name + ".qsb");
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        write(directory + "/" + name + ".qsb", file.readAll());
+    }
+    host.runtime.importDirectory(directory);
+    QVERIFY(awaitEvent(
+        [&] { return host.runtime.state(host.installation()) == PluginRuntime::Active; }, 5000));
+    auto *scope = host.runtime.context(host.installation());
+    auto *gpu = scope->graphics();
+    QVERIFY(gpu);
+    OffscreenSession session;
+    QVERIFY(session.initialize({360, 144}, 1));
+    host.mainWindow = &session.window;
+    GlyphRun glyph(session.window.contentItem());
+    glyph.setProperty("plugin", QVariant::fromValue(scope));
+    glyph.setSize({180, 100});
+    glyph.setPosition({150, 0});
+    glyph.setRuns(
+        {QVariantMap{{"key", "borrowed"}, {"text", "Atlas"}, {"size", 32}, {"maxBlur", 0}}});
+    QVERIFY(glyph.errorString().isEmpty());
+    EchoGpuSurface surface;
+    surface.setParentItem(session.window.contentItem());
+    surface.setSize({96, 64});
+    surface.setGraphics(gpu);
+    auto *atlas = surface.importGlyphAtlas(&glyph);
+    QVERIFY(atlas);
+    QVERIFY(awaitEvent([&] { return atlas->ready() && glyph.renderBatches() > 0; }, 10000));
+    auto *pipeline = gpu->createRenderPipeline(
+        {{"vertexShader", "fixture.vert.qsb"},
+         {"fragmentShader", "glyph.frag.qsb"},
+         {"blend", "none"},
+         {"topology", "triangle-strip"},
+         {"vertexLayout",
+          QVariantMap{
+              {"stride", 8},
+              {"attributes",
+               QVariantList{QVariantMap{{"location", 0}, {"offset", 0}, {"format", "float2"}}}}}}});
+    auto *vertices = gpu->createBuffer({{"size", 32}, {"usage", QStringList{"vertex"}}},
+                                       host.engine.evaluate("[-1,1,1,1,-1,-1,1,-1]"));
+    auto *sampler = gpu->createSampler();
+    QVERIFY(pipeline && vertices && sampler);
+    const auto draw = [&]() {
+        const auto level = atlas->fragments().first().toMap()["levels"].toList().first().toMap();
+        auto values = level["uv"].toList();
+        values.append(1.);
+        values.append(0.);
+        values.append(0.);
+        values.append(0.);
+        auto *uniform = gpu->createBuffer({{"size", 32}, {"usage", QStringList{"uniform"}}},
+                                          host.engine.toScriptValue(values));
+        auto *page = qobject_cast<EchoGpuResource *>(
+            atlas->pages().value(level["page"].toInt()).value<QObject *>());
+        if (!uniform || !page)
+            return QByteArray();
+        const bool accepted = surface.submit(
+            {{"passes",
+              QVariantList{QVariantMap{
+                  {"pipeline", pipeline->id()},
+                  {"bindings",
+                   QVariantList{
+                       QVariantMap{{"binding", 0}, {"kind", "uniform"}, {"resource", "frame"}},
+                       QVariantMap{
+                           {"binding", 1}, {"kind", "uniform"}, {"resource", uniform->id()}},
+                       QVariantMap{{"binding", 2},
+                                   {"kind", "texture"},
+                                   {"resource", page->id()},
+                                   {"sampler", sampler->id()}}}},
+                  {"draws",
+                   QVariantList{QVariantMap{{"count", 4}, {"vertexBuffer", vertices->id()}}}}}}}});
+        if (!accepted) {
+            uniform->dispose();
+            return QByteArray();
+        }
+        auto *operation = surface.readback();
+        const auto hold = host.engine.newQObject(operation);
+        if (!awaitEvent([&] { return operation->finished(); }, 10000) ||
+            operation->state() != EchoPluginOperation::Succeeded) {
+            uniform->dispose();
+            return QByteArray();
+        }
+        const auto pixels = operation->result().toMap()["data"].toByteArray();
+        uniform->dispose();
+        return pixels;
+    };
+    const auto reference = draw();
+    QVERIFY(!reference.isEmpty());
+    int ink = 0, clear = 0;
+    for (int i = 0; i < reference.size(); i += 4) {
+        ink += quint8(reference[i]) > 32;
+        clear += reference[i + 3] == 0;
+    }
+    QVERIFY(ink > 15 && clear > 15);
+    for (int cycle = 0; cycle < 3; ++cycle) {
+        const auto generation = atlas->generation();
+        QPointer<EchoGpuResource> oldPage =
+            qobject_cast<EchoGpuResource *>(atlas->pages().first().value<QObject *>());
+        QVERIFY(QMetaObject::invokeMethod(&session.window, "sceneGraphAboutToStop",
+                                          Qt::DirectConnection));
+        QVERIFY(!atlas->ready());
+        QVERIFY(
+            awaitEvent([&] { return atlas->ready() && atlas->generation() > generation; }, 10000));
+        QVERIFY(!oldPage || !oldPage->active());
+        QCOMPARE(draw(), reference);
+    }
+    surface.setPaused(true);
+    QVERIFY(awaitEvent([&] { return surface.drained(); }, 10000));
+    QVERIFY(!atlas->ready());
+    QVERIFY(host.runtime.setEnabled(scope->installationId(), false));
+    QVERIFY(awaitEvent([&] { return !atlas->active(); }, 10000));
+    QVERIFY(!session.window.handle());
+}
+
 void FoliaOffscreenTest::floatTextureCodecPixels()
 {
     if (!qEnvironmentVariableIsSet("FOLIA_FLOAT_CODEC_SHADER"))
@@ -517,6 +643,56 @@ Item {
     }
     QVERIFY(initialReady);
     const auto preparationMs = preparation.elapsed();
+    if (qEnvironmentVariableIsSet("FOLIA_TEST_GLYPH_RESTART")) {
+        QTest::failOnWarning(QRegularExpression("No QSGTexture provided"));
+        auto *toggle = visual(window->contentItem(), "foliaCapsulePlayToggle");
+        QVERIFY(toggle);
+        for (int cycle = 0; cycle < 12; ++cycle) {
+            QVERIFY(QMetaObject::invokeMethod(toggle, "clicked"));
+            runEventLoop(70);
+            session.frame();
+        }
+        host.playback.pause();
+        QVERIFY(awaitEvent([&] { return !host.playback.playing(); }, 5000));
+        host.theme.setMotionEnabled(false);
+        // Finish the transport color transition already started by pause.
+        runEventLoop(750);
+        session.frame();
+        const auto capture = [&] {
+            QRhiReadbackResult pixels;
+            session.frame(&pixels);
+            return QImage(reinterpret_cast<const uchar *>(pixels.data.constData()),
+                          pixels.pixelSize.width(), pixels.pixelSize.height(),
+                          QImage::Format_RGBA8888)
+                .copy();
+        };
+        const auto reference = capture();
+        QVERIFY(!reference.isNull());
+        const auto folder = qEnvironmentVariable("FOLIA_CAPTURE_DIR");
+        QDir().mkpath(folder);
+        QVERIFY(reference.save(folder + "/before-restart.png"));
+        for (int cycle = 0; cycle < 3; ++cycle) {
+            QVERIFY(
+                QMetaObject::invokeMethod(window, "sceneGraphAboutToStop", Qt::DirectConnection));
+            runEventLoop(20);
+            const auto restored = capture();
+            QVERIFY(restored.save(folder + QString("/restart-%1.png").arg(cycle)));
+            QCOMPARE(restored, reference);
+        }
+        QVERIFY(QMetaObject::invokeMethod(root.get(), "closePlayback"));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return !visual(window->contentItem(), "foliaPlaybackPage");
+            },
+            10000));
+        QCOMPARE(presentationResources(window)["floatTextureCount"].toInt(), 0);
+        QCOMPARE(presentationResources(window)["glyphRunCount"].toInt(), 0);
+        QVERIFY(QMetaObject::invokeMethod(root.get(), "openPlayback"));
+        QVERIFY(awaitReadyFrame(30000));
+        QVERIFY(!window->handle());
+        return;
+    }
     if (qEnvironmentVariableIsSet("FOLIA_TEST_UI_ISSUES")) {
         const auto folder = qEnvironmentVariable("FOLIA_CAPTURE_DIR");
         QDir().mkpath(folder);
@@ -704,8 +880,35 @@ Item {
             10000));
         auto *skinPicker = visual(folia, "foliaSkinPicker");
         report["skinPickerAvailable"] = skinPicker != nullptr;
+        auto *sourceAction = visual(window->contentItem(), "lyricSourceAction");
+        QVERIFY(sourceAction && skinPicker);
+        const auto hostRight = sourceAction->mapRectToScene(sourceAction->boundingRect()).right();
+        for (auto *action : {picker, skinPicker}) {
+            QCOMPARE(action->size(), sourceAction->size());
+            QCOMPARE(action->property("glyphSize"), sourceAction->property("glyphSize"));
+            QVERIFY(qAbs(action->mapRectToScene(action->boundingRect()).right() - hostRight) < .01);
+            auto *colors = nativeObject(action->property("colors"));
+            auto *hostColors = nativeObject(sourceAction->property("colors"));
+            QVERIFY(colors && hostColors);
+            for (const auto *field : {"text", "tone", "mutedSurface", "hover", "neutralPressed"})
+                QCOMPARE(colors->property(field), hostColors->property(field));
+        }
+        QTest::mouseMove(
+            window,
+            sourceAction->mapToScene(QPointF(sourceAction->width() / 2, sourceAction->height() / 2))
+                .toPoint());
+        runEventLoop(250);
+        QRhiReadbackResult toolsPixels;
+        session.frame(&toolsPixels);
+        QImage toolsImage(reinterpret_cast<const uchar *>(toolsPixels.data.constData()),
+                          toolsPixels.pixelSize.width(), toolsPixels.pixelSize.height(),
+                          QImage::Format_RGBA8888);
+        QVERIFY(toolsImage.copy().save(folder + "/tools.png"));
+
         if (skinPicker) {
-            const auto pickPoint = skinPicker->mapToScene(QPointF(20, 20)).toPoint();
+            const auto pickPoint =
+                skinPicker->mapToScene(QPointF(skinPicker->width() / 2, skinPicker->height() / 2))
+                    .toPoint();
             QTest::mouseMove(window, pickPoint);
             runEventLoop(100);
             session.frame();
@@ -845,7 +1048,7 @@ Item {
         auto *capsule = visual(window->contentItem(), "foliaPlayerCapsule");
         auto *shared = visual(window->contentItem(), "foliaSharedCapsule");
         QVERIFY(picker && capsule && shared);
-        QCOMPARE(picker->size(), QSizeF(40, 40));
+        QCOMPARE(picker->size(), QSizeF(36, 36));
         auto *scene = visual(window->contentItem(), "foliaPresentationScene");
         QVERIFY(scene);
         QCOMPARE(nativeObject(shared->property("backdropSource")), static_cast<QObject *>(scene));

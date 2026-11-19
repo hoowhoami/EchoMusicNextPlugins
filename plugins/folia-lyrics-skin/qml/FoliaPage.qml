@@ -55,6 +55,10 @@ Item {
     property bool timelineOpen: false
     property string commandError: ""
     property bool _completed: false
+    property EchoUiPartRef hostToolsPart: null
+    readonly property EchoUiPartPalette toolsColors: EchoUiPartPalette {
+        part: root.hostToolsPart
+    }
     readonly property string presentationError: presentationAssets.errorString || page.player.lyricsInfo.errorMessage || (dynamicPresentation ? dynamicPresentation.errorString : "") || (backgroundPresentation ? backgroundPresentation.errorString : "") || harmonyTimeline.errorString || harmonyOverlay.errorString
     clip: true
 
@@ -178,6 +182,11 @@ Item {
 
     Component.onCompleted: {
         _completed = true;
+        hostToolsPart = plugin.ui.parts.query({
+            key: "lyricSourceAction",
+            surface: "playback",
+            owner: "@host"
+        });
         schedulePositioning();
     }
     Component.onDestruction: {
@@ -328,34 +337,42 @@ Item {
             font: root.plugin.fonts.build([], 14, 500)
         }
     }
-    EchoIconButton {
+    EchoSoftButton {
         objectName: "foliaSkinPicker"
         anchors.right: parent.right
         anchors.bottom: stylePicker.top
-        anchors.rightMargin: 24
+        anchors.rightMargin: 16
         anchors.bottomMargin: 8
-        width: 40
-        height: 40
+        width: 36
+        height: 36
         glyph: "shirt"
         text: qsTr("换肤")
-        foreground: root.appearance.text
+        colors: root.toolsColors
+        glyphSize: 14
+        leftPadding: 8
+        rightPadding: 8
+        display: AbstractButton.IconOnly
         opacity: chrome.hidden ? 0 : 1
         visible: opacity > 0
         enabled: root.presentationActive
         onClicked: root.watchOperation(root.page.command("skins", {}))
     }
-    EchoIconButton {
+    EchoSoftButton {
         id: stylePicker
         objectName: "foliaStylePicker"
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        anchors.rightMargin: 24
+        anchors.rightMargin: 16
         anchors.bottomMargin: 24
-        width: 40
-        height: 40
+        width: 36
+        height: 36
         glyph: "settings"
         text: qsTr("歌词样式设置")
-        foreground: root.appearance.text
+        colors: root.toolsColors
+        glyphSize: 14
+        leftPadding: 8
+        rightPadding: 8
+        display: AbstractButton.IconOnly
         opacity: chrome.hidden ? 0 : 1
         visible: opacity > 0
         enabled: root.configuration.active && root.plugin.ui.state.foliaStudioOpen !== true
