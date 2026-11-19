@@ -54,6 +54,24 @@ test('bindings follow actual Qt properties, signals, methods, readonly state and
   await assert.rejects(checkBindings(method), /method differs/);
 });
 
+test('lyric snapshots accept native JS documents without widening other snapshot types', async () => {
+  const contract = await loadContract();
+  assert.equal(
+    contract.types.EchoPluginPlayer.methods.find((value) => value.name === 'lyricSnapshot')
+      .returnType,
+    'QJSValue',
+  );
+  assert.equal(
+    contract.types.EchoPluginLyrics.properties.find((value) => value.name === 'snapshot').type,
+    'QJSValue',
+  );
+  await checkBindings(contract);
+  const wrong = structuredClone(contract);
+  wrong.types.EchoPluginPlayer.properties.find((value) => value.name === 'lyricsInfo').type =
+    'QJSValue';
+  await assert.rejects(checkBindings(wrong), /property type differs.*lyricsInfo/);
+});
+
 test('resource and presentation bindings retain native return types and state', async () => {
   const contract = await loadContract();
   await checkBindings(contract);

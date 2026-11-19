@@ -228,6 +228,7 @@ declare module 'echo:plugin-sdk' {
     readonly currentLine: Partial<LyricLineSnapshot>;
   }
   export interface LyricsSnapshot extends LyricsInfo {
+    /** Shared with legacy lyric reads while the document is unchanged. Copy before editing. */
     readonly lines: LyricLineSnapshot[];
     readonly revision: string;
   }
@@ -1132,6 +1133,7 @@ declare module 'echo:plugin-sdk' {
     | 'copyLyrics'
     | 'seek';
   export interface EchoPluginLyrics {
+    /** Live metadata with context-owned, shared read-only lines. */
     readonly snapshot: LyricSourceSnapshot;
     readonly model: EchoPluginReadModel;
     readonly changed: QtSignal;

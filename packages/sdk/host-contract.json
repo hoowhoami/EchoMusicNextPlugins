@@ -2588,7 +2588,7 @@
         {
           "constant": false,
           "name": "snapshot",
-          "type": "QVariantMap",
+          "type": "QJSValue",
           "writable": false
         },
         {
@@ -2835,7 +2835,7 @@
         {
           "name": "lyricSnapshot",
           "parameters": [],
-          "returnType": "QVariantMap",
+          "returnType": "QJSValue",
           "signal": false
         },
         {

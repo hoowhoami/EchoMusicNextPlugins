@@ -120,7 +120,7 @@ component 是包内 QML，作为歌词视口 foreground 装饰按可见性创建
 
 完整歌词数据按需要读取 player.lyricSnapshot()；视口快照不在每一帧重复拷贝整首歌词。时间与词/glyph 的 startMs 对照时减去 snapshot.offsetMs；run 自带的 timelineMs 已位于原始逐字时间轴。快照只在持有公开引用时生成，字形几何随排版缓存，正常播放不重做 CPU 字体栅格化。
 
-`lyrics.onSnapshot`的`lines`及嵌套数据在文档不变时共享并保持只读，换行只更新当前行等轻量信息；内容、过滤或偏移变化后会换成新的行数组。需要改写内容时先复制，不要在每次回调中深度遍历不变的整首歌词。缓存归订阅租约所有，取消订阅即释放宿主引用；调用者自行保留的旧快照不被后续更新改写。
+`lyrics.onSnapshot`的`lines`及嵌套数据在文档不变时共享并保持只读，换行只更新当前行等轻量信息；内容、过滤或偏移变化后会换成新的行数组。`lyrics.snapshot`和`player.lyricSnapshot()`也复用同一scope内的只读行数组。需要改写内容时先复制，不要在每次回调中深度遍历不变的整首歌词。订阅缓存归各自租约所有，取消订阅即释放；直接读取的缓存归scope，停用即释放。调用者自行保留的旧快照不被后续更新改写。
 
 `autoScroll({host, request, snapshot})` 同步返回 true 表示接管这次滚动，否则宿主按原逻辑跟随。较高 order 先执行；已接管后不再调用较低优先级处理器。通过 host.invoke('scrollTo',{position}) 调整位置；resumeFollow 恢复默认跟随。页面手动浏览时不调用接管处理器，减少动态效果时 request.reducedMotion=true、smooth=false。桌面横排、拼音和竖排均使用实际跟随位置。停用会移除处理器、装饰组件、样式和呈现订阅，下一次跟随回到原生行为。
 

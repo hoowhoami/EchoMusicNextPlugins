@@ -65,6 +65,8 @@ const nativeScriptDefinitions = new Set([
   'SidebarDefinition',
   'SongMenuDefinition',
   'LyricEffectDefinition',
+  'LyricsSnapshot',
+  'LyricSourceSnapshot',
 ]);
 let declaredTypes = new Map();
 function compatibleType(qtType, type, depth = 0) {

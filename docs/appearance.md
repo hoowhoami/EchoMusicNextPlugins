@@ -55,7 +55,7 @@ Item {
 }
 ```
 
-`plugin.player`提供完整只读播放快照、队列和歌词模型，`lyricSnapshot()`按需返回完整歌词，`lyricsInfo`提供当前行、翻译/音译和偏移信息。`page.command(action,args)`调用真实宿主命令，返回operation表示分发结果；网络、播放和收藏的后续状态由同一宿主快照通知。对曲目敏感的操作可携带`revision`，不会作用到已经切换的新歌曲。组件失效、隐藏或账号变化时，旧操作拒绝或取消；曲目敏感操作及显式携带revision的命令也会在切歌后取消。音量、播放模式和浮窗等全局操作不因切歌失效。
+`plugin.player`提供完整只读播放快照、队列和歌词模型。`lyricSnapshot()`按需返回完整歌词，与`ctx.lyrics.snapshot`共享当前文档的只读行数组，切行不重新投影整首歌词；`lyricsInfo`提供当前行、翻译/音译和偏移信息。`page.command(action,args)`调用真实宿主命令，返回operation表示分发结果；网络、播放和收藏的后续状态由同一宿主快照通知。对曲目敏感的操作可携带`revision`，不会作用到已经切换的新歌曲。组件失效、隐藏或账号变化时，旧操作拒绝或取消；曲目敏感操作及显式携带revision的命令也会在切歌后取消。音量、播放模式和浮窗等全局操作不因切歌失效。
 
 `EchoPluginPlaybackControls`、`EchoPluginProgress`和`EchoPluginLyricsView`直接接受typed page，复用共享控件、原生歌词绘制及宿主时间源。封面可直接用`EchoCover`绑定`page.player.coverUrl`。不把PlaybackService、可写模型或裸Window交给作者。
 

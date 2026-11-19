@@ -60,6 +60,8 @@ write 返回真实解析及应用结果，不是文件写入。每个激活/呈�
 
 `ctx.lyrics.snapshot`包含歌词行、revision、来源、manual/loading/errorMessage及原有偏移、转换状态。`model`是宿主同一只读模型。`onSnapshot(id, callback, immediate=true)`返回 scope 注册句柄，合并同一事件循环内的重复状态，dispose 或停用停止回调。避免在观察自己的写入结果时无条件再次写入。
 
+`ctx.lyrics.snapshot`和`player.lyricSnapshot()`在同一scope及歌词文档内共享只读的`lines`与嵌套对象；重复读取仅更新当前行等轻量信息。内容、过滤或偏移变化后返回新的行数组，已持有的旧快照保持原值。需要编辑时先复制。缓存按scope惰性创建，停用时释放；订阅仍各自拥有行数组，dispose释放对应缓存。
+
 `command`接受 `translation`、`romanization`、`conversion`、`offset`、`resetOffset`、`globalOffset`、`offsetStep`、`copyLyrics`、`seek`，参数与 `player.control` 相同，返回可取消操作。
 
 LRC、增强 LRC、KRC 和 YRC 由宿主共享的 C++ 解析器在后台处理；在线、内嵌和插件文档使用同一格式实现。切歌、账号变化、取消或停用后不交付旧解析结果。公开文档与歌词结果结构保持不变。
