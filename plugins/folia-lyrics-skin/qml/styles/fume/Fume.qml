@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import EchoMusic.PluginSdk
-import "api.mjs" as Fume
+import "render-api.mjs" as Fume
 import "frame.mjs" as Frame
 import "background.mjs" as Background
 import "vector.mjs" as Vector
@@ -75,8 +75,8 @@ Item {
             animationIntensity: settings.animationIntensity || "normal",
             wordColors: settings.wordColors || []
         })
-    property var _nextStart: new Map()
-    property var _staticBlocks: new Map()
+    property var _nextStart: Object.create(null)
+    property var _staticBlocks: Object.create(null)
     property var _cameraState: Fume.createFumeCameraState()
     property var _batches: []
     property var _actors: []
@@ -111,7 +111,7 @@ Item {
     function clearPool(): void {
         grow.stop();
         cacheCheck.stop();
-        _staticBlocks.clear();
+        _staticBlocks = Object.create(null);
         const retired = _actors;
         _actors = [];
         _batches = [];
@@ -220,7 +220,10 @@ Item {
             height: height
         }) : null;
         const blocks = article ? article.chronologicalBlocks : [], last = blocks.length ? blocks[blocks.length - 1] : null;
-        _nextStart = new Map(blocks.map((block, i) => [block.id, i + 1 < blocks.length ? blocks[i + 1].line.startTime : null]));
+        const nextStart = Object.create(null);
+        for (let i = 0; i < blocks.length; ++i)
+            nextStart[blocks[i].id] = i + 1 < blocks.length ? blocks[i + 1].line.startTime : null;
+        _nextStart = nextStart;
         _overviewStart = last ? last.line.startTime + Math.max(Hints.getLineRenderEndTime(last.line) - last.line.startTime, 0) * .5 : Infinity;
         _fadeDuration = Fume.resolveFumePassedFadeDuration(blocks.map(block => block.line), tuning.textHoldRatio);
         _background = Background.buildFumeBackgroundScene({
@@ -279,16 +282,17 @@ Item {
             _cameraY = _cameraState.camera.y;
             _cameraScale = _cameraState.camera.scale;
             const commands = [], stamps = [], glow = Fume.resolveFumeGlowBases(theme.animationIntensity, tuning.glowIntensity);
-            const retained = new Map();
+            const retained = Object.create(null);
             let visibleCount = 0;
             if (article && settings.showText !== false) {
-                for (const block of article.blocks) {
+                for (let blockIndex = 0; blockIndex < article.blocks.length; ++blockIndex) {
+                    const block = article.blocks[blockIndex];
                     if (!Fume.isFumeBlockOnScreen(block, _cameraState.camera, viewport))
                         continue;
                     ++visibleCount;
-                    const next = _nextStart.get(block.id);
+                    const next = _nextStart[block.id];
                     const isWaiting = timeSeconds < block.line.startTime;
-                    const previous = _staticBlocks.get(block.id);
+                    const previous = _staticBlocks[block.id];
                     const reuse = previous && (previous.timing.staticState === "waiting" ? isWaiting : timeSeconds >= previous.reusableFrom && (previous.restore === undefined || previous.restore === restore));
                     const recorded = reuse ? previous : Frame.recordBlock(block, {
                         time: timeSeconds,
@@ -311,7 +315,7 @@ Item {
                         if (!reuse)
                             for (const command of recorded.text)
                                 command.retainedPose = true;
-                        retained.set(block.id, recorded);
+                        retained[block.id] = recorded;
                     } else if (recorded.timing.staticState === "passed") {
                         const timing = recorded.timing;
                         const dimmed = timing.effectiveTextHoldStyle === "dimmed";
@@ -321,7 +325,7 @@ Item {
                             if (!reuse)
                                 for (const command of recorded.text)
                                     command.retainedPose = true;
-                            retained.set(block.id, recorded);
+                            retained[block.id] = recorded;
                         }
                     }
                     commands.push.apply(commands, recorded.text);
@@ -355,17 +359,17 @@ Item {
         schedule();
     }
     onSettingsChanged: {
-        _staticBlocks.clear();
+        _staticBlocks = Object.create(null);
         resetBudget();
         _fadeDuration = article ? Fume.resolveFumePassedFadeDuration(article.chronologicalBlocks.map(block => block.line), tuning.textHoldRatio) : Infinity;
         schedule();
     }
     onThemeChanged: {
-        _staticBlocks.clear();
+        _staticBlocks = Object.create(null);
         schedule();
     }
     onBaseFontChanged: {
-        _staticBlocks.clear();
+        _staticBlocks = Object.create(null);
         schedule();
     }
     onPausedChanged: schedule()
@@ -383,7 +387,7 @@ Item {
             draw(1 / 60);
     }
     onDevicePixelRatioChanged: {
-        _staticBlocks.clear();
+        _staticBlocks = Object.create(null);
         schedule();
     }
     onAvatarSeedChanged: rebuildScene()

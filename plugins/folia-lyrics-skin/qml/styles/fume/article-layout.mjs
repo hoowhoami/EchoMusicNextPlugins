@@ -1,4 +1,4 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See fume-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 var __assign = function () {
   __assign =
     Object.assign ||
@@ -323,7 +323,7 @@ function buildArticleLayoutAttempt(
   lineMeasures,
   orderBySeed,
 ) {
-  var paperWidth,
+  let paperWidth,
     viewportHeight,
     columns,
     gap,
@@ -341,432 +341,323 @@ function buildArticleLayoutAttempt(
     blocks,
     columnHeights,
     bodyColumnTieCursor,
-    heroPlacementTieCursor,
-    _loop_1,
-    _b,
-    _c,
-    _d,
-    blockIndex,
-    _e,
-    line,
-    index,
-    e_2_1,
-    articleHeight,
-    metrics,
-    chronologicalBlocks,
-    blockBySourceLineIndex,
-    chronologicalBlocks_1,
-    chronologicalBlocks_1_1,
-    block,
-    firstRenderableStartTime,
-    lastChronologicalRenderEndTime;
-  var e_2, _f, e_3, _g;
-  var _h, _j, _k, _l, _m, _o;
-  return __generator(this, function (_p) {
-    switch (_p.label) {
-      case 0:
-        if (viewport.width <= 0 || viewport.height <= 0 || lines.length === 0) {
-          return [2, null];
-        }
-        ((paperWidth = options.paperWidth),
-          (viewportHeight = options.viewportHeight),
-          (columns = options.columns),
-          (gap = options.gap),
-          (densityScale = options.densityScale),
-          (seedKey = options.seedKey),
-          (_a = options.mode),
-          (mode = _a === void 0 ? 'render' : _a),
-          (timing = options.timing));
-        shouldBuildRenderDetails = mode === 'render';
-        horizontalMargin = Math.max(viewport.width * 0.86, 280);
-        verticalMargin = Math.max(viewport.height * 0.82, 220);
-        columnWidth = (paperWidth - gap * (columns - 1)) / columns;
-        fontFamily = resolveThemeFontStack(layoutTheme);
-        filteredLines = orderBySeed.get(seedKey);
-        if (!filteredLines) {
-          filteredLines = lines
-            .map((line, i) => {
-              const index = Number.isInteger(line.sourceIndex) ? line.sourceIndex : i;
-              return { line, index, order: seeded(seedKey + ':' + index + ':' + line.fullText) };
-            })
-            .filter((entry) => entry.line.fullText.trim().length > 0)
-            .sort((left, right) => left.order - right.order);
-          const hero = chooseFallbackHeroBlockIndex(filteredLines);
-          filteredLines.forEach((entry, i) => {
-            entry.variant = chooseBlockVariant(entry.line, i, filteredLines.length, hero);
-          });
-          orderBySeed.set(seedKey, filteredLines);
-        }
-        blocks = [];
-        columnHeights = Array.from({ length: columns }, function () {
-          return verticalMargin;
-        });
-        bodyColumnTieCursor = 0;
-        heroPlacementTieCursor = 0;
-        _loop_1 = function (blockIndex2, line2, index2) {
-          var variant,
-            heroSpanColumns,
-            heroSpanWidth,
-            blockWidth,
-            paddingX,
-            paddingY,
-            innerWidth,
-            prepareLayoutStart,
-            measures,
-            _q,
-            fontPx,
-            lineCount,
-            lineHeight,
-            blockGap,
-            blockHeight,
-            x,
-            y,
-            placementStart,
-            bestHeight,
-            candidateStarts,
-            startColumn,
-            coveredHeight,
-            columnIndex,
-            targetStart,
-            columnIndex,
-            targetColumn,
-            minHeight,
-            candidateColumns,
-            columnIndex,
-            height,
-            renderDetailsStart,
-            prepared_1,
-            layout,
-            fontSpec_1,
-            _r,
-            graphemes,
-            segmentMetas_1,
-            wordRanges,
-            wordRangeIndexByOffset,
-            colorRangeIndexByOffset,
-            renderLines;
-          return __generator(this, function (_s) {
-            switch (_s.label) {
-              case 0:
-                if (!(blockIndex2 > 0)) return [3, 2];
-                return [
-                  4,
-                  /*yield*/
-                ];
-              case 1:
-                _s.sent();
-                _s.label = 2;
-              case 2:
-                timing && (timing.lines += 1);
-                variant = filteredLines[blockIndex2].variant;
-                heroSpanColumns = variant === 'hero' ? Math.min(columns, columns <= 1 ? 1 : 2) : 1;
-                heroSpanWidth =
-                  heroSpanColumns > 1
-                    ? columnWidth * heroSpanColumns + gap * (heroSpanColumns - 1)
-                    : paperWidth;
-                blockWidth =
-                  variant === 'hero'
-                    ? heroSpanColumns === 1
-                      ? paperWidth
-                      : columns === 2
-                        ? columnWidth * 1.5 + gap * 0.5
-                        : heroSpanWidth
-                    : columnWidth;
-                paddingX = 0;
-                paddingY = 0;
-                innerWidth = Math.max(blockWidth - paddingX * 2, 120);
-                prepareLayoutStart = timing ? nowMs() : 0;
-                measures = lineMeasuresFor(
-                  lineMeasures,
-                  line2.fullText,
-                  variant,
-                  fontFamily,
-                  layoutTheme,
-                );
-                ((_q = chooseSingleLineFontPx(
-                  measures,
-                  innerWidth,
-                  lyricsFontScale,
-                  densityScale,
-                  fumeTuning.heroScale,
-                )),
-                  (fontPx = _q.fontPx),
-                  (lineCount = _q.lineCount));
-                if (timing) {
-                  timing.prepareLayoutMs += nowMs() - prepareLayoutStart;
-                }
-                lineHeight = Math.round(fontPx * (variant === 'hero' ? 1.02 : 1.06));
-                blockGap =
-                  variant === 'hero'
-                    ? Math.max(Math.round(lineHeight * 0.2), 6)
-                    : Math.max(Math.round(lineHeight * 0.08), 2);
-                blockHeight = paddingY * 2 + lineCount * lineHeight;
-                x = 0;
-                y = 0;
-                placementStart = timing ? nowMs() : 0;
-                if (variant === 'hero') {
-                  if (heroSpanColumns === 1) {
-                    y = Math.max.apply(Math, __spreadArray([], __read(columnHeights), false));
-                    x = horizontalMargin;
-                    columnHeights[0] = y + blockHeight + blockGap;
-                  } else {
-                    bestHeight = Number.POSITIVE_INFINITY;
-                    candidateStarts = [];
-                    for (
-                      startColumn = 0;
-                      startColumn <= columns - heroSpanColumns;
-                      startColumn += 1
-                    ) {
-                      coveredHeight = 0;
-                      for (
-                        columnIndex = startColumn;
-                        columnIndex < startColumn + heroSpanColumns;
-                        columnIndex += 1
-                      ) {
-                        coveredHeight = Math.max(
-                          coveredHeight,
-                          (_h = columnHeights[columnIndex]) !== null && _h !== void 0 ? _h : 0,
-                        );
-                      }
-                      if (coveredHeight < bestHeight) {
-                        bestHeight = coveredHeight;
-                        candidateStarts = [startColumn];
-                      } else if (coveredHeight === bestHeight) {
-                        candidateStarts.push(startColumn);
-                      }
-                    }
-                    targetStart =
-                      candidateStarts.length > 0
-                        ? candidateStarts[heroPlacementTieCursor % candidateStarts.length]
-                        : 0;
-                    heroPlacementTieCursor += 1;
-                    y = bestHeight;
-                    x =
-                      horizontalMargin +
-                      targetStart * (columnWidth + gap) +
-                      Math.max((heroSpanWidth - blockWidth) * 0.5, 0);
-                    for (
-                      columnIndex = targetStart;
-                      columnIndex < targetStart + heroSpanColumns;
-                      columnIndex += 1
-                    ) {
-                      columnHeights[columnIndex] = y + blockHeight + blockGap;
-                    }
-                  }
-                } else {
-                  targetColumn = 0;
-                  minHeight = (_j = columnHeights[0]) !== null && _j !== void 0 ? _j : 0;
-                  candidateColumns = [0];
-                  for (columnIndex = 1; columnIndex < columns; columnIndex += 1) {
-                    height = (_k = columnHeights[columnIndex]) !== null && _k !== void 0 ? _k : 0;
-                    if (height < minHeight) {
-                      minHeight = height;
-                      candidateColumns.length = 0;
-                      candidateColumns.push(columnIndex);
-                    } else if (height === minHeight) {
-                      candidateColumns.push(columnIndex);
-                    }
-                  }
-                  targetColumn =
-                    (_l = candidateColumns[bodyColumnTieCursor % candidateColumns.length]) !==
-                      null && _l !== void 0
-                      ? _l
-                      : 0;
-                  bodyColumnTieCursor += 1;
-                  x = horizontalMargin + targetColumn * (columnWidth + gap);
-                  y = columnHeights[targetColumn];
-                  columnHeights[targetColumn] = y + blockHeight + blockGap;
-                }
-                if (timing) {
-                  timing.placementMs += nowMs() - placementStart;
-                }
-                if (shouldBuildRenderDetails) {
-                  renderDetailsStart = timing ? nowMs() : 0;
-                  prepared_1 = prepareLineAt(measures, fontPx);
-                  layout = layoutWithLines(prepared_1, innerWidth, lineHeight);
-                  fontSpec_1 = buildFontSpec(fontPx, variant, fontFamily, layoutTheme);
-                  ((_r = buildSegmentMetas(prepared_1)),
-                    (graphemes = _r.graphemes),
-                    (segmentMetas_1 = _r.segmentMetas));
-                  wordRanges = buildWordRangesFromWords(line2, graphemes);
-                  wordRangeIndexByOffset = buildWordRangeIndexByOffset(
-                    graphemes.length,
-                    wordRanges,
-                  );
-                  colorRangeIndexByOffset = buildWordRangeIndexByOffset(
-                    graphemes.length,
-                    wordRanges,
-                    'color',
-                  );
-                  renderLines = layout.lines.map(function (layoutLine, lineIndex) {
-                    var start = cursorToGlobalOffset(layoutLine.start, segmentMetas_1);
-                    var end = cursorToGlobalOffset(layoutLine.end, segmentMetas_1);
-                    var lineGraphemes = splitGraphemes(layoutLine.text);
-                    return {
-                      id: ''.concat(line2.startTime, '-').concat(lineIndex),
-                      text: layoutLine.text,
-                      start,
-                      end,
-                      graphemes: lineGraphemes,
-                      glyphOffsets: buildGlyphOffsets(
-                        prepared_1,
-                        segmentMetas_1,
-                        start,
-                        lineGraphemes.length,
-                      ),
-                      segments: buildRenderSegments(
-                        prepared_1,
-                        segmentMetas_1,
-                        start,
-                        end,
-                        fontSpec_1,
-                      ),
-                      left:
-                        variant === 'hero'
-                          ? Math.max((blockWidth - layoutLine.width) * 0.08, 0)
-                          : 0,
-                      top: paddingY + lineIndex * lineHeight,
-                      width: layoutLine.width,
-                    };
-                  });
-                  blocks.push({
-                    id: 'fume-'.concat(line2.startTime, '-').concat(index2),
-                    sourceLineIndex: index2,
-                    line: line2,
-                    variant,
-                    x,
-                    y,
-                    width: blockWidth,
-                    height: blockHeight,
-                    innerWidth,
-                    fontPx,
-                    lineHeight,
-                    prepared: prepared_1,
-                    layout,
-                    graphemes,
-                    segmentMetas: segmentMetas_1,
-                    wordRanges,
-                    wordRangeIndexByOffset,
-                    colorRangeIndexByOffset,
-                    renderLines,
-                  });
-                  if (timing) {
-                    timing.renderDetailsMs += nowMs() - renderDetailsStart;
-                  }
-                }
-                return [
-                  2,
-                  /*return*/
-                ];
-            }
-          });
-        };
-        _p.label = 1;
-      case 1:
-        _p.trys.push([1, 6, 7, 8]);
-        ((_b = __values(filteredLines.entries())), (_c = _b.next()));
-        _p.label = 2;
-      case 2:
-        if (!!_c.done) return [3, 5];
-        ((_d = __read(_c.value, 2)),
-          (blockIndex = _d[0]),
-          (_e = _d[1]),
-          (line = _e.line),
-          (index = _e.index));
-        return [5, _loop_1(blockIndex, line, index)];
-      case 3:
-        _p.sent();
-        _p.label = 4;
-      case 4:
-        _c = _b.next();
-        return [3, 2];
-      case 5:
-        return [3, 8];
-      case 6:
-        e_2_1 = _p.sent();
-        e_2 = { error: e_2_1 };
-        return [3, 8];
-      case 7:
-        try {
-          if (_c && !_c.done && (_f = _b.return)) _f.call(_b);
-        } finally {
-          if (e_2) throw e_2.error;
-        }
-        return [
-          7,
-          /*endfinally*/
-        ];
-      case 8:
-        articleHeight =
-          Math.max.apply(Math, __spreadArray([0], __read(columnHeights), false)) + verticalMargin;
-        metrics = {
-          width: paperWidth + horizontalMargin * 2,
-          height: articleHeight,
-          viewportHeight,
-          columns,
-          gap,
-          paperBounds: {
-            left: horizontalMargin,
-            top: verticalMargin,
-            right: horizontalMargin + paperWidth,
-            bottom: Math.max(articleHeight - verticalMargin, verticalMargin),
-          },
-        };
-        if (!shouldBuildRenderDetails) {
-          return [2, metrics];
-        }
-        chronologicalBlocks = __spreadArray([], __read(blocks), false).sort(function (left, right) {
-          return left.sourceLineIndex - right.sourceLineIndex;
-        });
-        blockBySourceLineIndex = /* @__PURE__ */ new Map();
-        try {
-          for (
-            chronologicalBlocks_1 = __values(chronologicalBlocks),
-              chronologicalBlocks_1_1 = chronologicalBlocks_1.next();
-            !chronologicalBlocks_1_1.done;
-            chronologicalBlocks_1_1 = chronologicalBlocks_1.next()
-          ) {
-            block = chronologicalBlocks_1_1.value;
-            blockBySourceLineIndex.set(block.sourceLineIndex, block);
-          }
-        } catch (e_3_1) {
-          e_3 = { error: e_3_1 };
-        } finally {
-          try {
-            if (
-              chronologicalBlocks_1_1 &&
-              !chronologicalBlocks_1_1.done &&
-              (_g = chronologicalBlocks_1.return)
-            )
-              _g.call(chronologicalBlocks_1);
-          } finally {
-            if (e_3) throw e_3.error;
-          }
-        }
-        firstRenderableStartTime =
-          (_o =
-            (_m = chronologicalBlocks[0]) === null || _m === void 0
-              ? void 0
-              : _m.line.startTime) !== null && _o !== void 0
-            ? _o
-            : Number.POSITIVE_INFINITY;
-        lastChronologicalRenderEndTime =
-          chronologicalBlocks.length > 0
-            ? getLineRenderEndTime(chronologicalBlocks[chronologicalBlocks.length - 1].line)
-            : Number.NEGATIVE_INFINITY;
-        return [
-          2,
-          __assign(__assign({}, metrics), {
-            blocks,
-            blockBySourceLineIndex,
-            chronologicalBlocks,
-            firstRenderableStartTime,
-            lastChronologicalRenderEndTime,
-          }),
-        ];
+    heroPlacementTieCursor;
+  let _h, _j, _k, _l;
+
+  let initialized = false,
+    closed = false,
+    nextBlock = 0;
+  function initialize() {
+    ((paperWidth = options.paperWidth),
+      (viewportHeight = options.viewportHeight),
+      (columns = options.columns),
+      (gap = options.gap),
+      (densityScale = options.densityScale),
+      (seedKey = options.seedKey),
+      (_a = options.mode),
+      (mode = _a === void 0 ? 'render' : _a),
+      (timing = options.timing));
+    shouldBuildRenderDetails = mode === 'render';
+    horizontalMargin = Math.max(viewport.width * 0.86, 280);
+    verticalMargin = Math.max(viewport.height * 0.82, 220);
+    columnWidth = (paperWidth - gap * (columns - 1)) / columns;
+    fontFamily = resolveThemeFontStack(layoutTheme);
+    filteredLines = orderBySeed.get(seedKey);
+    if (!filteredLines) {
+      filteredLines = lines
+        .map((line, i) => {
+          const index = Number.isInteger(line.sourceIndex) ? line.sourceIndex : i;
+          return { line, index, order: seeded(seedKey + ':' + index + ':' + line.fullText) };
+        })
+        .filter((entry) => entry.line.fullText.trim().length > 0)
+        .sort((left, right) => left.order - right.order);
+      const hero = chooseFallbackHeroBlockIndex(filteredLines);
+      filteredLines.forEach((entry, i) => {
+        entry.variant = chooseBlockVariant(entry.line, i, filteredLines.length, hero);
+      });
+      orderBySeed.set(seedKey, filteredLines);
     }
-  });
+    blocks = [];
+    columnHeights = Array.from({ length: columns }, function () {
+      return verticalMargin;
+    });
+    bodyColumnTieCursor = 0;
+    heroPlacementTieCursor = 0;
+  }
+  function placeBlock(blockIndex2, line2, index2) {
+    var variant,
+      heroSpanColumns,
+      heroSpanWidth,
+      blockWidth,
+      paddingX,
+      paddingY,
+      innerWidth,
+      prepareLayoutStart,
+      measures,
+      _q,
+      fontPx,
+      lineCount,
+      lineHeight,
+      blockGap,
+      blockHeight,
+      x,
+      y,
+      placementStart,
+      bestHeight,
+      candidateStarts,
+      startColumn,
+      coveredHeight,
+      columnIndex,
+      targetStart,
+      columnIndex,
+      targetColumn,
+      minHeight,
+      candidateColumns,
+      columnIndex,
+      height,
+      renderDetailsStart,
+      prepared_1,
+      layout,
+      fontSpec_1,
+      _r,
+      graphemes,
+      segmentMetas_1,
+      wordRanges,
+      wordRangeIndexByOffset,
+      colorRangeIndexByOffset,
+      renderLines;
+    timing && (timing.lines += 1);
+    variant = filteredLines[blockIndex2].variant;
+    heroSpanColumns = variant === 'hero' ? Math.min(columns, columns <= 1 ? 1 : 2) : 1;
+    heroSpanWidth =
+      heroSpanColumns > 1
+        ? columnWidth * heroSpanColumns + gap * (heroSpanColumns - 1)
+        : paperWidth;
+    blockWidth =
+      variant === 'hero'
+        ? heroSpanColumns === 1
+          ? paperWidth
+          : columns === 2
+            ? columnWidth * 1.5 + gap * 0.5
+            : heroSpanWidth
+        : columnWidth;
+    paddingX = 0;
+    paddingY = 0;
+    innerWidth = Math.max(blockWidth - paddingX * 2, 120);
+    prepareLayoutStart = timing ? nowMs() : 0;
+    measures = lineMeasuresFor(lineMeasures, line2.fullText, variant, fontFamily, layoutTheme);
+    ((_q = chooseSingleLineFontPx(
+      measures,
+      innerWidth,
+      lyricsFontScale,
+      densityScale,
+      fumeTuning.heroScale,
+    )),
+      (fontPx = _q.fontPx),
+      (lineCount = _q.lineCount));
+    if (timing) {
+      timing.prepareLayoutMs += nowMs() - prepareLayoutStart;
+    }
+    lineHeight = Math.round(fontPx * (variant === 'hero' ? 1.02 : 1.06));
+    blockGap =
+      variant === 'hero'
+        ? Math.max(Math.round(lineHeight * 0.2), 6)
+        : Math.max(Math.round(lineHeight * 0.08), 2);
+    blockHeight = paddingY * 2 + lineCount * lineHeight;
+    x = 0;
+    y = 0;
+    placementStart = timing ? nowMs() : 0;
+    if (variant === 'hero') {
+      if (heroSpanColumns === 1) {
+        y = Math.max.apply(Math, __spreadArray([], __read(columnHeights), false));
+        x = horizontalMargin;
+        columnHeights[0] = y + blockHeight + blockGap;
+      } else {
+        bestHeight = Number.POSITIVE_INFINITY;
+        candidateStarts = [];
+        for (startColumn = 0; startColumn <= columns - heroSpanColumns; startColumn += 1) {
+          coveredHeight = 0;
+          for (
+            columnIndex = startColumn;
+            columnIndex < startColumn + heroSpanColumns;
+            columnIndex += 1
+          ) {
+            coveredHeight = Math.max(
+              coveredHeight,
+              (_h = columnHeights[columnIndex]) !== null && _h !== void 0 ? _h : 0,
+            );
+          }
+          if (coveredHeight < bestHeight) {
+            bestHeight = coveredHeight;
+            candidateStarts = [startColumn];
+          } else if (coveredHeight === bestHeight) {
+            candidateStarts.push(startColumn);
+          }
+        }
+        targetStart =
+          candidateStarts.length > 0
+            ? candidateStarts[heroPlacementTieCursor % candidateStarts.length]
+            : 0;
+        heroPlacementTieCursor += 1;
+        y = bestHeight;
+        x =
+          horizontalMargin +
+          targetStart * (columnWidth + gap) +
+          Math.max((heroSpanWidth - blockWidth) * 0.5, 0);
+        for (
+          columnIndex = targetStart;
+          columnIndex < targetStart + heroSpanColumns;
+          columnIndex += 1
+        ) {
+          columnHeights[columnIndex] = y + blockHeight + blockGap;
+        }
+      }
+    } else {
+      targetColumn = 0;
+      minHeight = (_j = columnHeights[0]) !== null && _j !== void 0 ? _j : 0;
+      candidateColumns = [0];
+      for (columnIndex = 1; columnIndex < columns; columnIndex += 1) {
+        height = (_k = columnHeights[columnIndex]) !== null && _k !== void 0 ? _k : 0;
+        if (height < minHeight) {
+          minHeight = height;
+          candidateColumns.length = 0;
+          candidateColumns.push(columnIndex);
+        } else if (height === minHeight) {
+          candidateColumns.push(columnIndex);
+        }
+      }
+      targetColumn =
+        (_l = candidateColumns[bodyColumnTieCursor % candidateColumns.length]) !== null &&
+        _l !== void 0
+          ? _l
+          : 0;
+      bodyColumnTieCursor += 1;
+      x = horizontalMargin + targetColumn * (columnWidth + gap);
+      y = columnHeights[targetColumn];
+      columnHeights[targetColumn] = y + blockHeight + blockGap;
+    }
+    if (timing) {
+      timing.placementMs += nowMs() - placementStart;
+    }
+    if (shouldBuildRenderDetails) {
+      renderDetailsStart = timing ? nowMs() : 0;
+      prepared_1 = prepareLineAt(measures, fontPx);
+      layout = layoutWithLines(prepared_1, innerWidth, lineHeight);
+      fontSpec_1 = buildFontSpec(fontPx, variant, fontFamily, layoutTheme);
+      ((_r = buildSegmentMetas(prepared_1)),
+        (graphemes = _r.graphemes),
+        (segmentMetas_1 = _r.segmentMetas));
+      wordRanges = buildWordRangesFromWords(line2, graphemes);
+      wordRangeIndexByOffset = buildWordRangeIndexByOffset(graphemes.length, wordRanges);
+      colorRangeIndexByOffset = buildWordRangeIndexByOffset(graphemes.length, wordRanges, 'color');
+      renderLines = layout.lines.map(function (layoutLine, lineIndex) {
+        var start = cursorToGlobalOffset(layoutLine.start, segmentMetas_1);
+        var end = cursorToGlobalOffset(layoutLine.end, segmentMetas_1);
+        var lineGraphemes = splitGraphemes(layoutLine.text);
+        return {
+          id: ''.concat(line2.startTime, '-').concat(lineIndex),
+          text: layoutLine.text,
+          start,
+          end,
+          graphemes: lineGraphemes,
+          glyphOffsets: buildGlyphOffsets(prepared_1, segmentMetas_1, start, lineGraphemes.length),
+          segments: buildRenderSegments(prepared_1, segmentMetas_1, start, end, fontSpec_1),
+          left: variant === 'hero' ? Math.max((blockWidth - layoutLine.width) * 0.08, 0) : 0,
+          top: paddingY + lineIndex * lineHeight,
+          width: layoutLine.width,
+        };
+      });
+      blocks.push({
+        id: 'fume-'.concat(line2.startTime, '-').concat(index2),
+        sourceLineIndex: index2,
+        line: line2,
+        variant,
+        x,
+        y,
+        width: blockWidth,
+        height: blockHeight,
+        innerWidth,
+        fontPx,
+        lineHeight,
+        prepared: prepared_1,
+        layout,
+        graphemes,
+        segmentMetas: segmentMetas_1,
+        wordRanges,
+        wordRangeIndexByOffset,
+        colorRangeIndexByOffset,
+        renderLines,
+      });
+      if (timing) {
+        timing.renderDetailsMs += nowMs() - renderDetailsStart;
+      }
+    }
+  }
+  function finish() {
+    const articleHeight = Math.max(0, ...columnHeights) + verticalMargin;
+    const metrics = {
+      width: paperWidth + horizontalMargin * 2,
+      height: articleHeight,
+      viewportHeight,
+      columns,
+      gap,
+      paperBounds: {
+        left: horizontalMargin,
+        top: verticalMargin,
+        right: horizontalMargin + paperWidth,
+        bottom: Math.max(articleHeight - verticalMargin, verticalMargin),
+      },
+    };
+    if (!shouldBuildRenderDetails) return metrics;
+    const chronologicalBlocks = [...blocks].sort(
+      (left, right) => left.sourceLineIndex - right.sourceLineIndex,
+    );
+    const blockBySourceLineIndex = new Map();
+    for (const block of chronologicalBlocks)
+      blockBySourceLineIndex.set(block.sourceLineIndex, block);
+    return {
+      ...metrics,
+      blocks,
+      blockBySourceLineIndex,
+      chronologicalBlocks,
+      firstRenderableStartTime: chronologicalBlocks[0]?.line.startTime ?? Number.POSITIVE_INFINITY,
+      lastChronologicalRenderEndTime:
+        chronologicalBlocks.length > 0
+          ? getLineRenderEndTime(chronologicalBlocks[chronologicalBlocks.length - 1].line)
+          : Number.NEGATIVE_INFINITY,
+    };
+  }
+  // Each next call owns one plain block frame. No suspended generator frame
+  // retains its temporary arrays across WorkerScript GC or native measurements.
+  return {
+    [Symbol.iterator]() {
+      return this;
+    },
+    next() {
+      if (closed) return { done: true };
+      if (!initialized) {
+        initialized = true;
+        if (viewport.width <= 0 || viewport.height <= 0 || lines.length === 0) {
+          closed = true;
+          return { done: true, value: null };
+        }
+        initialize();
+      }
+      if (nextBlock < filteredLines.length) {
+        const entry = filteredLines[nextBlock];
+        placeBlock(nextBlock++, entry.line, entry.index);
+        if (nextBlock < filteredLines.length) return { done: false };
+      }
+      closed = true;
+      return { done: true, value: finish() };
+    },
+    return() {
+      closed = true;
+      return { done: true };
+    },
+  };
 }
+
 function buildArticleLayout(
   lines,
   viewport,
@@ -826,7 +717,7 @@ function buildArticleLayout(
         renderTiming = createFumeLayoutTiming();
         measureColumnTimings = /* @__PURE__ */ new Map();
         measureAttemptCount = 0;
-        lineMeasures = /* @__PURE__ */ new Map();
+        lineMeasures = Object.create(null);
         columns = maxColumns;
         _g.label = 1;
       case 1:

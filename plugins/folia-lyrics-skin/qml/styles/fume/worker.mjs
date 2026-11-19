@@ -13,7 +13,8 @@ function send(value) {
   WorkerScript.sendMessage(Object.assign({ generation, trackRevision: revision }, value));
 }
 function step() {
-  const result = job.step(16);
+  // ArticlePreparation keeps the existing 8ms deadline even for many cheap yields.
+  const result = job.step(1024);
   if (result.phase === 'complete') {
     pieces = [];
     if (result.article) {

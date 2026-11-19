@@ -242,6 +242,7 @@ Item {
         id: layout
         options: root._options
         runtimeMode: true
+        coalesceFrameChanges: true
         // A baking view cannot consume another particle frame. Its ready signal
         // wakes the coalesced latest request, including changes while paused.
         frameRequestsEnabled: !layout.frame || view.ready

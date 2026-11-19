@@ -1,5 +1,5 @@
 // @chenglou/pretext 0.0.9 MIT; portable Unicode17/explicit ICU/native measurement adapter.
-// Source algorithm retained. PRETEXT-LICENSE.txt; cadenza-reference.md.
+// Source algorithm retained. PRETEXT-LICENSE.txt; THIRD_PARTY_NOTICES.md.
 var __defProp = Object.defineProperty;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
@@ -1138,8 +1138,10 @@ function resolveParagraphLevels(types, levels, start, end) {
   }
   return startLevel;
 }
-function computeSegmentLevels(normalized, segStarts) {
-  const bidiLevels = computeBidiLevels(normalized);
+function computeSegmentLevels(normalized, segStarts, analysis) {
+  // Bidi levels depend on text, not the font being tried by the layout search.
+  if (analysis.bidiLevels === undefined) analysis.bidiLevels = computeBidiLevels(normalized);
+  const bidiLevels = analysis.bidiLevels;
   if (bidiLevels === null) return null;
   const segLevels = new Int8Array(segStarts.length);
   for (let i = 0; i < segStarts.length; i++) {
@@ -1184,7 +1186,8 @@ function getSharedWordSegmenter() {
   return sharedWordSegmenter;
 }
 function clearAnalysisCaches() {
-  analysisMemo.clear();
+  analysisMemo = Object.create(null);
+  analysisMemoCount = 0;
   analysisMemoUnits = 0;
   sharedGraphemeSegmenter = null;
   sharedWordSegmenter = null;
@@ -2489,7 +2492,7 @@ function analyzeText(text, profile, whiteSpace = 'normal', wordBreak = 'normal')
 // ../folia-major/node_modules/@chenglou/pretext/dist/measurement.js
 import { propertyTest as propertyTest2 } from '../cadenza/unicode-properties.mjs';
 import { getMeasureContext } from './native-measure.mjs';
-var segmentMetricCaches = /* @__PURE__ */ new Map();
+var segmentMetricCaches = Object.create(null);
 var MAX_PREFIX_FIT_GRAPHEMES = 96;
 var emojiPresentationRe2 = propertyTest2(['Emoji_Presentation']);
 var maybeEmojiRe = propertyTest2([
@@ -2501,21 +2504,21 @@ var maybeEmojiRe = propertyTest2([
 ]);
 var emojiCorrectionCache = /* @__PURE__ */ new Map();
 function getSegmentMetricCache(font) {
-  let cache = segmentMetricCaches.get(font);
+  let cache = segmentMetricCaches[font];
   if (!cache) {
-    cache = /* @__PURE__ */ new Map();
-    segmentMetricCaches.set(font, cache);
+    cache = Object.create(null);
+    segmentMetricCaches[font] = cache;
   }
   return cache;
 }
 function getSegmentMetrics(seg, cache) {
-  let metrics = cache.get(seg);
+  let metrics = cache[seg];
   if (metrics === void 0) {
     const ctx = getMeasureContext();
     metrics = {
       width: ctx.measureText(seg).width,
     };
-    cache.set(seg, metrics);
+    cache[seg] = metrics;
   }
   return metrics;
 }
@@ -2621,7 +2624,7 @@ function getFontMeasurementState(font, needsEmojiCorrection) {
   return { cache, emojiCorrection };
 }
 function clearMeasurementCaches() {
-  segmentMetricCaches.clear();
+  segmentMetricCaches = Object.create(null);
   emojiCorrectionCache.clear();
 }
 
@@ -3541,7 +3544,7 @@ function countRenderedSpacingGraphemes(text, kind) {
 function addInternalLetterSpacing(width, graphemeCount, letterSpacing) {
   return graphemeCount > 1 ? width + (graphemeCount - 1) * letterSpacing : width;
 }
-function measureAnalysis(analysis, font, includeSegments, wordBreak, letterSpacing) {
+function measureAnalysisUncached(analysis, font, includeSegments, wordBreak, letterSpacing) {
   const engineProfile = getEngineProfile();
   const { cache, emojiCorrection } = getFontMeasurementState(
     font,
@@ -3690,8 +3693,14 @@ function measureAnalysis(analysis, font, includeSegments, wordBreak, letterSpaci
       );
       continue;
     }
-    if (segKind === 'text' && isCJK(segText)) {
-      const measuredUnits = getCjkTextUnits(segText, engineProfile, wordBreak);
+    const unitCache = analysis.cjkUnits || (analysis.cjkUnits = new Array(analysis.len));
+    if (unitCache[mi] === undefined)
+      unitCache[mi] =
+        segKind === 'text' && isCJK(segText)
+          ? getCjkTextUnits(segText, engineProfile, wordBreak)
+          : null;
+    if (unitCache[mi] !== null) {
+      const measuredUnits = unitCache[mi];
       for (let i = 0; i < measuredUnits.length; i++) {
         const unit = measuredUnits[i];
         const unitMetrics = getSegmentMetrics(unit.text, cache);
@@ -3723,7 +3732,7 @@ function measureAnalysis(analysis, font, includeSegments, wordBreak, letterSpaci
     });
   }
   const segLevels =
-    segStarts === null ? null : computeSegmentLevels(analysis.normalized, segStarts);
+    segStarts === null ? null : computeSegmentLevels(analysis.normalized, segStarts, analysis);
   if (segments !== null) {
     return {
       widths,
@@ -3758,25 +3767,108 @@ function measureAnalysis(analysis, font, includeSegments, wordBreak, letterSpaci
     chunks,
   };
 }
+// With zero letter spacing, segmentation, bidi levels and break structure are
+// font-independent. Reuse that structure while measuring every numeric advance
+// again; unknown native widths never enter this plan as reusable geometry.
+function measureAnalysis(analysis, font, includeSegments, wordBreak, letterSpacing) {
+  if (!includeSegments || letterSpacing !== 0 || Object.is(letterSpacing, -0) || analysis.len === 0)
+    return measureAnalysisUncached(analysis, font, includeSegments, wordBreak, letterSpacing);
+  let plan = analysis.measurePlan;
+  if (!plan) {
+    const prepared = measureAnalysisUncached(analysis, font, true, wordBreak, 0);
+    const modes = prepared.segments.map((text, i) =>
+      prepared.breakableFitAdvances[i] === null
+        ? null
+        : isNumericRunSegment(text)
+          ? 'pair-context'
+          : 'sum-graphemes',
+    );
+    analysis.measurePlan = {
+      segments: prepared.segments,
+      kinds: prepared.kinds,
+      simpleLineWalkFastPath: prepared.simpleLineWalkFastPath,
+      segLevels: prepared.segLevels,
+      chunks: prepared.chunks,
+      spacingGraphemeCounts: prepared.spacingGraphemeCounts,
+      breakablePreferredBreaks: prepared.breakablePreferredBreaks,
+      modes,
+      emoji: textMayContainEmoji(analysis.normalized),
+    };
+    return prepared;
+  }
+  const { cache, emojiCorrection } = getFontMeasurementState(font, plan.emoji);
+  const discretionaryHyphenWidth = getCorrectedSegmentWidth(
+    '-',
+    getSegmentMetrics('-', cache),
+    emojiCorrection,
+  );
+  const tabStopAdvance =
+    getCorrectedSegmentWidth(' ', getSegmentMetrics(' ', cache), emojiCorrection) * 8;
+  const count = plan.segments.length,
+    widths = new Array(count),
+    lineEndFitAdvances = new Array(count),
+    lineEndPaintAdvances = new Array(count),
+    breakableFitAdvances = new Array(count);
+  for (let i = 0; i < count; ++i) {
+    const kind = plan.kinds[i],
+      text = plan.segments[i];
+    if (kind === 'soft-hyphen' || kind === 'hard-break' || kind === 'tab') {
+      widths[i] = 0;
+      lineEndFitAdvances[i] = lineEndPaintAdvances[i] =
+        kind === 'soft-hyphen' ? discretionaryHyphenWidth : 0;
+      breakableFitAdvances[i] = null;
+      continue;
+    }
+    const metrics = getSegmentMetrics(text, cache);
+    const width = getCorrectedSegmentWidth(text, metrics, emojiCorrection);
+    widths[i] = width;
+    lineEndFitAdvances[i] =
+      kind === 'space' || kind === 'preserved-space' || kind === 'zero-width-break' ? 0 : width;
+    lineEndPaintAdvances[i] = kind === 'space' || kind === 'zero-width-break' ? 0 : width;
+    breakableFitAdvances[i] =
+      plan.modes[i] === null
+        ? null
+        : getSegmentBreakableFitAdvances(text, metrics, cache, emojiCorrection, plan.modes[i]);
+  }
+  return {
+    widths,
+    lineEndFitAdvances,
+    lineEndPaintAdvances,
+    kinds: plan.kinds,
+    simpleLineWalkFastPath: plan.simpleLineWalkFastPath,
+    segLevels: plan.segLevels,
+    breakableFitAdvances,
+    breakablePreferredBreaks: plan.breakablePreferredBreaks,
+    letterSpacing: 0,
+    spacingGraphemeCounts: plan.spacingGraphemeCounts,
+    discretionaryHyphenWidth,
+    tabStopAdvance,
+    chunks: plan.chunks,
+    segments: plan.segments,
+  };
+}
 // Text analysis is independent of font size. Keep it only within one native
 // refinement round; exact widths and all caches reset at its boundary.
 // Bound distinct inputs and source units in this page-owned Worker.
-var analysisMemo = new Map(),
+var analysisMemo = Object.create(null),
+  analysisMemoCount = 0,
   analysisMemoUnits = 0;
 function prepareInternal(text, font, includeSegments, options) {
   var _a, _b;
   const wordBreak = (_a = options == null ? void 0 : options.wordBreak) != null ? _a : 'normal';
   const letterSpacing = (_b = options == null ? void 0 : options.letterSpacing) != null ? _b : 0;
   const key = JSON.stringify([text, options?.whiteSpace || 'normal', wordBreak]);
-  let analysis = analysisMemo.get(key);
+  let analysis = analysisMemo[key];
   if (!analysis) {
     analysis = analyzeText(text, getEngineProfile(), options?.whiteSpace, wordBreak);
     if (key.length <= 65536) {
-      if (analysisMemo.size >= 1024 || analysisMemoUnits + key.length > 65536) {
-        analysisMemo.clear();
+      if (analysisMemoCount >= 1024 || analysisMemoUnits + key.length > 65536) {
+        analysisMemo = Object.create(null);
+        analysisMemoCount = 0;
         analysisMemoUnits = 0;
       }
-      analysisMemo.set(key, analysis);
+      analysisMemo[key] = analysis;
+      ++analysisMemoCount;
       analysisMemoUnits += key.length;
     }
   }
@@ -3947,10 +4039,13 @@ function layoutWithLines(prepared, maxWidth, lineHeight) {
   );
   return { lineCount, height: lineCount * lineHeight, lines };
 }
-function clearCache() {
-  clearAnalysisCaches();
+function clearMeasurementState() {
   clearLineTextCaches();
   clearMeasurementCaches();
+}
+function clearCache() {
+  clearAnalysisCaches();
+  clearMeasurementState();
 }
 function setLocale(locale) {
   setAnalysisLocale(locale);
@@ -3958,6 +4053,7 @@ function setLocale(locale) {
 }
 export {
   clearCache,
+  clearMeasurementState,
   layout,
   layoutNextLine,
   layoutNextLineRange,

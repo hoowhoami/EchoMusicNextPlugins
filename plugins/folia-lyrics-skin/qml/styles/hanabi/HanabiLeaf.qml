@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import EchoMusic.PluginSdk
 import "../lumiere" as Native
-import "../../shared/binary.mjs" as Binary
 
 Item {
     id: root
@@ -44,14 +43,13 @@ Item {
         id: upload
         interval: 0
         onTriggered: if (root.live && root.node && root.node.kind === 'batch' && root.graphicsService && root.graphicsService.active) {
-            const bytes = Binary.unpackBytes(root.node.payload);
-            if (root.node.count === root.node.capacity) {
-                data.upload(6, root.node.capacity, bytes);
-            } else {
-                const padded = new Uint8Array(root.node.capacity * 6 * 16);
-                padded.set(new Uint8Array(bytes));
-                data.upload(6, root.node.capacity, padded.buffer);
+            const packet = root.node.payload, split = packet.indexOf(":");
+            const bytes = root.node.capacity * 6 * 16;
+            if (split < 1 || packet.slice(0, split) !== String(bytes)) {
+                data.uploadBase64(6, root.node.capacity, "");
+                return;
             }
+            data.uploadBase64(6, root.node.capacity, packet.slice(split + 1));
         }
     }
     onGraphicsServiceChanged: upload.restart()

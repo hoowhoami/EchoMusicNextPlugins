@@ -1,4 +1,4 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See docs/folia/lumiere-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 import { createRng } from '../lumiereRandom.mjs';
 import { compressLight, lightAt } from '../light/rig.mjs';
 import { splitLyricGraphemes } from '../../../../shared/text/graphemeTiming.mjs';
@@ -128,7 +128,8 @@ const createLyricEcho = (pixi, options) => {
   };
   const prepare = (time) => {
     let budget = 1;
-    for (const echoLine of echoLines) {
+    for (let lineIndex = 0; lineIndex < echoLines.length; ++lineIndex) {
+      const echoLine = echoLines[lineIndex];
       if (time < echoLine.from - PREPARE || time > echoLine.to + LIFE) {
         if (echoLine.layout) release(echoLine);
       } else if (!echoLine.layout && (time >= echoLine.from || budget-- > 0)) {
@@ -179,7 +180,8 @@ const createLyricEcho = (pixi, options) => {
       const split = 0.05 * age ** 1.3;
       const lit = compressLight(lightAt(beams, x / height, y / height));
       const glyphAlpha = alpha * (0.05 + 0.4 * lit);
-      for (const glyph of fragment.glyphs) {
+      for (let glyphIndex = 0; glyphIndex < fragment.glyphs.length; ++glyphIndex) {
+        const glyph = fragment.glyphs[glyphIndex];
         if (!glyph.sprite) continue;
         glyph.sprite.position.set(
           glyph.offset + glyph.dx * fontPx * split * glyph.speed,

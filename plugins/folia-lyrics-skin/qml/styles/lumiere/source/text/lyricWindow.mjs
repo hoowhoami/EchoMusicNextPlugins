@@ -1,4 +1,4 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See docs/folia/lumiere-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 import { flatMap } from '../../../../shared/text/compat.mjs';
 import { compressLight, lightAt } from '../light/rig.mjs';
 import { hexOf, mixRgb, WHITE } from '../color.mjs';
@@ -15,7 +15,8 @@ import {
   lerp,
   lerpPoint,
   LIGHT_UP,
-  resolveSpotX,
+  sampleSingingPositions,
+  resolveSpotPoint,
   SLIDE,
   smooth,
   TRACK_SAMPLES,
@@ -79,7 +80,7 @@ const createLyricWindow = (pixi, options) => {
     nextAlpha,
     lineOf,
   });
-  const { lineTransform, glyphLocal, activeRange } = geometry;
+  const { lineTransform, glyphLocal, glyphFrame, activeRange } = geometry;
   const protection = createWindowProtection({ lines: options.lines, heroPx, lineOf });
   const frameTransforms = new Array(lineCount);
   let tracksDrawn = false;
@@ -94,17 +95,20 @@ const createLyricWindow = (pixi, options) => {
     );
     const transforms = samples.map((sample) => lineTransform(index, sample));
     if (!transforms.some((sample) => sample.fly)) return;
+    const frames = samples.map((sample, i) => glyphFrame(view2, sample, transforms[i]));
     const width = 1.2;
     tracksDrawn = true;
-    view2.glyphs.forEach((glyph) => {
-      if (glyph.blank) return;
+    for (let glyphIndex = 0; glyphIndex < view2.glyphs.length; ++glyphIndex) {
+      const glyph = view2.glyphs[glyphIndex];
+      if (glyph.blank) continue;
       let length = 0;
       let previous = null;
       let fontPx = heroPx;
       let flying = 0;
-      samples.forEach((sample, i) => {
-        const local = glyphLocal(view2, glyph, sample, transforms[i]);
-        const world = toWorld(transforms[i], local);
+      for (let i = 0; i < samples.length; ++i) {
+        const sample = samples[i];
+        const local = glyphLocal(view2, glyph, sample, transforms[i], frames[i]);
+        const world = toWorld(transforms[i], local, frames[i]);
         fontPx = heroPx * transforms[i].scale * local.scale;
         flying = local.flying;
         const wobble = Math.sin(i * 0.9 + glyph.flight.wobble + sample * 6) * heroPx * 0.02;
@@ -117,7 +121,7 @@ const createLyricWindow = (pixi, options) => {
           trackLayer.moveTo(x, y);
         }
         previous = { x, y };
-      });
+      }
       const strength = Math.min(1, length / (heroPx * 3));
       const head = previous;
       const shield = head ? protection.shield(index, head.x, head.y, fontPx / 2, flying) : 1;
@@ -130,7 +134,7 @@ const createLyricWindow = (pixi, options) => {
           join: 'round',
         });
       else trackLayer.beginPath();
-    });
+    }
   };
   const update = (frame) => {
     const { time, beams, litColor, unlitColor, unlitAlpha, intensity } = frame;
@@ -165,7 +169,9 @@ const createLyricWindow = (pixi, options) => {
       const lineFontPx = heroPx * scale;
       if (trackLayer.visible)
         drawTracks(index, view2, time, transform, lineAlpha * passedDim, litHex);
-      for (const glyph of view2.glyphs) {
+      const frame = glyphFrame(view2, time, transform);
+      for (let glyphIndex = 0; glyphIndex < view2.glyphs.length; ++glyphIndex) {
+        const glyph = view2.glyphs[glyphIndex];
         if (glyph.blank) continue;
         if (!visible) {
           glyph.glyph.visible = false;
@@ -173,12 +179,12 @@ const createLyricWindow = (pixi, options) => {
           glyph.star.visible = false;
           continue;
         }
-        const local = glyphLocal(view2, glyph, time, transform);
+        const local = glyphLocal(view2, glyph, time, transform, frame);
         glyph.glyph.position.set(local.x, local.y);
         glyph.glyph.rotation = local.rotation;
         glyph.glyph.scale.set(local.scale / MAX_WORD_SCALE);
         const fontPx = lineFontPx * local.scale;
-        const { x: gx, y: gy } = toWorld(transform, local);
+        const { x: gx, y: gy } = toWorld(transform, local, frame);
         const lit = smooth(
           (time - glyph.timing.start) / Math.max(glyph.timing.end - glyph.timing.start, LIGHT_UP),
         );
@@ -245,19 +251,9 @@ const createLyricWindow = (pixi, options) => {
       view2.spot.visible = spotAlpha > 3e-3;
       if (view2.spot.visible) {
         const vertical = transform.toOrient >= 0.5;
-        const spotOf = (wrap) => {
-          const path = view2.flow[vertical ? 1 : 0][wrap].spots;
-          return {
-            x: resolveSpotX(
-              view2.glyphs.map((glyph) => ({ timing: glyph.timing, center: path[glyph.index].x })),
-              time,
-            ),
-            y: resolveSpotX(
-              view2.glyphs.map((glyph) => ({ timing: glyph.timing, center: path[glyph.index].y })),
-              time,
-            ),
-          };
-        };
+        const positions = sampleSingingPositions(view2.glyphs, time);
+        const spotOf = (wrap) =>
+          resolveSpotPoint(view2.glyphs, view2.flow[vertical ? 1 : 0][wrap].spots, positions);
         const local =
           transform.wrap <= 0
             ? spotOf(0)

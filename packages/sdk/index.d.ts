@@ -1915,6 +1915,8 @@ declare module 'echo:plugin-sdk' {
     readonly errorString: string;
     upload(width: number, height: number, arrayBuffer: FloatTextureData): boolean;
     uploadPacked(width: number, height: number, utf16Words: string): boolean;
+    /** Strict canonical Base64; decodes natively with the same dimensions, finite checks and ownership. */
+    uploadBase64(width: number, height: number, base64: string): boolean;
     clear(): void;
     readonly graphicsChanged: QtSignal;
     readonly activeChanged: QtSignal;

@@ -1,21 +1,4 @@
 // Generated from Folia a8da4437 (AGPL-3.0-only).
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) =>
-  key in obj
-    ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value })
-    : (obj[key] = value);
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {})) if (__hasOwnProp.call(b, prop)) __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop)) __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-import { rememberBounded } from './compat.mjs';
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const mix = (from, to, amount) => from + (to - from) * amount;
 const FALLBACK_RGB = { r: 255, g: 255, b: 255 };
@@ -56,13 +39,17 @@ const readColor = (normalizedColor) => {
   }
   return 'passthrough';
 };
-const parsedColors = /* @__PURE__ */ new Map();
+const parsedColors = Object.create(null),
+  parsedColorKeys = [];
 const PARSED_COLOR_LIMIT = 512;
 const parseColor = (color) => {
   const normalized = typeof color === 'string' ? color.trim() : '';
-  let parsed = parsedColors.get(normalized);
+  let parsed = parsedColors[normalized];
   if (parsed === void 0) {
-    parsed = rememberBounded(parsedColors, normalized, readColor(normalized), PARSED_COLOR_LIMIT);
+    parsed = readColor(normalized);
+    parsedColors[normalized] = parsed;
+    parsedColorKeys.push(normalized);
+    if (parsedColorKeys.length > PARSED_COLOR_LIMIT) delete parsedColors[parsedColorKeys.shift()];
   }
   return { normalized, parsed };
 };
@@ -74,7 +61,7 @@ const colorWithAlpha = (color, alpha) => {
 };
 const parseColorChannels = (color) => {
   const { parsed } = parseColor(color);
-  return typeof parsed === 'string' ? null : __spreadValues({}, parsed);
+  return typeof parsed === 'string' ? null : { r: parsed.r, g: parsed.g, b: parsed.b };
 };
 const mixColors = (from, to, amount, alpha = 1) => {
   const normalizedAmount = clamp(amount, 0, 1);

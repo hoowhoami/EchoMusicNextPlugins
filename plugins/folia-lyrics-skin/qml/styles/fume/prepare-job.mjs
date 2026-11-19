@@ -1,14 +1,17 @@
 import { buildArticleLayout } from './article-layout.mjs';
-import { configure, pendingMeasurements } from './native-measure.mjs';
-import { clearCache } from './pretext.mjs';
+import { configure, pendingMeasurements, clearGraphemeCache } from './native-measure.mjs';
+import { clearCache, clearMeasurementState } from './pretext.mjs';
 import { clearFumeTextMeasureCaches } from './text-measure.mjs';
 // Unknown widths only discover the next native queries. No provisional article crosses this boundary.
 export class ArticlePreparation {
   constructor(lines, context, pieces) {
+    clearGraphemeCache();
+    clearCache();
     this.lines = lines;
     this.context = context;
     this.pieces = pieces;
-    this.widths = new Map();
+    this.widths = Object.create(null);
+    this.widthCount = 0;
     this.orderBySeed = new Map();
     this.round = 0;
     this.iterator = null;
@@ -19,7 +22,7 @@ export class ArticlePreparation {
   restart() {
     if (++this.round > 32)
       throw new Error('Fume native measurement preparation exceeded 32 refinement rounds');
-    clearCache();
+    clearMeasurementState();
     clearFumeTextMeasureCaches();
     configure({
       pieces: this.pieces,
@@ -55,10 +58,12 @@ export class ArticlePreparation {
     }
     // The displayed article owns its render data. Only source rows are
     // consulted by the worker when a later model reset checks identity.
+    clearGraphemeCache();
     this.finished = true;
     this.iterator = null;
     this.orderBySeed.clear();
-    this.widths.clear();
+    this.widths = Object.create(null);
+    this.widthCount = 0;
     this.pieces = [];
     clearCache();
     clearFumeTextMeasureCaches();
@@ -70,9 +75,10 @@ export class ArticlePreparation {
     for (const item of measurements) {
       if (typeof item.key !== 'string' || !Number.isFinite(item.width) || item.width < 0)
         throw new Error('Invalid native Fume measurement');
-      this.widths.set(item.key, item.width);
+      if (this.widths[item.key] === undefined) ++this.widthCount;
+      this.widths[item.key] = item.width;
     }
-    if (this.widths.size > 65536)
+    if (this.widthCount > 65536)
       throw new Error('Fume font measurement budget exceeded (65536 unique widths)');
     this.restart();
   }

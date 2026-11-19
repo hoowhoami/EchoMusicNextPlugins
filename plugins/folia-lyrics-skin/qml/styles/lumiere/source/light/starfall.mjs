@@ -1,4 +1,4 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See docs/folia/lumiere-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 import { createRng } from '../lumiereRandom.mjs';
 import { compressLight, lightAt } from './rig.mjs';
 const lumiereScaleMask = 0 | 0;
@@ -78,7 +78,8 @@ const createStarfall = (pixi, options) => {
     }
   };
   const update = (local, time, beams, color, fade) => {
-    for (const star of stars) {
+    for (let i = 0; i < stars.length; ++i) {
+      const star = stars[i];
       const progress = (local - star.delay) / star.fall;
       if (progress <= 0) {
         star.sprite.visible = false;
@@ -99,7 +100,8 @@ const createStarfall = (pixi, options) => {
       place(star.sprite, star.trail, star.x, y, star.size * (1 + flash * 1.5), alpha, speed, color);
     }
     const rainIn = clamp01((local - spec.opening * 0.6) / 1.5);
-    for (const drop of drops) {
+    for (let i = 0; i < drops.length; ++i) {
+      const drop = drops[i];
       const cycle = (time / drop.period + drop.phase) % 1;
       const y = -0.1 + cycle * 1.25;
       const x = drop.x + Math.sin(time * 0.7 + drop.phase * 6) * drop.sway;

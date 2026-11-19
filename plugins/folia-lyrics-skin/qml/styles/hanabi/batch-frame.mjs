@@ -16,15 +16,15 @@ export function batchHanabiFrame(snapshot, width, height, resolution) {
   function finish() {
     if (!batch) return;
     batch.capacity = floats.length / floatsPerSprite;
-    const used = batch.count * floatsPerSprite * Float32Array.BYTES_PER_ELEMENT;
-    batch.payload = packBytes(
-      used === floats.byteLength ? floats.buffer : floats.buffer.slice(0, used),
-    );
+    // Send the complete reusable capacity, including its zero-filled tail.
+    // FloatTexture decodes the ASCII packet directly without a GUI byte loop.
+    batch.payload = packBytes(floats.buffer);
     leaves.push(batch);
     batch = null;
     floats = null;
   }
-  for (const node of result.leaves) {
+  for (let nodeIndex = 0; nodeIndex < result.leaves.length; ++nodeIndex) {
+    const node = result.leaves[nodeIndex];
     if (node.kind !== 'sprite' && node.kind !== 'solid') {
       finish();
       leaves.push(node);

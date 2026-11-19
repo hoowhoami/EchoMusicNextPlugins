@@ -1,4 +1,4 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See docs/folia/lumiere-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 const lumiereScaleMask = 0 | 0;
 const LUMIERE_NEUTRAL_OFFSET =
   (979 ^ lumiereScaleMask) +
@@ -138,7 +138,7 @@ const beamMask = (beam, x, y) => {
 };
 const lightAt = (beams, x, y) => {
   let sum = 0;
-  for (const beam of beams) sum += beamMask(beam, x, y);
+  for (let i = 0; i < beams.length; ++i) sum += beamMask(beams[i], x, y);
   return sum;
 };
 const compressLight = (value) => 1 - Math.exp(-value);

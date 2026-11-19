@@ -1,8 +1,8 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See fume-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 import { getLineRenderHints, getLineTransitionTiming } from '../../shared/renderHints.mjs';
 import { clamp, easeInOutCubic, mix } from './math.mjs';
 import { resolvePrintedGraphemeCount } from './reveal.mjs';
-import { resolveGlyphAdvance, widthBetweenOffsets } from './text-measure.mjs';
+import { resolveGlyphAdvance, widthBetweenOffsets } from './text-geometry.mjs';
 const CAMERA_SCALE_MIN = 0.22;
 const CAMERA_SCALE_MAX = 2.24;
 const OVERVIEW_CAMERA_SOURCE = -2;

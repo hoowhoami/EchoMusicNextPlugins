@@ -1,5 +1,7 @@
 // Derived from Folia a8da4437 (AGPL-3.0-only). See fume-reference.md.
-import { splitLyricGraphemes as splitGraphemes } from '../../shared/text/unicode.mjs';
+import { portableGraphemeSegmenter } from './native-measure.mjs';
+const splitGraphemes = (text) =>
+  portableGraphemeSegmenter.segment(text).map((value) => value.segment);
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const mix = (from, to, amount) => from + (to - from) * amount;
 const quadraticBezier = (from, control, to, amount) => {

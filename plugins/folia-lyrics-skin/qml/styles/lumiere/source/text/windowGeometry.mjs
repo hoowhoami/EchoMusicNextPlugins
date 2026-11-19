@@ -25,13 +25,11 @@ import {
   decayAmount,
   easeInOutCubic,
   easeInOutSine,
-  flightPoint,
   flightProgress,
   GATHER,
   GATHER_LEAD,
   LEAD,
   lerp,
-  lerpPoint,
   MAX_LAG,
   ORBIT,
   resolveLinePhase,
@@ -42,9 +40,9 @@ import {
 } from './windowTiming.mjs';
 import { awayOf, CROSSED_CLEARANCE, fixedSlot, sameSlot, stackX } from './windowSlots.mjs';
 const WINDOW_REACH = 3;
-const toWorld = (transform, point) => {
-  const cos = Math.cos(transform.rotation);
-  const sin = Math.sin(transform.rotation);
+const toWorld = (transform, point, frame) => {
+  const cos = frame ? frame.cos : Math.cos(transform.rotation);
+  const sin = frame ? frame.sin : Math.sin(transform.rotation);
   return {
     x: transform.x + (point.x * cos - point.y * sin) * transform.scale,
     y: transform.y + (point.x * sin + point.y * cos) * transform.scale,
@@ -305,38 +303,57 @@ const createWindowGeometry = ({
       moves,
     };
   };
-  const glyphLocal = (view, glyph, time, transform) => {
-    const at = (orient, wrap) =>
-      view.flow[orient >= 0.5 ? 1 : 0][wrap >= 0.5 ? 1 : 0].points[glyph.index];
-    let point = at(transform.restOrient, transform.restWrap);
+  // Shared by every glyph at one original trajectory sample. No samples are skipped.
+  const glyphFrame = (view, time, transform) => {
+    const gather = smooth((time - (view.line.startTime - LEAD - GATHER_LEAD)) / GATHER);
+    return {
+      gather,
+      scatter: (1 - gather) ** 2 * decay.strength,
+      breath: heroPx * 0.022 * Math.min(1, decay.strength + 0.3),
+      cos: Math.cos(transform.rotation),
+      sin: Math.sin(transform.rotation),
+      easings: transform.moves.map((move) => (move.fly ? 0 : easeInOutSine(move.phase))),
+    };
+  };
+  const flowPoint = (view, glyph, orient, wrap) =>
+    view.flow[orient >= 0.5 ? 1 : 0][wrap >= 0.5 ? 1 : 0].points[glyph.index];
+  const glyphLocal = (view, glyph, time, transform, frame = glyphFrame(view, time, transform)) => {
+    const point = flowPoint(view, glyph, transform.restOrient, transform.restWrap);
+    let x = point.x,
+      y = point.y;
     let orientation = transform.restOrient;
     let flying = 0;
-    for (const move of transform.moves) {
-      const target = at(move.toOrient, move.toWrap);
+    for (let i = 0; i < transform.moves.length; ++i) {
+      const move = transform.moves[i];
+      const target = flowPoint(view, glyph, move.toOrient, move.toWrap);
       if (move.fly) {
         const s = flightProgress(glyph.flight, move.phase);
-        point = flightPoint(glyph.flight, point, target, s);
+        const u = 1 - s;
+        const a = u * u * u,
+          b = 3 * u * u * s,
+          c = 3 * u * s * s,
+          d = s * s * s;
+        const flight = glyph.flight;
+        x = a * x + b * (x + flight.c1.x) + c * (target.x + flight.c2.x) + d * target.x;
+        y = a * y + b * (y + flight.c1.y) + c * (target.y + flight.c2.y) + d * target.y;
         orientation = lerp(orientation, move.toOrient, s);
         flying = Math.max(flying, Math.sin(Math.PI * s));
       } else {
-        const k = easeInOutSine(move.phase);
-        point = lerpPoint(point, target, k);
+        const k = frame.easings[i];
+        x = lerp(x, target.x, k);
+        y = lerp(y, target.y, k);
         orientation = lerp(orientation, move.toOrient, k);
       }
     }
-    let x = point.x;
-    let y = point.y;
     let rotation = glyph.vRotation * orientation + glyph.flight.spin * flying;
     const pulse = 1 - 0.28 * flying;
-    const gather = smooth((time - (view.line.startTime - LEAD - GATHER_LEAD)) / GATHER);
-    const scatter = (1 - gather) ** 2 * decay.strength;
+    const { gather, scatter, breath } = frame;
     x += glyph.scatter.x * heroPx * scatter;
     y += glyph.scatter.y * heroPx * scatter;
     const amount = decayAmount(decay, glyph.timing.start, time) * glyph.drift.speed;
     x += glyph.drift.dx * heroPx * amount;
     y += glyph.drift.dy * heroPx * amount;
     rotation += glyph.drift.spin * amount * 0.18;
-    const breath = heroPx * 0.022 * Math.min(1, decay.strength + 0.3);
     x += Math.sin(time * 0.9 + glyph.phase) * breath;
     y += Math.cos(time * 1.13 + glyph.phase * 1.7) * breath;
     return { x, y, rotation, gather, flying, scale: glyph.scale * pulse };
@@ -350,6 +367,6 @@ const createWindowGeometry = ({
       high: Math.min(lineCount - 1, Math.max(current, 0) + WINDOW_REACH),
     };
   };
-  return { fontH, lineTransform, glyphLocal, activeRange };
+  return { fontH, lineTransform, glyphLocal, glyphFrame, activeRange };
 };
 export { createWindowGeometry, toWorld };

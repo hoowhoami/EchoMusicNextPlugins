@@ -131,6 +131,22 @@ export function createLumiereBackend(options = {}) {
     }
   }
   class Sprite extends pixi.Sprite {
+    // Sprite bounds are the texture rectangle. Resizing particles does not
+    // need an anchor-adjusted box or four texture-dimension getter calls.
+    get width() {
+      return Math.abs(this.scale.x) * this.texture.width;
+    }
+    set width(value) {
+      const width = this.texture.width;
+      this.scale.x = width ? value / width : 1;
+    }
+    get height() {
+      return Math.abs(this.scale.y) * this.texture.height;
+    }
+    set height(value) {
+      const height = this.texture.height;
+      this.scale.y = height ? value / height : 1;
+    }
     setSize(width, height) {
       this.width = width;
       this.height = height;

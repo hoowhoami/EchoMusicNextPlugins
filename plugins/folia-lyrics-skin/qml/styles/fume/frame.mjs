@@ -3,7 +3,7 @@ export { canvasText } from './native-measure.mjs';
 import { drawFumeLiveBlock, buildCanvasFont } from './canvas-text.mjs';
 import { resolveFumeBlockTiming, resolveFumeStaticLayers } from './block-frame.mjs';
 import { graphemeSegments } from '../../shared/text/unicode.mjs';
-import { resolveRenderLineOffset } from './text-measure.mjs';
+import { resolveRenderLineOffset } from './text-geometry.mjs';
 import { parseColorChannels } from '../cadenza/color.mjs';
 export function tuning(settings) {
   const number = (key, fallback, min, max) =>
@@ -20,16 +20,21 @@ export function tuning(settings) {
   };
 }
 // One theme uses a small palette repeatedly with independently animated opacity.
-const colorChannels = new Map();
+let colorChannels = Object.create(null),
+  colorChannelCount = 0;
 export function rgba(value, alpha = 1) {
-  let channels = colorChannels.get(value);
+  let channels = colorChannels[value];
   if (!channels) {
     const rgb = parseColorChannels(value);
     const match = /^rgba\([^,]+,[^,]+,[^,]+,\s*([\d.]+)\)$/.exec(value);
     const a = value === 'transparent' ? 0 : match ? Number(match[1]) : 1;
     channels = { r: rgb ? rgb.r / 255 : 1, g: rgb ? rgb.g / 255 : 1, b: rgb ? rgb.b / 255 : 1, a };
-    if (colorChannels.size >= 256) colorChannels.clear();
-    colorChannels.set(value, channels);
+    if (colorChannelCount >= 256) {
+      colorChannels = Object.create(null);
+      colorChannelCount = 0;
+    }
+    colorChannels[value] = channels;
+    ++colorChannelCount;
   }
   return alpha === 1 ? channels : { ...channels, a: channels.a * alpha };
 }
@@ -42,7 +47,7 @@ export function recordBlock(block, params, nextStart, staticInput) {
     ),
     text = [],
     stamps = [],
-    groups = new Map();
+    groups = Object.create(null);
   const style = (context) => ({
     fill: context.fillStyle,
     blur: context.shadowBlur || 0,
@@ -51,7 +56,7 @@ export function recordBlock(block, params, nextStart, staticInput) {
   });
   const add = (value) => {
     value.key = block.id + ':' + value.layer + ':' + value.x + ':' + value.y + ':' + value.text;
-    const found = groups.get(value.key);
+    const found = groups[value.key];
     if (found && value.ranges) {
       found.ranges.push.apply(found.ranges, value.ranges);
       return;
@@ -79,7 +84,7 @@ export function recordBlock(block, params, nextStart, staticInput) {
           : Math.max(0, value.style.blur || 0);
     value.minimumDeviceScale = params.minimumDeviceScale || 0.22;
     value.maxHaloRadius = haloBudget(value, params.glowIntensity > 0);
-    groups.set(value.key, value);
+    groups[value.key] = value;
     text.push(value);
   };
   if (staticInput) {

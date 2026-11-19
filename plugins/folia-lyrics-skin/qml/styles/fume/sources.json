@@ -4,7 +4,8 @@
     "package": "typescript",
     "version": "5.9.3",
     "target": "ES5",
-    "license": "TYPESCRIPT-LICENSE.txt"
+    "license": "TYPESCRIPT-LICENSE.txt",
+    "scope": "Outer layout iterator; per-block work uses an explicit iterator"
   },
   "pretext": "0.0.9",
   "unicode": "17.0.0",

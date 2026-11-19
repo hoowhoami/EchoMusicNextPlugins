@@ -1,4 +1,4 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See fume-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 import { resolveThemeFontStack } from '../cadenza/font-stacks.mjs';
 import { colorWithAlpha, mixColors } from '../cadenza/color.mjs';
 import { clearCanvasTextGlow, fillGlowText, setCanvasTextGlow } from './canvas-glow.mjs';
@@ -17,7 +17,7 @@ import {
   resolveRenderLineOffset,
   resolveSegmentGlyphAdvance,
   resolveSegmentGlyphOffset,
-} from './text-measure.mjs';
+} from './text-geometry.mjs';
 const buildCanvasFont = (block, theme) => {
   const fontFamily = resolveThemeFontStack(theme);
   return buildFontSpec(block.fontPx, block.variant, fontFamily, theme);

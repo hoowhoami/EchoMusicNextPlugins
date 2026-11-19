@@ -24,6 +24,10 @@ Item {
     property bool _usesScaledHalo: false
     property bool _publishing: false
     property bool _prepareRejected: false
+    property var _poseCommands: []
+    property var _poseAnchors: null
+    property real _poseScale: 1
+    property bool _poseGlow: true
     readonly property var glyph: nativeGlyph
     readonly property real cacheBytes: nativeGlyph.cacheBytes + nativeGlyph.gpuCacheBytes
     readonly property string sharedCacheKey: nativeGlyph.sharedCacheKey
@@ -60,6 +64,12 @@ Item {
     }
     function publish(): void {
         if (!commands || _publishing || _prepareRejected || nativeGlyph.preparing || _anchors.length !== commands.length)
+            return;
+        // Camera translation changes the parent transform, not retained local
+        // paints. Avoid another QVariant conversion of identical pose arrays.
+        if (_publishedSignature === _signature && _poseAnchors === _anchors &&
+            _poseGlow === glowEnabled && (!_usesScaledHalo || _poseScale === deviceScale) &&
+            _poseCommands.length === commands.length && commands.every((command, i) => command === _poseCommands[i]))
             return;
         const signature = _signature;
         publishTask.stop();
@@ -141,6 +151,10 @@ Item {
         else {
             errorString = "";
             _publishedSignature = signature;
+            _poseCommands = commands;
+            _poseAnchors = anchors;
+            _poseGlow = glowEnabled;
+            _poseScale = deviceScale;
         }
     }
     onCommandsChanged: prepare()

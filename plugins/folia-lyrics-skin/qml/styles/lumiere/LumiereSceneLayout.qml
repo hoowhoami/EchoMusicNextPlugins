@@ -17,6 +17,7 @@ Item {
     property url workerSource: Qt.resolvedUrl("scene-worker.mjs")
     property bool runtimeMode: false
     property bool frameRequestsEnabled: true
+    property bool coalesceFrameChanges: false
     property var runtimeParameters: ({})
     property real presentationTimeMs: 0
     property var pieces: []
@@ -158,6 +159,17 @@ Item {
         });
     }
     function requestFrame() {
+        if (coalesceFrameChanges) {
+            if (!_complete || !live || !options || !_worker)
+                return;
+            _dirtyFrame = true;
+            if (frameRequestsEnabled && !_working && !busy && !frameRequest.running)
+                frameRequest.start();
+            return;
+        }
+        flushFrame();
+    }
+    function flushFrame() {
         if (!_complete || !live || !options || !_worker)
             return;
         if (!frameRequestsEnabled || _working || busy) {
@@ -385,7 +397,7 @@ Item {
         objectName: "lumiereFrameRequest"
         interval: 0
         onTriggered: if (root._complete)
-            root.requestFrame()
+            root.flushFrame()
     }
     Timer {
         id: piecesCompletion

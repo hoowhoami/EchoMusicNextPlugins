@@ -40,3 +40,52 @@ test('Fume reuses text analysis across font sizes while keeping exact metrics an
     Native.configure({ pieces: [] });
   }
 });
+
+test('font-independent caches preserve RTL, CJK, emoji and combining layouts across exact font changes', () => {
+  const texts = [
+    'שלום עולם 12 office ffi',
+    'السَّلَامُ عَلَيْكُم 12-34',
+    'á 👨‍👩‍👧‍👦 🇨🇳 १२३.४५',
+    '日本語（句読点）と月光。',
+    '__proto__ constructor',
+  ];
+  const segmenter = new Intl.Segmenter('und', { granularity: 'word' });
+  for (const text of texts) {
+    Native.configure({
+      pieces: [{ text, pieces: Array.from(segmenter.segment(text)) }],
+      evaluator: (font, value) => Number(/ ([\d.]+)px /.exec(font)[1]) * [...value].length * 0.61,
+    });
+    Pretext.clearCache();
+    const fonts = [20, 25.375, 48, 37.125].map((size) => `640 ${size}px "sans"`);
+    const cached = fonts.map((font) =>
+      Pretext.prepareWithSegments(text, font, { whiteSpace: 'pre-wrap' }),
+    );
+    for (let i = 0; i < fonts.length; ++i) {
+      Pretext.clearCache();
+      const independent = Pretext.prepareWithSegments(text, fonts[i], { whiteSpace: 'pre-wrap' });
+      assert.deepEqual(cached[i], independent);
+      for (const width of [30, 97.5, 400])
+        assert.deepEqual(
+          Pretext.layoutWithLines(cached[i], width, 24),
+          Pretext.layoutWithLines(independent, width, 24),
+        );
+    }
+  }
+  Pretext.clearCache();
+  Native.configure({ pieces: [] });
+  Native.clearGraphemeCache();
+});
+
+test('an exact zero width is reused rather than rediscovered as missing', () => {
+  const font = '640 20px "sans"',
+    text = '\u200b';
+  Native.configure({
+    pieces: [],
+    discovery: true,
+    measurements: [{ key: Native.metricKey(font, text), width: 0 }],
+  });
+  Native.getMeasureContext().font = font;
+  assert.equal(Native.getMeasureContext().measureText(text).width, 0);
+  assert.deepEqual(Native.pendingMeasurements(), []);
+  Native.configure({ pieces: [] });
+});

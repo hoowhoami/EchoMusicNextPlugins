@@ -1,4 +1,4 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See docs/folia/lumiere-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 import { createRng } from '../lumiereRandom.mjs';
 import { compressLight, lightAt } from './rig.mjs';
 const lumiereScaleMask = 0 | 0;
@@ -37,7 +37,8 @@ const createMotes = (pixi, options) => {
   });
   const update = (time, beams, color, intensity) => {
     const omega = (Math.PI * 2) / Math.max(spec.swirlPeriod, 0.1);
-    for (const mote of motes) {
+    for (let i = 0; i < motes.length; ++i) {
+      const mote = motes[i];
       const speed = 0.45 + mote.depth * 0.9;
       const swirl = spec.swirl * (0.5 + mote.depth);
       const x = wrap(

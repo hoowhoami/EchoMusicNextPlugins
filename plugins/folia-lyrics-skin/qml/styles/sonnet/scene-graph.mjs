@@ -401,7 +401,16 @@ export function createSceneGraph(options = {}) {
       return this._push('M' + x + ',' + y, null);
     }
     lineTo(x, y) {
-      const b = polyBounds([this._last.x, this._last.y, x, y]);
+      const x0 = this._last.x,
+        y0 = this._last.y;
+      const left = Math.min(x0, x),
+        top = Math.min(y0, y);
+      const b = {
+        x: left,
+        y: top,
+        width: Math.max(x0 + 0, x + 0) - left,
+        height: Math.max(y0 + 0, y + 0) - top,
+      };
       this._last.set(x, y);
       return this._push('L' + x + ',' + y, b);
     }

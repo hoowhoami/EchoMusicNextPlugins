@@ -181,7 +181,7 @@ Item {
                     const queue = [];
                     for (const group of next.groups) {
                         if (_groups.has(group.id))
-                            _groups.get(group.id).group = group;
+                            _groups.get(group.id).apply(group);
                         else
                             queue.push({
                                 kind: 'group',
@@ -263,12 +263,14 @@ Item {
                     actor.texture = entry.spec;
                 }
                 if (node.kind === 'batch') {
-                    actor.providers = node.sources.map(id => {
+                    const providers = node.sources.map(id => {
                         const entry = _textures.get(id);
                         if (!entry)
                             throw new Error('Native batch texture is missing');
                         return entry.actor;
                     });
+                    if (providers.length !== actor.providers.length || providers.some((provider, i) => provider !== actor.providers[i]))
+                        actor.providers = providers;
                     actor.width = root.width;
                     actor.height = root.height;
                 }

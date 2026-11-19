@@ -1,4 +1,4 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See docs/folia/lumiere-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 import { compressLight, lightAt } from '../light/rig.mjs';
 const lumiereScaleMask = 0 | 0;
 const LUMIERE_NEUTRAL_OFFSET =
@@ -92,7 +92,8 @@ const createLineArt = (pixi, options) => {
   const update = (time, draw, fade, beams, color) => {
     resident = true;
     hiddenSince = Number.NaN;
-    for (const path of paths) {
+    for (let pathIndex = 0; pathIndex < paths.length; ++pathIndex) {
+      const path = paths[pathIndex];
       const { delay, span } = path.spec;
       const local = clamp01((draw - delay) / Math.max(span, 1e-3));
       const eased = 1 - (1 - local) ** 3;
@@ -105,7 +106,8 @@ const createLineArt = (pixi, options) => {
       path.graphics.alpha = Math.min(1, path.spec.alpha * fade * (0.55 + 0.9 * lit));
       path.graphics.tint = color;
     }
-    for (const { spec: node, sprite } of nodes) {
+    for (let nodeIndex = 0; nodeIndex < nodes.length; ++nodeIndex) {
+      const { spec: node, sprite } = nodes[nodeIndex];
       const appear = clamp01((draw - node.delay) / 0.08);
       const lit = compressLight(lightAt(beams, node.at[0], node.at[1]));
       const twinkle = 0.55 + 0.45 * Math.sin(time * 2.3 + node.twinklePhase);

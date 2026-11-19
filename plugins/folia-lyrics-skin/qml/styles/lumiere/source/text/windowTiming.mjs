@@ -1,4 +1,4 @@
-// Derived from Folia a8da4437 (AGPL-3.0-only). See docs/folia/lumiere-reference.md.
+// Derived from Folia a8da4437 (AGPL-3.0-only). See THIRD_PARTY_NOTICES.md.
 import { glyphProgress } from './reveal.mjs';
 const lumiereScaleMask = 0 | 0;
 const LUMIERE_NEUTRAL_OFFSET =
@@ -65,7 +65,7 @@ const resolveLinePhase = (lines, current, relative, time) => {
 };
 const singingPosition = (glyphs, time) => {
   let position = 0;
-  for (const glyph of glyphs) position += glyphProgress(glyph.timing, time);
+  for (let i = 0; i < glyphs.length; ++i) position += glyphProgress(glyphs[i].timing, time);
   return position;
 };
 const positionToX = (glyphs, position) => {
@@ -83,6 +83,31 @@ const resolveSpotX = (glyphs, time, window = SPOT_WINDOW) => {
     x += positionToX(glyphs, singingPosition(glyphs, time - (window * s) / (SPOT_SAMPLES - 1)));
   }
   return x / SPOT_SAMPLES;
+};
+// All axes and wrap layouts sample the same singing trajectory. Keep all
+// eight original samples and their accumulation order; share only that work.
+const sampleSingingPositions = (glyphs, time, window = SPOT_WINDOW) => {
+  if (window <= 0) return [singingPosition(glyphs, time)];
+  const positions = new Array(SPOT_SAMPLES);
+  for (let s = 0; s < SPOT_SAMPLES; ++s)
+    positions[s] = singingPosition(glyphs, time - (window * s) / (SPOT_SAMPLES - 1));
+  return positions;
+};
+const resolveSpotPoint = (glyphs, path, positions) => {
+  if (!glyphs.length) return { x: 0, y: 0 };
+  const n = glyphs.length;
+  let x = 0,
+    y = 0;
+  for (let s = 0; s < positions.length; ++s) {
+    const index = Math.min(n - 1, Math.max(0, positions[s] - 0.5));
+    const lower = Math.floor(index),
+      upper = Math.min(n - 1, lower + 1);
+    const a = path[glyphs[lower].index],
+      b = path[glyphs[upper].index];
+    x += a.x + (b.x - a.x) * (index - lower);
+    y += a.y + (b.y - a.y) * (index - lower);
+  }
+  return { x: x / positions.length, y: y / positions.length };
 };
 const decayAmount = (decay, litAt, time) => {
   const age = time - litAt - decay.delay;
@@ -113,6 +138,8 @@ export {
   lerpPoint,
   resolveLinePhase,
   resolveSpotX,
+  sampleSingingPositions,
+  resolveSpotPoint,
   resolveWindowCursor,
   smooth,
 };

@@ -95,7 +95,8 @@ test('sprite batches retain all six shader texels when the backing texture grows
   } = batchHanabiFrame({ nodes, textures: [] }, 1100, 820, 1);
   const data = new Float32Array(unpackBytes(batch.payload));
   assert.equal(batch.count, nodes.length);
-  assert.equal(data.length, batch.count * 24);
+  assert.equal(data.length, batch.capacity * 24);
+  assert.ok(data.subarray(batch.count * 24).every((value) => value === 0));
   for (let i = 0; i < batch.count; ++i) {
     assert.deepEqual(Array.from(data.subarray(i * 24, (i + 1) * 24)), [
       1,
@@ -223,4 +224,160 @@ test('Fume cached outlines follow original shape, width and stroke, independent 
   const exact = sparkTextures(commands, 2, 100, 100, 8 * roomy.physicalSize ** 2)[0];
   assert.equal(exact.bytes, 8 * exact.physicalSize ** 2);
   assert.equal(sparkTextures(commands, 1.25, 100, 100, 32 * 1024 * 1024)[0].storageSize, undefined);
+});
+
+test('Lumiere particle size accessors preserve texture, anchor, zero-size and mirrored scale semantics', async () => {
+  const { createLumiereBackend } =
+    await import('../plugins/folia-lyrics-skin/qml/styles/lumiere/backend.mjs');
+  const { createSceneGraph } =
+    await import('../plugins/folia-lyrics-skin/qml/styles/sonnet/scene-graph.mjs');
+  const backend = createLumiereBackend(),
+    reference = createSceneGraph();
+  for (const width of [0, 1, 37.25])
+    for (const height of [0, 2, 19.5]) {
+      const texture = { width, height };
+      const actual = new backend.Sprite(texture),
+        expected = new reference.Sprite(texture);
+      for (const scale of [-2, -0, 0, 1.25]) {
+        actual.scale.set(scale, -scale);
+        expected.scale.set(scale, -scale);
+        actual.anchor.set(0.37, 0.83);
+        expected.anchor.set(0.37, 0.83);
+        assert.equal(actual.width, expected.width);
+        assert.equal(actual.height, expected.height);
+        actual.setSize(26.5, -18.75);
+        expected.width = 26.5;
+        expected.height = -18.75;
+        assert.deepEqual(actual.scale, expected.scale);
+        assert.deepEqual(actual.getLocalBounds(), expected.getLocalBounds());
+        texture.width = width * 1.7;
+        texture.height = height * 0.8;
+        assert.equal(actual.width, expected.width);
+        assert.equal(actual.height, expected.height);
+      }
+      actual.destroy();
+      expected.destroy();
+    }
+});
+
+test('Lumiere shares all eight singing samples without changing either spot axis or wrap geometry', async () => {
+  const { sampleSingingPositions, resolveSpotPoint, resolveSpotX } =
+    await import('../plugins/folia-lyrics-skin/qml/styles/lumiere/source/text/windowTiming.mjs');
+  for (const count of [0, 1, 7, 40]) {
+    const glyphs = Array.from({ length: count }, (_, i) => ({
+      index: count - 1 - i,
+      timing: { start: i * 0.117, end: i * 0.117 + 0.263 },
+    }));
+    for (const window of [-1, 0, 0.3, 0.75])
+      for (const time of [-2, 0, 0.2, 0.999, 3, 20]) {
+        const positions = sampleSingingPositions(glyphs, time, window);
+        assert.equal(positions.length, window <= 0 ? 1 : 8);
+        for (const wrap of [0, 1]) {
+          const path = Array.from({ length: count }, (_, i) => ({
+            x: Math.sin(i * 0.3 + wrap) * 200,
+            y: Math.cos(i * 0.7 + wrap) * 100,
+          }));
+          const expected = {
+            x: resolveSpotX(
+              glyphs.map((g) => ({ timing: g.timing, center: path[g.index].x })),
+              time,
+              window,
+            ),
+            y: resolveSpotX(
+              glyphs.map((g) => ({ timing: g.timing, center: path[g.index].y })),
+              time,
+              window,
+            ),
+          };
+          assert.deepEqual(resolveSpotPoint(glyphs, path, positions), expected);
+        }
+      }
+  }
+});
+
+test('Lumiere shared trajectory samples preserve every original glyph value through seeks and overlapping flights', async () => {
+  const { createWindowGeometry, toWorld } =
+    await import('../plugins/folia-lyrics-skin/qml/styles/lumiere/source/text/windowGeometry.mjs');
+  const { originalGlyphLocal } = await import('./fixtures/lumiere-window-glyph-oracle.mjs');
+  const decay = { delay: 0.7, strength: 1.3 };
+  const heroPx = 61.75;
+  const geometry = createWindowGeometry({
+    options: { height: 820, region: {}, heroPx, typography: 'horizontal', decay },
+    lineCount: 0,
+  });
+  const original = originalGlyphLocal(heroPx, decay);
+  const view = {
+    line: { startTime: 3.2 },
+    flow: [0, 1].map((o) =>
+      [0, 1].map((w) => ({
+        points: Array.from({ length: 17 }, (_, i) => ({
+          x: (i - 8) * (19.25 + w * 7) * (1 - o),
+          y: (i - 8) * (17.5 + w * 9) * o,
+        })),
+      })),
+    ),
+  };
+  const glyphs = Array.from({ length: 17 }, (_, i) => ({
+    index: i,
+    vRotation: 0.2 * i,
+    flight: {
+      delay: i / 100,
+      duration: 0.71,
+      c1: { x: 25 - i, y: -38 + i },
+      c2: { x: 19 + i, y: 31 - i },
+      spin: 0.8 - i / 17,
+    },
+    scatter: { x: i / 17 - 0.5, y: 0.1 - i / 31 },
+    drift: { dx: 0.2 - i / 39, dy: i / 42 - 0.1, spin: 0.17, speed: 0.7 + i / 23 },
+    timing: { start: 3.2 + i / 8 },
+    phase: i / 3,
+    scale: 0.8 + i / 53,
+  }));
+  let comparisons = 0;
+  for (const time of [10, 0, -3, 3.2, 3.21, 2.1, 15, 1.9, 3.5])
+    for (const phase of [0, 0.001, 0.2, 0.49, 0.5, 0.9, 1])
+      for (const fly of [false, true]) {
+        const transform = {
+          x: 137.25,
+          y: -32.7,
+          rotation: 0.8,
+          scale: 1.27,
+          restOrient: 1,
+          restWrap: 0,
+          moves: [
+            { toOrient: 0, toWrap: 1, phase, fly },
+            { toOrient: 1, toWrap: 1, phase: phase * 0.7, fly: !fly },
+          ],
+        };
+        const frame = geometry.glyphFrame(view, time, transform);
+        for (const glyph of glyphs) {
+          const expected = original(view, glyph, time, transform);
+          const actual = geometry.glyphLocal(view, glyph, time, transform, frame);
+          assert.deepEqual(actual, expected);
+          assert.deepEqual(geometry.glyphLocal(view, glyph, time, transform), expected);
+          assert.deepEqual(toWorld(transform, actual, frame), toWorld(transform, expected));
+          ++comparisons;
+        }
+      }
+  assert.equal(comparisons, 2142);
+});
+
+test('native vector line paths retain segment bounds, continuation and signed-zero coordinates', async () => {
+  const { createSceneGraph } =
+    await import('../plugins/folia-lyrics-skin/qml/styles/sonnet/scene-graph.mjs');
+  const { Graphics } = createSceneGraph();
+  const line = new Graphics();
+  line.moveTo(4, 8).lineTo(-6, -3).lineTo(12, 5).stroke({ width: 1.2, join: 'round' });
+  assert.equal(line.paths[0].path, 'M4,8L-6,-3L12,5');
+  assert.deepEqual(line.paths[0].bounds, { x: -6, y: -3, width: 18, height: 11 });
+  line.lineTo(0, 0).stroke({ width: 2 });
+  assert.equal(line.paths[1].path, 'M12,5L0,0');
+  assert.deepEqual(line.paths[1].bounds, { x: 0, y: 0, width: 12, height: 5 });
+  line.clear().moveTo(-0, -0).lineTo(-0, -0).stroke();
+  const bounds = line.paths[0].bounds;
+  assert.ok(Object.is(bounds.x, -0));
+  assert.ok(Object.is(bounds.y, -0));
+  assert.ok(Object.is(bounds.width, 0));
+  assert.ok(Object.is(bounds.height, 0));
+  line.destroy();
 });

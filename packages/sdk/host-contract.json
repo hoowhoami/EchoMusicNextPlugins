@@ -130,6 +130,7 @@
   "contexts": ["main"],
   "features": [
     "graphics.floatTexture",
+    "graphics.floatTexture.base64",
     "graphics.shaderComposition",
     "graphics.blendEquations",
     "graphics.depthMsaa",
@@ -5513,6 +5514,12 @@
         },
         {
           "name": "uploadPacked",
+          "parameters": ["int", "int", "QString"],
+          "returnType": "bool",
+          "signal": false
+        },
+        {
+          "name": "uploadBase64",
           "parameters": ["int", "int", "QString"],
           "returnType": "bool",
           "signal": false

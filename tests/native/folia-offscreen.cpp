@@ -1,6 +1,8 @@
 // No Cocoa windows or activation calls. Verify real Metal pixels before using
 // this harness for any plugin cost measurement.
 #include "folia-benchmark-support.h"
+#include "FloatTexture.h"
+#include <QtEndian>
 #include <QAbstractAnimation>
 #include <QGuiApplication>
 #include <QImage>
@@ -11,9 +13,12 @@
 #include <QQuickRenderControl>
 #include <QQuickRenderTarget>
 #include <QQuickWindow>
+#include <QResource>
 #include <QtCore/private/qcore_mac_p.h>
 #include <QtQuick/private/qquickwindow_p.h>
 #include <QtTest>
+#include <array>
+#include <cstring>
 #include <memory>
 #include <rhi/qrhi.h>
 
@@ -22,6 +27,7 @@ class FoliaOffscreenTest : public QObject
     Q_OBJECT
 private slots:
     void metalTexturePixels();
+    void floatTextureCodecPixels();
     void virtualPresentationState();
     void installedPlaybackPage();
 };
@@ -238,6 +244,113 @@ public:
         }
     }
 };
+void FoliaOffscreenTest::floatTextureCodecPixels()
+{
+    if (!qEnvironmentVariableIsSet("FOLIA_FLOAT_CODEC_SHADER"))
+        QSKIP("Bake tests/native/shaders/float-codec.frag and set FOLIA_FLOAT_CODEC_SHADER");
+    Host host;
+    host.runtime.importDirectory(package(host.temporary.path(), "export function activate(c) {}",
+                                         {"graphics.floatTexture", "graphics.floatTexture.base64"},
+                                         {"graphics"}));
+    QVERIFY(awaitEvent(
+        [&] { return host.runtime.state(host.installation()) == PluginRuntime::Active; }, 5000));
+    auto *gpu = host.runtime.context(host.installation())->graphics();
+    QVERIFY(gpu && gpu->active());
+    const auto budget = gpu->memoryBudget();
+    OffscreenSession session;
+    QVERIFY(session.initialize({64, 32}, 1));
+    QQmlComponent component(&host.engine);
+    component.setData(R"(
+import QtQuick
+import EchoMusic.PluginSdk
+Item {
+    id: view; width: 64; height: 32
+    required property url shader
+    FloatTexture { id: pixels; objectName: "codecPixels"; width: 1; height: 1 }
+    ShaderEffect { anchors.fill: parent; property var source: pixels; fragmentShader: view.shader }
+})",
+                      QUrl("qrc:/folia-float-codec.qml"));
+    std::unique_ptr<QObject> object(component.createWithInitialProperties(
+        {{"shader", QUrl::fromLocalFile(qEnvironmentVariable("FOLIA_FLOAT_CODEC_SHADER"))}}));
+    QVERIFY2(object, qPrintable(component.errorString()));
+    auto *item = qobject_cast<QQuickItem *>(object.get());
+    item->setParentItem(session.window.contentItem());
+    auto *source = object->findChild<FloatTexture *>("codecPixels");
+    QVERIFY(source);
+    source->setGraphics(gpu);
+    QByteArray bytes(6 * 16, Qt::Uninitialized);
+    for (int pixel = 0; pixel < 6; ++pixel) {
+        const std::array<float, 4> channels{-.5f + pixel * .125f, 2.f - pixel * .1f,
+                                            .25f + pixel * .05f, 1.f};
+        for (int channel = 0; channel < 4; ++channel) {
+            quint32 bits;
+            memcpy(&bits, &channels[channel], 4);
+            qToLittleEndian(bits, bytes.data() + pixel * 16 + channel * 4);
+        }
+    }
+    const auto encoded = QString::fromLatin1(bytes.toBase64());
+    QString packed;
+    for (int i = 0; i < bytes.size(); i += 2)
+        packed.append(QChar(qFromLittleEndian<quint16>(bytes.constData() + i)));
+    const auto verifyPixels = [&] {
+        QRhiReadbackResult result;
+        session.frame(&result);
+        if (result.data.isEmpty())
+            return false;
+        const QImage image(reinterpret_cast<const uchar *>(result.data.constData()), 64, 32,
+                           QImage::Format_RGBA8888);
+        for (int pixel = 0; pixel < 6; ++pixel) {
+            const auto actual = image.pixelColor((pixel % 3) * 64 / 3 + 10, (pixel / 3) * 16 + 8);
+            if (qAbs(actual.red() - qRound((.25f + pixel * .0625f) * 255)) > 1 ||
+                qAbs(actual.green() - qRound((.5f - pixel * .025f) * 255)) > 1 ||
+                qAbs(actual.blue() - qRound((.25f + pixel * .05f) * 255)) > 1 ||
+                actual.alpha() != 255)
+                return false;
+        }
+        return true;
+    };
+    QVERIFY(source->uploadBase64(3, 2, encoded));
+    QVERIFY(awaitEvent(verifyPixels, 5000));
+    QVERIFY(awaitEvent([&] { return source->textureUploads() == 1; }, 5000));
+    QVERIFY(source->uploadPacked(3, 2, packed));
+    QVERIFY(verifyPixels());
+    QCOMPARE(source->textureUploads(), 1);
+    const std::array<quint32, 24> patterns{
+        0,          0x80000000, 1,          0x80000001, 0x007fffff, 0x807fffff,
+        0x00800000, 0x80800000, 0x7f7fffff, 0xff7fffff, 0x3f800000, 0xbf800000,
+        0x3f000000, 0xbf000000, 0x40000000, 0xc0000000, 0x3f800001, 0xbf800001,
+        0x3f7fffff, 0xbf7fffff, 0x12345678, 0x92345678, 0x6abcdef0, 0xeabcdef0};
+    QByteArray special(96, Qt::Uninitialized);
+    QString specialPacked;
+    for (int i = 0; i < int(patterns.size()); ++i)
+        qToLittleEndian(patterns[i], special.data() + i * 4);
+    for (int i = 0; i < special.size(); i += 2)
+        specialPacked.append(QChar(qFromLittleEndian<quint16>(special.constData() + i)));
+    QVERIFY(source->uploadBase64(3, 2, QString::fromLatin1(special.toBase64())));
+    QVERIFY(awaitEvent([&] { return source->textureUploads() == 2; }, 5000));
+    QVERIFY(source->uploadPacked(3, 2, specialPacked));
+    session.frame();
+    QCOMPARE(source->textureUploads(),
+             2); // Identical finite bits, including signed zero/subnormals.
+    QVERIFY(source->uploadBase64(3, 2, encoded));
+    QVERIFY(awaitEvent(verifyPixels, 5000));
+    for (int cycle = 0; cycle < 3; ++cycle) {
+        item->setVisible(false);
+        QVERIFY(awaitEvent([&] { return budget->native.used.load() == 0; }, 5000));
+        QVERIFY(!source->uploadBase64(3, 2, encoded));
+        item->setVisible(true);
+        QVERIFY(source->uploadBase64(3, 2, encoded));
+        QVERIFY(awaitEvent(verifyPixels, 5000));
+        QCOMPARE(budget->native.used.load(), 96);
+    }
+    QVERIFY(host.runtime.setEnabled(host.installation(), false));
+    QVERIFY(awaitEvent(
+        [&] { return budget->native.used.load() == 0 && budget->floatTextures.load() == 0; },
+        5000));
+    QVERIFY(!source->uploadBase64(3, 2, encoded));
+    QVERIFY(!session.window.handle());
+}
+
 void FoliaOffscreenTest::virtualPresentationState()
 {
     QCOMPARE(QGuiApplication::platformName(), QString("offscreen"));
@@ -352,6 +465,24 @@ Item {
             auditBeat.restart();
         });
         auditHeartbeat.start();
+    }
+    const auto computeReference = qEnvironmentVariable("ECHO_GLYPH_REFERENCE_COMPUTE_RCC");
+    if (!computeReference.isEmpty()) {
+        Q_CLEANUP_RESOURCE(echo_plugin_glyph_canvas_compute_shaders);
+        QVERIFY(QResource::registerResource(computeReference));
+        QFile selected(":/qt/qml/EchoMusic/PluginSdk/shaders/glyph-canvas/vertical.comp.qsb");
+        QVERIFY(selected.open(QIODevice::ReadOnly));
+        QCOMPARE(selected.readAll(), QByteArray("unsupported-compute-test"));
+    }
+    const auto reference = qEnvironmentVariable("ECHO_GLYPH_REFERENCE_RCC");
+    if (!reference.isEmpty()) {
+        Q_CLEANUP_RESOURCE(echo_plugin_glyph_canvas_shaders);
+        QVERIFY(QResource::registerResource(reference));
+        QFile expected(qEnvironmentVariable("ECHO_GLYPH_REFERENCE_QSB"));
+        QFile selected(":/qt/qml/EchoMusic/PluginSdk/shaders/glyph-canvas/blur.frag.qsb");
+        QVERIFY(expected.open(QIODevice::ReadOnly));
+        QVERIFY(selected.open(QIODevice::ReadOnly));
+        QCOMPARE(selected.readAll(), expected.readAll());
     }
     QElapsedTimer preparation;
     preparation.start();

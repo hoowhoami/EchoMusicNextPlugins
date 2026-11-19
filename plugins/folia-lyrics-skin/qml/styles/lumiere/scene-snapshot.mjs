@@ -179,7 +179,7 @@ export function snapshotLumiereScene(root, options = {}) {
     const children = node.sortableChildren
       ? node.children.slice().sort((a, b) => a.zIndex - b.zIndex)
       : node.children;
-    for (const child of children) visit(child, node.id, result.blendMode, state);
+    for (let i = 0; i < children.length; ++i) visit(children[i], node.id, result.blendMode, state);
   }
   visit(root, null);
   if (options.textureCache)

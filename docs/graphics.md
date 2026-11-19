@@ -107,7 +107,7 @@ Qt组件layer/texture provider的只读GPU借用见[纹理源](gpu-texture-sourc
 
 ## ShaderEffect 的原始浮点输入与混合
 
-`graphics.floatTexture` 提供 `FloatTexture`，将原始 RGBA32F 数据直接作为 Qt `ShaderEffect` 纹理源，不进行图像编码或颜色转换。先绑定当前插件的 `graphics`；`upload(width, height, arrayBuffer)` 只接受 ArrayBuffer，`uploadPacked(width, height, utf16Words)` 接受按小端 uint16 打包的相同字节。每像素严格 16 字节，所有 float32 必须有限；每轴 1–8192、每纹理最多 16 MiB，共享当前 scope 的 128 MiB native 预算，最多 256 个在用或待退休的纹理。拒绝的输入保留上一份有效内容。
+`graphics.floatTexture` 提供 `FloatTexture`，将原始 RGBA32F 数据直接作为 Qt `ShaderEffect` 纹理源，不进行图像编码或颜色转换。先绑定当前插件的 `graphics`；`upload(width, height, arrayBuffer)` 只接受 ArrayBuffer，`uploadPacked(width, height, utf16Words)` 接受按小端 uint16 打包的相同字节。声明 `graphics.floatTexture.base64` 后可用 `uploadBase64(width, height, base64)` 原生解码标准 ASCII Base64，避免在 QML 中逐字节复制；输入须规范编码、正确填充且无空白，尺寸必须与解码字节数相符。每像素严格 16 字节，所有 float32 必须有限；每轴 1–8192、每纹理最多 16 MiB，共享当前 scope 的 native 预算，最多 256 个在用或待退休的纹理。拒绝的输入保留上一份有效内容。
 
 `sourceBytes` 表示保留的源字节，`cacheBytes` 表示已上传 GPU 字节，`ready` 表示存在已上传且没有错误的纹理。更新排队期间仍可使用上一份纹理，`ready` 不保证最新数据已经呈现；同尺寸更新复用原生分配。纹理在被 ShaderEffect 采样时上传，因此不要用 `ready` 来阻止唯一采样者的创建。`textureUploads` 累计实际上传数，`errorString` 提供错误。相同数据不会重复上传。数据源本身不画像素，其坐标可在裁切视口外；离屏回收按最近有尺寸的父呈现项判断。隐藏、全透明、最小化、停用和会话失效会清理数据；恢复后由调用者重新上传，不能用失效账号的数据自动恢复。`clear()` 主动释放，GPU 资源在所属渲染线程退休。
 
