@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "id": "dynamic-themes",
   "name": "动态主题",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "整窗枫叶、幻彩、金丝带、杨柳与摩天轮主题，使用实时着色器和分层动画。",
   "author": "hoowhoami",
   "kind": "qml-js",
@@ -17,7 +17,7 @@
   "contexts": ["main"],
   "tags": ["主题", "动态", "特效"],
   "distribution": {
-    "artifact": "artifacts/dynamic-themes-1.0.1.echomod",
-    "sha256": "19fff713dd65a3f43a5629bc4dd49edb1f3d8a6b651a4a6c6ba2fd69bb9080f6"
+    "artifact": "artifacts/dynamic-themes-1.0.2.echomod",
+    "sha256": "a3782ac8557605ab9f41a38730918150d3b81719cae60dc219f660be43002dd0"
   }
 }

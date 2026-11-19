@@ -12,7 +12,7 @@
 
 HDR默认关闭，仅在宿主报告localHdrSupported时可用；当前嵌入式后端禁用该选项并说明原因。普通频谱继续使用GPU，不修改主窗口格式或透明、毛玻璃，不声称此版本已实现局部HDR实屏输出。
 
-频谱插件 1.0.2 需要 EchoMusicNext 0.1.7 或更高版本。在仓库根目录执行 `npm run build`，然后在插件管理面板安装 `dist/spectrum-visualizer-1.0.2.echomod`，进入插件设置选择显示位置。
+频谱插件 1.0.3 需要 EchoMusicNext 0.1.7 或更高版本。在仓库根目录执行 `npm run build`，然后在插件管理面板安装 `dist/spectrum-visualizer-1.0.3.echomod`，进入插件设置选择显示位置。
 
 shaders下的qsb由Qt6.12 qsb离线生成（GLSL100es/120/150、HLSL50、MSL12），插件运行时无需编译器。修改frag时用相同参数重新生成。原绘制数学和图标的MIT版权见LICENSE，保留原作者声明。
 

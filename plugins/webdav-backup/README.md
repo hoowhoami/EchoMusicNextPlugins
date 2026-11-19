@@ -30,7 +30,7 @@
 
 ## 开发
 
-插件初始版本为 1.0.0，要求宿主 0.1.3 及同步后的 SDK，使用 `maxRequestBytes` 显式请求大小选项。源码由开发工具编译为 ES2016 `.echomod`，不依赖 Node、浏览器 DOM、fetch、URL 或 btoa 运行时。
+插件版本为 1.0.1，要求宿主 0.1.3 及同步后的 SDK，使用 `maxRequestBytes` 显式请求大小选项。源码由开发工具编译为 ES2016 `.echomod`，不依赖 Node、浏览器 DOM、fetch、URL 或 btoa 运行时。
 
 ```sh
 npm run check

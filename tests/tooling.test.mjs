@@ -121,7 +121,59 @@ test('echomod is a deterministic validated container and corrupted contents are 
   const bad = Buffer.from(bytes);
   bad[30 + bad.readUInt16LE(26)] ^= 1;
   await writeFile(first.file, bad);
-  await assert.rejects(validatePackage(first.file), /checksum mismatch/);
+  await assert.rejects(
+    validatePackage(first.file),
+    /checksum mismatch|Invalid compressed plugin payload/,
+  );
+});
+
+test('archive compression preserves bytes and executable modes while storing incompressible data', async (t) => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'echo-archive-deflate-'));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const source = path.join(temporary, 'source');
+  await import('node:fs/promises').then(({ mkdir }) => mkdir(source));
+  const text = Buffer.from('dictionary shader and module data\n'.repeat(2048));
+  const binary = Buffer.from([213, 91, 147, 78, 255, 0, 32, 43, 17, 99, 118, 233, 54, 72, 41, 3]);
+  await writeFile(path.join(source, 'a-text.mjs'), text, { mode: 0o755 });
+  await writeFile(path.join(source, 'z-binary.bin'), binary);
+  await writeFile(path.join(source, 'manifest.json'), '{}');
+  const archive = path.join(temporary, 'test.echomod');
+  await packPluginArchive(source, archive);
+  const bytes = await readFile(archive);
+  assert.equal(bytes.readUInt16LE(8), 8);
+  assert.ok(bytes.length < text.length / 4);
+  let cursor = 0;
+  const methods = new Map();
+  while (bytes.readUInt32LE(cursor) === 0x04034b50) {
+    const length = bytes.readUInt16LE(cursor + 26);
+    methods.set(
+      bytes.subarray(cursor + 30, cursor + 30 + length).toString(),
+      bytes.readUInt16LE(cursor + 8),
+    );
+    cursor += 30 + length + bytes.readUInt16LE(cursor + 28) + bytes.readUInt32LE(cursor + 18);
+  }
+  assert.equal(methods.get('z-binary.bin'), 0);
+  const extracted = path.join(temporary, 'extracted');
+  await unpackPluginArchive(archive, extracted);
+  assert.deepEqual(await readFile(path.join(extracted, 'a-text.mjs')), text);
+  assert.deepEqual(await readFile(path.join(extracted, 'z-binary.bin')), binary);
+  if (process.platform !== 'win32')
+    assert.equal((await stat(path.join(extracted, 'a-text.mjs'))).mode & 0o111, 0o111);
+});
+
+test('highly compressible source files still respect the unpacked byte budget', async (t) => {
+  const temporary = await mkdtemp(path.join(os.tmpdir(), 'echo-archive-budget-'));
+  t.after(() => rm(temporary, { recursive: true, force: true }));
+  const { mkdir, truncate } = await import('node:fs/promises');
+  const source = path.join(temporary, 'source');
+  await mkdir(source);
+  const oversized = path.join(source, 'zeros.bin');
+  await writeFile(oversized, '');
+  await truncate(oversized, 128 * 1024 * 1024 + 1);
+  await assert.rejects(
+    packPluginArchive(source, path.join(temporary, 'oversized.echomod')),
+    /contents exceed 128 MiB/,
+  );
 });
 
 test('stable author locators discover updates through manifests and verify package snapshots', async (t) => {

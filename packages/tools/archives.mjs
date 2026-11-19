@@ -1,9 +1,9 @@
 import path from 'node:path';
 import { readFile, writeFile, rename, readdir, mkdir, stat, chmod } from 'node:fs/promises';
-import { crc32, inflateRawSync } from 'node:zlib';
+import { crc32, inflateRawSync, deflateRawSync } from 'node:zlib';
 import { createHash, randomUUID } from 'node:crypto';
 
-// Deterministic ZIP/STORE container: UTF-8, regular files only, fixed DOS epoch.
+// Deterministic ZIP container: UTF-8, regular files only, fixed DOS epoch.
 // The host's existing bounded Rust extractor validates paths, CRC and budgets.
 // No shell zip utility or Node runtime is required on the user's machine.
 export async function packPluginArchive(directory, destination) {
@@ -19,20 +19,30 @@ export async function packPluginArchive(directory, destination) {
   };
   await walk();
   names.sort();
+  if (names.length > 4096) throw new Error('Plugin archive exceeds 4096 files');
   const chunks = [],
     central = [];
-  let offset = 0;
+  let offset = 0,
+    unpacked = 0;
   for (const name of names) {
     const filename = Buffer.from(name, 'utf8');
+    const info = await stat(path.join(directory, name));
+    if (unpacked + info.size > 128 * 1024 * 1024) throw new Error('Plugin contents exceed 128 MiB');
     const data = await readFile(path.join(directory, name));
+    unpacked += data.length;
+    if (unpacked > 128 * 1024 * 1024) throw new Error('Plugin contents exceed 128 MiB');
+    const compressed = deflateRawSync(data, { level: 6 });
+    const method = compressed.length < data.length ? 8 : 0;
+    const payload = method === 8 ? compressed : data;
     const checksum = crc32(data);
     const local = Buffer.alloc(30);
     local.writeUInt32LE(0x04034b50);
     local.writeUInt16LE(20, 4);
     local.writeUInt16LE(0x800, 6);
+    local.writeUInt16LE(method, 8);
     local.writeUInt16LE(33, 12);
     local.writeUInt32LE(checksum, 14);
-    local.writeUInt32LE(data.length, 18);
+    local.writeUInt32LE(payload.length, 18);
     local.writeUInt32LE(data.length, 22);
     local.writeUInt16LE(filename.length, 26);
     const header = Buffer.alloc(46);
@@ -40,17 +50,18 @@ export async function packPluginArchive(directory, destination) {
     header.writeUInt16LE(0x314, 4);
     header.writeUInt16LE(20, 6);
     header.writeUInt16LE(0x800, 8);
+    header.writeUInt16LE(method, 10);
     header.writeUInt16LE(33, 14);
     header.writeUInt32LE(checksum, 16);
-    header.writeUInt32LE(data.length, 20);
+    header.writeUInt32LE(payload.length, 20);
     header.writeUInt32LE(data.length, 24);
     header.writeUInt16LE(filename.length, 28);
-    const executable = (await stat(path.join(directory, name))).mode & 0o111;
+    const executable = info.mode & 0o111;
     header.writeUInt32LE(((0o100644 | executable) << 16) >>> 0, 38);
     header.writeUInt32LE(offset, 42);
-    chunks.push(local, filename, data);
+    chunks.push(local, filename, payload);
     central.push(header, filename);
-    offset += local.length + filename.length + data.length;
+    offset += local.length + filename.length + payload.length;
   }
   const directoryBytes = Buffer.concat(central);
   const end = Buffer.alloc(22);
@@ -135,12 +146,17 @@ export async function unpackPluginArchive(archive, destination) {
       throw new Error('Plugin extraction budget/header invalid');
     const start = local + 30 + bytes.readUInt16LE(local + 26) + bytes.readUInt16LE(local + 28);
     if (start + compressed > directoryEnd) throw new Error('Invalid plugin file bounds');
-    const data =
-      method === 0
-        ? bytes.subarray(start, start + compressed)
-        : inflateRawSync(bytes.subarray(start, start + compressed), {
-            maxOutputLength: Math.max(1, size),
-          });
+    let data;
+    try {
+      data =
+        method === 0
+          ? bytes.subarray(start, start + compressed)
+          : inflateRawSync(bytes.subarray(start, start + compressed), {
+              maxOutputLength: Math.max(1, size),
+            });
+    } catch (cause) {
+      throw new Error(`Invalid compressed plugin payload: ${name}`, { cause });
+    }
     if (data.length !== size || crc32(data) !== checksum)
       throw new Error(`Plugin checksum mismatch: ${name}`);
     const target = path.join(destination, name);

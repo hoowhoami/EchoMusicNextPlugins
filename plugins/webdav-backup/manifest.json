@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "id": "webdav-backup",
   "name": "WebDAV 备份",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "将应用设置、插件及插件数据备份到自己的 WebDAV 存储，并接入主程序的备份与恢复。",
   "author": "hoowhoami",
   "license": "MIT",
@@ -28,7 +28,7 @@
   "contexts": ["main"],
   "tags": ["备份", "WebDAV", "存储"],
   "distribution": {
-    "artifact": "artifacts/webdav-backup-1.0.0.echomod",
-    "sha256": "3021191f358089977eeaa31036d7f588a1343df6c71e49baaa4bd469e86b12a1"
+    "artifact": "artifacts/webdav-backup-1.0.1.echomod",
+    "sha256": "0cbcad94b2dee0772ca2e368d9744c73b8eeb69f2f6ee7e1abb3bb055e9c089d"
   }
 }

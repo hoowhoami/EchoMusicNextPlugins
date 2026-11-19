@@ -21,7 +21,7 @@ SDK/tools1.0.0正式生成`.echomod`文件；普通开发目录仍用于编辑�
 npm ci
 npm run sdk:check -- --host /absolute/path/to/echomusicnext
 npx echo-plugin build plugins/spectrum-visualizer --out dist
-npx echo-plugin validate dist/spectrum-visualizer-1.0.2.echomod
+npx echo-plugin validate dist/spectrum-visualizer-1.0.3.echomod
 npm run prepare:source
 npm run format:write
 npm run check:published
@@ -117,3 +117,5 @@ await volume.call('set', { percent: 50 });
 上述代码展示可选的插件间服务契约，官方源不再分发依赖演示插件；依赖图和服务隔离由宿主集成测试覆盖。正式频谱插件直接消费播放器频谱，无附加插件依赖。完整EchoMusic扩展能力按宿主迁移清单推进，本轮不声称任意修改全部宿主界面或所有65项已落地。
 
 A graphics plugin can declare `graphicsLimits` with four explicit limits and require `graphics.limits`. The host validates bounded positive integer values and the graphics capability. Omission uses the common defaults; limits remain fixed for an activation. This does not change the host window or playback engine. See [graphics](graphics.md) for exact limits and snapshot accounting.
+
+构建工具对可缩小的文件使用标准 ZIP DEFLATE，已压缩的资源可保留原样；解包内容和可执行权限不变，无需新增宿主能力。
