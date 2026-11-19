@@ -2862,6 +2862,9 @@ declare module 'echo:plugin-sdk' {
     /** Package-relative QML Item; required properties: plugin, dialog. */
     component: string;
     width?: number;
+    /** Optional total height (160..2048 logical px), clamped to the host window.
+     * Reserves space while the body loads asynchronously. Requires ui.dialogs.height. */
+    height?: number;
     title?: string;
     modal?: boolean;
     closeOnMask?: boolean;

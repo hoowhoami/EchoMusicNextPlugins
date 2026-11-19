@@ -115,21 +115,25 @@ ColumnLayout {
                 accent: root.choice === modelData.value
                 Accessible.name: modelData.title
                 Accessible.description: root.choice === modelData.value ? qsTr("已选择") : ""
-                contentItem: Column {
-                    spacing: 4
-                    Text {
+                contentItem: Item {
+                    Column {
+                        anchors.centerIn: parent
                         width: parent.width
-                        text: "永Aa"
-                        horizontalAlignment: Text.AlignHCenter
-                        color: tile.foreground
-                        font: root.previewFont(tile.modelData.value)
-                    }
-                    Text {
-                        width: parent.width
-                        text: tile.modelData.title
-                        horizontalAlignment: Text.AlignHCenter
-                        color: tile.foreground
-                        font: Theme.font(12, 500)
+                        spacing: 4
+                        Text {
+                            width: parent.width
+                            text: "永Aa"
+                            horizontalAlignment: Text.AlignHCenter
+                            color: tile.foreground
+                            font: root.previewFont(tile.modelData.value)
+                        }
+                        Text {
+                            width: parent.width
+                            text: tile.modelData.title
+                            horizontalAlignment: Text.AlignHCenter
+                            color: tile.foreground
+                            font: Theme.font(12, 500)
+                        }
                     }
                 }
                 onClicked: root.selectChoice(modelData.value)

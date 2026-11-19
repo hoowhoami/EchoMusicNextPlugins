@@ -18,6 +18,7 @@
       "ui.lyricsPage",
       "ui.state",
       "ui.dialogs",
+      "ui.dialogs.height",
       "ui.presentationClosing",
       "ui.presentationVisibility",
       "playback.context",
@@ -65,6 +66,6 @@
   },
   "distribution": {
     "artifact": "artifacts/folia-lyrics-skin-1.0.1.echomod",
-    "sha256": "9ec5f40cea0aef719915fff64ed2e8c022a3c3f0afd07641b51f14aca2af53c6"
+    "sha256": "e26ef8f6a7ebc576cb69e23c38638c113838bec3f7f92e9c028015e78484129e"
   }
 }

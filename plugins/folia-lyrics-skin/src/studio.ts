@@ -44,7 +44,8 @@ export function registerStudio(
         ctx.ui.showDialog({
           component: 'qml/studio/Studio.qml',
           title: '歌词样式设置',
-          width: 1240,
+          width: 960,
+          height: 608,
           modal: true,
           closeOnMask: true,
         }),

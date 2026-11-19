@@ -10,6 +10,7 @@ import EchoMusic.Theme
 Item {
     id: root
     required property EchoPluginViewContext page
+    property Item backdropSource: null
     property var appearance: ({})
     property font baseFont: Theme.font(14, 500)
     readonly property bool daylight: appearance.dark !== undefined ? !appearance.dark : !Theme.dark
@@ -73,9 +74,10 @@ Item {
         running: true
         onTriggered: root.followCurrent()
     }
-    EchoFloatingSurface {
+    CapsuleSurface {
         id: panel
         objectName: "foliaLyricsTimeline"
+        backdropSource: root.backdropSource
         anchors.centerIn: parent
         width: Math.min(896, root.width * 0.9)
         height: root.height * 0.8
@@ -103,6 +105,7 @@ Item {
             height: 40
             glyph: "x"
             text: qsTr("关闭歌词时间轴")
+            tooltipText: ""
             foreground: root.primaryColor
             onClicked: root.closeRequested()
         }

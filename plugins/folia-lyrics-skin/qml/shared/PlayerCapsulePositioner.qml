@@ -9,6 +9,7 @@ import EchoMusic.Theme
 
 Item {
     id: root
+    property Item backdropSource: null
     property bool open: true
     property bool motionEnabled: true
     property bool initialized: false
@@ -72,7 +73,9 @@ Item {
             }
         }
     }
-    EchoFloatingSurface {
+    CapsuleSurface {
+        objectName: "foliaCapsulePositionHint"
+        backdropSource: root.backdropSource
         anchors.top: parent.top
         anchors.topMargin: 32
         anchors.horizontalCenter: parent.horizontalCenter
@@ -123,6 +126,7 @@ Item {
                 implicitHeight: 28
                 glyph: "x"
                 text: qsTr("取消")
+                tooltipText: ""
                 foreground: root.primaryColor
                 onClicked: root.cancelRequested()
             }

@@ -329,6 +329,22 @@ Item {
         }
     }
     EchoIconButton {
+        objectName: "foliaSkinPicker"
+        anchors.right: parent.right
+        anchors.bottom: stylePicker.top
+        anchors.rightMargin: 24
+        anchors.bottomMargin: 8
+        width: 40
+        height: 40
+        glyph: "shirt"
+        text: qsTr("换肤")
+        foreground: root.appearance.text
+        opacity: chrome.hidden ? 0 : 1
+        visible: opacity > 0
+        enabled: root.presentationActive
+        onClicked: root.watchOperation(root.page.command("skins", {}))
+    }
+    EchoIconButton {
         id: stylePicker
         objectName: "foliaStylePicker"
         anchors.right: parent.right
@@ -370,6 +386,7 @@ Item {
         z: 100
         active: root.timelineOpen && root.presentationActive
         sourceComponent: PlayerCapsuleTimeline {
+            backdropSource: presentationScene
             page: root.page
             appearance: root.appearance
             baseFont: root.plugin.fonts.build([], 14, 500)

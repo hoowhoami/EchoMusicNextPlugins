@@ -169,7 +169,7 @@ await awaitOperation(ctx.clipboard.write('要复制的文本'));
 dialog.close();
 ```
 
-`showDialog` 使用主窗口共享弹层，保留当前页面，不需windows授权。宽度160..2048逻辑px并服从主窗边界，title默认插件名，modal/closeOnMask默认true；Escape始终可关闭。返回operation在正文准备完成时交付句柄，可取消尚未完成的打开；句柄支持active/changed/closed/close。最多同时8个。正文自备自然高度和必要滚动：
+`showDialog` 使用主窗口共享弹层，保留当前页面，不需windows授权。宽度160..2048逻辑px并服从主窗边界，title默认插件名，modal/closeOnMask默认true；Escape始终可关闭。声明 `ui.dialogs.height` 后可指定可选 `height`（含标题与内边距的总高度，160..2048逻辑px）；外框立即按该高度显示并服从主窗可用高度，首帧后异步装入正文，避免加载后撑大。省略时仍按正文自然高度布局。返回operation在正文准备完成时交付句柄，可取消尚未完成的打开；句柄支持active/changed/closed/close。最多同时8个。正文自备自然高度和必要滚动：
 
 ```qml
 import QtQuick

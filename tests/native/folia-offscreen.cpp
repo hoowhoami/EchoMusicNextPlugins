@@ -1,8 +1,7 @@
 // No Cocoa windows or activation calls. Verify real Metal pixels before using
 // this harness for any plugin cost measurement.
-#include "folia-benchmark-support.h"
 #include "FloatTexture.h"
-#include <QtEndian>
+#include "folia-benchmark-support.h"
 #include <QAbstractAnimation>
 #include <QGuiApplication>
 #include <QImage>
@@ -15,6 +14,7 @@
 #include <QQuickWindow>
 #include <QResource>
 #include <QtCore/private/qcore_mac_p.h>
+#include <QtEndian>
 #include <QtQuick/private/qquickwindow_p.h>
 #include <QtTest>
 #include <array>
@@ -247,7 +247,8 @@ public:
 void FoliaOffscreenTest::floatTextureCodecPixels()
 {
     if (!qEnvironmentVariableIsSet("FOLIA_FLOAT_CODEC_SHADER"))
-        QSKIP("Bake tests/native/shaders/float-codec.frag and set FOLIA_FLOAT_CODEC_SHADER");
+        QSKIP("Bake tests/native/shaders/float-codec.frag and set "
+              "FOLIA_FLOAT_CODEC_SHADER");
     Host host;
     host.runtime.importDirectory(package(host.temporary.path(), "export function activate(c) {}",
                                          {"graphics.floatTexture", "graphics.floatTexture.base64"},
@@ -415,12 +416,14 @@ void FoliaOffscreenTest::installedPlaybackPage()
     component.setData(R"(
 import QtQuick
 import EchoMusic.Playback
+import EchoMusic.Theme
 Item {
     id: container
     width: 1100; height: 820
     required property PlaybackService playback
     readonly property alias presentationPage: page
     PlaybackPage { id: page; parent: container; playback: container.playback }
+    Connections { target: Theme.store.extensions; function onRequestRaised(action) { if(action === "skins") Qt.callLater(page.openSkins); } }
     function openPlayback() { page.open(); }
     function closePlayback() { page.close(); }
 })",
@@ -514,6 +517,288 @@ Item {
     }
     QVERIFY(initialReady);
     const auto preparationMs = preparation.elapsed();
+    if (qEnvironmentVariableIsSet("FOLIA_TEST_UI_ISSUES")) {
+        const auto folder = qEnvironmentVariable("FOLIA_CAPTURE_DIR");
+        QDir().mkpath(folder);
+        const bool fixed = qEnvironmentVariableIsSet("FOLIA_UI_EXPECT_FIXED");
+        QJsonObject report;
+        auto *folia = visual(window->contentItem(), "foliaPlaybackPage");
+        QVERIFY(folia);
+        QVERIFY(folia->setProperty("timelineOpen", true));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return visual(folia, "foliaLyricsTimeline") != nullptr;
+            },
+            5000));
+        auto *timeline = visual(folia, "foliaLyricsTimeline");
+        QVERIFY(timeline);
+        auto *close = visual(folia, "foliaTimelineClose");
+        QVERIFY(close);
+        report["closeTooltip"] = close->property("tooltipText").toString();
+        int peak = 0, last = 0;
+        for (int n = 0; n < 30; ++n) {
+            runEventLoop(16);
+            QRhiReadbackResult pixels;
+            session.frame(&pixels);
+            QImage image(reinterpret_cast<const uchar *>(pixels.data.constData()),
+                         pixels.pixelSize.width(), pixels.pixelSize.height(),
+                         QImage::Format_RGBA8888);
+            const auto sample =
+                image.copy(timeline->mapRectToScene(timeline->boundingRect()).toAlignedRect())
+                    .convertToFormat(QImage::Format_ARGB32);
+            last = 0;
+            for (int y = 0; y < sample.height(); y += 2)
+                for (int x = 0; x < sample.width(); x += 2) {
+                    const auto c = sample.pixel(x, y);
+                    last += qRed(c) > 100 && qBlue(c) > 100 && qGreen(c) < 65;
+                }
+            peak = std::max(last, peak);
+            if (n == 29)
+                QVERIFY(image.copy().save(folder + "/timeline.png"));
+        }
+        report["magentaSamplesPeak"] = peak;
+        report["magentaSamplesLast"] = last;
+        QVERIFY(QMetaObject::invokeMethod(close, "clicked"));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return !visual(folia, "foliaLyricsTimeline");
+            },
+            5000));
+        auto *shared = visual(folia, "foliaSharedCapsule");
+        QVERIFY(shared);
+        const auto surfaceMagenta = [&](QQuickItem *surface, const QString &name) {
+            int peak = 0;
+            for (int frame = 0; frame < 20; ++frame) {
+                runEventLoop(16);
+                QRhiReadbackResult pixels;
+                session.frame(&pixels);
+                if (pixels.data.isEmpty())
+                    return -1;
+                QImage image(reinterpret_cast<const uchar *>(pixels.data.constData()),
+                             pixels.pixelSize.width(), pixels.pixelSize.height(),
+                             QImage::Format_RGBA8888);
+                const auto sample =
+                    image.copy(surface->mapRectToScene(surface->boundingRect()).toAlignedRect())
+                        .convertToFormat(QImage::Format_ARGB32);
+                int count = 0;
+                for (int y = 0; y < sample.height(); y += 2)
+                    for (int x = 0; x < sample.width(); x += 2) {
+                        const auto c = sample.pixel(x, y);
+                        count += qRed(c) > 100 && qBlue(c) > 100 && qGreen(c) < 65;
+                    }
+                peak = std::max(peak, count);
+                if (frame == 19)
+                    image.copy().save(folder + "/" + name + ".png");
+            }
+            return peak;
+        };
+        QVERIFY(shared->setProperty("modalAction", "volume"));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return visual(folia, "foliaCapsulePanel");
+            },
+            5000));
+        const auto volumeMagenta = surfaceMagenta(visual(folia, "foliaCapsulePanel"), "volume");
+        report["volumeMagentaPeak"] = volumeMagenta;
+        auto *volumeClose = visual(folia, "foliaCapsulePanelClose");
+        QVERIFY(volumeClose);
+        if (fixed)
+            QVERIFY(volumeClose->property("tooltipText").toString().isEmpty());
+        QVERIFY(QMetaObject::invokeMethod(volumeClose, "clicked"));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return !visual(folia, "foliaCapsulePanel");
+            },
+            5000));
+        bool started = false;
+        QVERIFY(QMetaObject::invokeMethod(shared, "startPositioning", Q_RETURN_ARG(bool, started)));
+        QVERIFY(started);
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return visual(folia, "foliaCapsulePositionHint");
+            },
+            5000));
+        const auto positionMagenta =
+            surfaceMagenta(visual(folia, "foliaCapsulePositionHint"), "position");
+        report["positionMagentaPeak"] = positionMagenta;
+        QVERIFY(QMetaObject::invokeMethod(shared, "cancelPositioning"));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return !visual(folia, "foliaCapsulePositionHint");
+            },
+            5000));
+        if (fixed) {
+            QVERIFY(volumeMagenta >= 0 && volumeMagenta < 100);
+            QVERIFY(positionMagenta >= 0 && positionMagenta < 100);
+        }
+        auto *picker = visual(folia, "foliaStylePicker");
+        QVERIFY(picker);
+        QVERIFY(QMetaObject::invokeMethod(picker, "clicked"));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return visual(window->contentItem(), "foliaStyleStudio");
+            },
+            10000));
+        auto *studio = visual(window->contentItem(), "foliaStyleStudio");
+        auto *preview = visual(studio, "foliaStudioPreview");
+        QVERIFY(preview);
+        QVERIFY2(awaitEvent(
+                     [&] {
+                         session.frame();
+                         return preview->property("renderReady").toBool();
+                     },
+                     30000),
+                 qPrintable(preview->property("errorString").toString()));
+        auto *tabs = visual(studio, "foliaStudioTabs");
+        QVERIFY(tabs);
+        QVERIFY(QMetaObject::invokeMethod(tabs, "picked", Q_ARG(int, 2)));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return visual(studio, "foliaFontStyleSans");
+            },
+            10000));
+        runEventLoop(200);
+        session.frame();
+        QJsonArray centers;
+        for (const auto &key : {"Sans", "Serif", "Mono", "Custom"}) {
+            auto *tile = visual(studio, QString("foliaFontStyle") + key);
+            QVERIFY(tile);
+            qreal low = 1e6, high = -1e6;
+            for (auto *child : presentationObjects(tile)) {
+                auto *text = qobject_cast<QQuickItem *>(child);
+                if (!text ||
+                    !QString::fromLatin1(text->metaObject()->className()).startsWith("QQuickText"))
+                    continue;
+                const auto bounds = text->mapRectToItem(tile, text->boundingRect());
+                low = std::min(low, bounds.top());
+                high = std::max(high, bounds.bottom());
+            }
+            const auto delta = (low + high) / 2 - tile->height() / 2;
+            centers.append(delta);
+            if (fixed)
+                QVERIFY2(std::abs(delta) < .51,
+                         qPrintable(QString("Tile %1 center delta %2").arg(key).arg(delta)));
+        }
+        report["fontTileCenterDeltas"] = centers;
+        QRhiReadbackResult pixels;
+        session.frame(&pixels);
+        QImage image(reinterpret_cast<const uchar *>(pixels.data.constData()),
+                     pixels.pixelSize.width(), pixels.pixelSize.height(), QImage::Format_RGBA8888);
+        QVERIFY(image.copy().save(folder + "/fonts.png"));
+        auto *dialog = nativeObject(studio->property("dialog"));
+        QVERIFY(dialog);
+        QVERIFY(QMetaObject::invokeMethod(dialog, "close"));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return !visual(window->contentItem(), "foliaStyleStudio");
+            },
+            10000));
+        auto *skinPicker = visual(folia, "foliaSkinPicker");
+        report["skinPickerAvailable"] = skinPicker != nullptr;
+        if (skinPicker) {
+            const auto pickPoint = skinPicker->mapToScene(QPointF(20, 20)).toPoint();
+            QTest::mouseMove(window, pickPoint);
+            runEventLoop(100);
+            session.frame();
+            QVERIFY(skinPicker->isVisible() && skinPicker->isEnabled());
+            QTest::mouseClick(window, Qt::LeftButton, Qt::NoModifier, pickPoint);
+            QVERIFY(awaitEvent(
+                [&] {
+                    session.frame();
+                    return visual(window->contentItem(), "simpleLyricSkinCard");
+                },
+                10000));
+            auto *simple = visual(window->contentItem(), "simpleLyricSkinCard");
+            QVERIFY(simple);
+            QTest::mouseClick(
+                window, Qt::LeftButton, Qt::NoModifier,
+                simple->mapToScene(QPointF(simple->width() / 2, simple->height() / 2)).toPoint());
+            QVERIFY(awaitEvent(
+                [&] {
+                    session.frame();
+                    return host.theme.extensions()->selectedSkin() == "lyric" &&
+                           !visual(window->contentItem(), "foliaPlaybackPage");
+                },
+                10000));
+            auto *drawer = window->contentItem()->findChild<QObject *>("lyricSkinDrawer");
+            if (drawer)
+                QVERIFY(QMetaObject::invokeMethod(drawer, "close"));
+            QVERIFY(host.runtime.context(installation)->appearance()->useSkin("folia"));
+            QVERIFY(awaitReadyFrame(30000));
+        } else if (fixed)
+            QFAIL("No way to change the lyric skin");
+        auto *pageObject = nativeObject(root->property("presentationPage"));
+        QVERIFY(pageObject);
+        auto *skinHost = visual(window->contentItem(), "pluginPlaybackSkinHost");
+        QVERIFY(skinHost);
+        QElapsedTimer closing;
+        closing.start();
+        QVERIFY(QMetaObject::invokeMethod(root.get(), "closePlayback"));
+        report["closeCallMs"] = closing.elapsed();
+        QJsonArray frames;
+        bool firstChange = false;
+        while (closing.elapsed() < 2000 && pageObject->property("visible").toBool()) {
+            runEventLoop(12);
+            session.frame();
+            const auto alpha = skinHost->opacity();
+            frames.append(QJsonObject{{"ms", closing.elapsed()}, {"opacity", alpha}});
+            if (alpha < .99 && !firstChange) {
+                report["firstFadeMs"] = closing.elapsed();
+                firstChange = true;
+            }
+        }
+        QVERIFY(!pageObject->property("visible").toBool());
+        report["closedMs"] = closing.elapsed();
+        report["closeFrames"] = frames;
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return !visual(window->contentItem(), "foliaPlaybackPage");
+            },
+            10000));
+        QCOMPARE(presentationResources(window)["floatTextureCount"].toInt(), 0);
+        QCOMPARE(presentationResources(window)["glyphRunCount"].toInt(), 0);
+        QVERIFY(QMetaObject::invokeMethod(root.get(), "openPlayback"));
+        QVERIFY(awaitReadyFrame(30000));
+        for (int cycle = 0; cycle < 2; ++cycle) {
+            QPointer<QQuickItem> previous = visual(window->contentItem(), "foliaPlaybackPage");
+            QVERIFY(previous);
+            QVERIFY(QMetaObject::invokeMethod(root.get(), "closePlayback"));
+            runEventLoop(70);
+            session.frame();
+            QVERIFY(QMetaObject::invokeMethod(root.get(), "openPlayback"));
+            QVERIFY(awaitReadyFrame(30000));
+            QVERIFY(previous && visual(window->contentItem(), "foliaPlaybackPage") == previous);
+        }
+        QVERIFY(QMetaObject::invokeMethod(root.get(), "closePlayback"));
+        QVERIFY(awaitEvent(
+            [&] {
+                session.frame();
+                return !pageObject->property("visible").toBool() &&
+                       !visual(window->contentItem(), "foliaPlaybackPage");
+            },
+            10000));
+        QCOMPARE(presentationResources(window)["floatTextureCount"].toInt(), 0);
+        QCOMPARE(presentationResources(window)["glyphRunCount"].toInt(), 0);
+        report["rapidReopens"] = 2;
+        write(folder + "/ui-issues.json", QJsonDocument(report).toJson());
+        if (fixed) {
+            QVERIFY(peak < 100);
+            QVERIFY(report["closeTooltip"].toString().isEmpty());
+            QVERIFY(firstChange);
+            QVERIFY(report["firstFadeMs"].toInt() < 150);
+        }
+        return;
+    }
     QSignalSpy acknowledged(&host.playback, &PlaybackService::seekCompleted);
     if (qEnvironmentVariableIsSet("FOLIA_TEST_CACHE_UI")) {
         QVERIFY(mode == "fume" || mode == "hanabi");

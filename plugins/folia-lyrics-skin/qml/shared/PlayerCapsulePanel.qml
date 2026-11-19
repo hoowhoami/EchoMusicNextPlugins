@@ -10,6 +10,7 @@ import EchoMusic.Theme
 Item {
     id: root
     required property EchoPluginViewContext page
+    property Item backdropSource: null
     property var appearance: ({})
     property font baseFont: Theme.font(14, 500)
     property bool dragging: false
@@ -78,8 +79,9 @@ Item {
         pixelSize: 12
         weight: 400
     }
-    EchoFloatingSurface {
+    CapsuleSurface {
         objectName: "foliaCapsulePanel"
+        backdropSource: root.backdropSource
         anchors.centerIn: parent
         width: Math.max(0, Math.min(512, root.width - 32))
         height: Math.min(root.height - 32, content.implicitHeight + 64)
@@ -118,6 +120,7 @@ Item {
                         objectName: "foliaCapsulePanelClose"
                         glyph: "x"
                         text: qsTr("关闭")
+                        tooltipText: ""
                         foreground: root.primaryColor
                         onClicked: root.closeRequested()
                     }

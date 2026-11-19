@@ -12,12 +12,12 @@ Item {
     objectName: "foliaStyleStudio"
     required property EchoPluginContext plugin
     required property EchoPluginDialog dialog
-    readonly property bool wide: width >= 960
+    readonly property bool wide: width >= 840 && height >= 420
     readonly property var settings: drafts.values
     readonly property var styles: plugin.ui.state.styles || []
     readonly property var preview: previewPane
-    implicitHeight: 650
-    implicitWidth: 1192
+    implicitHeight: 520
+    implicitWidth: 912
     focus: true
     Component.onCompleted: forceActiveFocus()
     Keys.onEscapePressed: event => {
@@ -53,19 +53,19 @@ Item {
             width: viewport.availableWidth
             height: root.wide ? viewport.availableHeight : implicitHeight
             columns: root.wide ? 2 : 1
-            columnSpacing: 22
-            rowSpacing: 22
+            columnSpacing: 20
+            rowSpacing: 20
             ColumnLayout {
                 Layout.fillWidth: true
                 Layout.fillHeight: root.wide
-                Layout.preferredWidth: root.wide ? root.width - 420 - 22 : root.width
+                Layout.preferredWidth: root.wide ? root.width - 360 - 20 : root.width
                 Layout.minimumWidth: 0
                 spacing: 14
                 StudioPreview {
                     id: previewPane
                     objectName: "foliaStudioPreview"
                     Layout.fillWidth: true
-                    Layout.preferredHeight: root.wide ? Math.max(230, Math.min(370, root.height * .56)) : Math.max(220, Math.min(340, width * .65))
+                    Layout.preferredHeight: root.wide ? Math.max(230, Math.min(290, root.height * .52)) : Math.max(220, Math.min(340, width * .65))
                     plugin: root.plugin
                     settings: root.settings
                     live: root.wide || viewport.contentItem.contentY < height
@@ -93,7 +93,7 @@ Item {
                 objectName: "foliaStudioSettings"
                 Layout.fillWidth: true
                 Layout.fillHeight: root.wide
-                Layout.preferredWidth: root.wide ? 420 : root.width
+                Layout.preferredWidth: root.wide ? 360 : root.width
                 Layout.minimumWidth: 0
                 plugin: root.plugin
                 draft: drafts

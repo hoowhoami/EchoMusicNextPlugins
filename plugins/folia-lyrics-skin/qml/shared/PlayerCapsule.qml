@@ -244,6 +244,7 @@ Item {
         z: 100
         active: root.modalOpen && capsuleState.available
         sourceComponent: PlayerCapsulePanel {
+            backdropSource: root.backdropSource
             page: root.page
             appearance: root.appearance
             baseFont: root.baseFont
@@ -511,6 +512,7 @@ Item {
         active: root.positionerRetained
         z: 10
         sourceComponent: PlayerCapsulePositioner {
+            backdropSource: root.backdropSource
             open: root.positioning
             motionEnabled: root.motionEnabled
             maxOffset: capsuleState.maxOffset

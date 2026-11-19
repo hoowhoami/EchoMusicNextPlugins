@@ -222,6 +222,7 @@ try {
                 'authSnapshotAuthorizationCurrentSessionAndCancellation',
                 'pluginClipboardWritesAndScopeCancellation',
                 'pluginMainWindowDialogsLifecycle',
+                'pluginDialogReservedHeightLifecycle',
                 'hostNavigationRoutesHistoryCancellationAndAccount',
                 'hostSettingsPersistenceSubscriptionsAndRevocation',
                 'hostActionsDynamicAsyncAndLifecycle',

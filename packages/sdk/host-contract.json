@@ -249,6 +249,7 @@
     "ui.presentationVisibility",
     "kugou.authSnapshot",
     "ui.dialogs",
+    "ui.dialogs.height",
     "clipboard.write",
     "text.segmentation"
   ],
