@@ -29,6 +29,8 @@ echo-plugin index-entry dist/my-plugin-1.0.0.echomod \
 
 命令只生成本地文件，不上传或推送。`prepare-index` 自动准备本仓库的包与作者 manifest 并保留第三方定位；`check-index` 离线校验定位，`check-published` 校验远端 manifest、包哈希和完整清单。
 
+`check-published --scope official|third-party|all` 按作者仓库选择校验范围，默认 `all`；源仓库来自 `echo-plugin.build.json.repository` 或 `--repo`。官方构建与第三方发布校验使用独立的手动 Actions，第三方失败不阻塞官方打包。
+
 `test-host <package.echomod>` 直接验证独立作者的实际包，无需官方源或本地构建清单；省略包路径才批量构建本仓库插件。索引类型为 SDK 的 `PluginSourceIndex` / `PluginSourceEntry`。
 
 GPU 着色器可在 plugin.config.json 的 shaders 中声明 source/output/target（rhi 或 quick），由匹配宿主 Qt 版本的 qsb 编译并验证跨后端包。设置 ECHO_QSB 或将 qsb 放入 PATH。编译失败保留旧产物，发布信息与包仍执行哈希校验。详见[GPU 绘图](../../docs/graphics.md)。

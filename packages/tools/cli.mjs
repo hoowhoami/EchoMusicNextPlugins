@@ -24,7 +24,7 @@ echo-plugin index-entry <package.echomod> --repo <github-url> [--ref <branch>] [
 echo-plugin publish-manifest <package.echomod> --artifact <path-or-https-url> [--out <manifest.json>]
 echo-plugin build-index [--root <repository>]
 echo-plugin prepare-index [--root <repository>]
-echo-plugin check-published [--root <repository>]
+echo-plugin check-published [--root <repository>] [--repo <github-url>] [--scope all|official|third-party]
 echo-plugin check-index [--root <repository>]
 echo-plugin check-sdk [--host <executable>]
 echo-plugin sdk-sync --host <executable>
@@ -43,6 +43,7 @@ try {
       artifact: { type: 'string' },
       'runtime-test': { type: 'string' },
       suite: { type: 'string' },
+      scope: { type: 'string' },
       help: { type: 'boolean' },
     },
   });
@@ -81,7 +82,7 @@ try {
   else if (command === 'prepare-index') console.info(await prepareIndex(root));
   else if (command === 'check-published')
     console.info(
-      `Verified ${(await checkPublished(root, { sourceRepo: values.repo })).length} published packages`,
+      `Verified ${(await checkPublished(root, { sourceRepo: values.repo, scope: values.scope })).length} published packages (${values.scope ?? 'all'})`,
     );
   else if (command === 'check-index')
     console.info(

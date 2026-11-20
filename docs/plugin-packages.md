@@ -24,7 +24,7 @@ npx echo-plugin build plugins/spectrum-visualizer --out dist
 npx echo-plugin validate dist/spectrum-visualizer-1.0.3.echomod
 npm run prepare:source
 npm run format:write
-npm run check:published
+npm run check:published:official
 ```
 
 官方 `echo-plugins.json`（schema2）只收录稳定定位：`id`、作者 GitHub `repo`、可选 `path` 和 `ref`。省略 `repo` 表示同仓，省略 `path` 表示仓库根，省略 `ref` 使用 HEAD。跟随作者更新应使用默认分支或持续维护的分支，不固定到版本 tag。
@@ -63,6 +63,8 @@ echo-plugin index-entry dist/my-plugin-1.0.0.echomod \
 `publish-manifest` 从实际包提取清单并计算哈希，原子写入指定 manifest；省略 `--out` 输出 JSON。上述命令不上传或推送。后续版本只需更新作者仓库的包与 manifest，官方索引不动；先确保包地址可下载，再提交新 manifest，历史版本包应保留以便已刷新客户端完成安装。
 
 本仓库的 `echo-plugin.build.json` 明确本地构建集合。`prepare-index` 构建本地插件，将包复制到 `artifacts/`，自动更新作者 manifest 的 `distribution`，首次添加本地定位并保留第三方条目。`check-index` 离线校验定位；`check-published` 联网校验每个作者 manifest、包哈希与包内完整清单。频谱继续同仓维护，第三方无需将源码迁入官方源。
+
+发布校验可通过 `check-published --scope official|third-party|all` 分开运行，默认 `all`。官方范围按作者仓库是否等于 `echo-plugin.build.json.repository`（或 `--repo`）判断，显式填写同仓 `repo` 仍属官方。`npm run check:published:official` 与 `npm run check:published:third-party` 分别提供对应入口。GitHub Actions 的 `Plugin SDK and packages` 只构建和校验官方插件并保存安装包；`Third-party plugin publications` 独立校验第三方发布，失败不影响官方打包。两个工作流都仅手动触发。
 
 ## 支持平台
 

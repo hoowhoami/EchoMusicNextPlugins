@@ -21,6 +21,8 @@
     "format:check": "prettier --check .",
     "prepare:source": "echo-plugin prepare-index",
     "check:published": "echo-plugin check-published",
+    "check:published:official": "echo-plugin check-published --scope official",
+    "check:published:third-party": "echo-plugin check-published --scope third-party",
     "build:folia": "echo-plugin build plugins/folia-lyrics-skin --out dist"
   },
   "devDependencies": {

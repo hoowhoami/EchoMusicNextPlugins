@@ -135,7 +135,7 @@ export async function readIndex(root, sourceRepo) {
     ids.add(entry.id);
     return entry;
   });
-  return { original, plugins };
+  return { original, plugins, sourceRepository: sourceRepo ? repository(sourceRepo) : undefined };
 }
 export async function indexEntry(file, options) {
   const { validatePackage } = await import('./packages.mjs');
@@ -196,34 +196,50 @@ async function download(url, limit, fetcher) {
   }
   throw new Error('Too many publication redirects');
 }
-export async function checkPublished(root, { sourceRepo, fetcher = fetch } = {}) {
+export async function checkPublished(root, { sourceRepo, fetcher = fetch, scope = 'all' } = {}) {
+  if (!['all', 'official', 'third-party'].includes(scope))
+    throw new Error('Invalid publication scope; expected all, official or third-party');
   const index = await readIndex(root, sourceRepo);
+  if (scope !== 'all' && !index.sourceRepository)
+    throw new Error(
+      'Scoped publication checks require --repo or echo-plugin.build.json.repository',
+    );
+  const selected = index.plugins.filter(
+    (entry) =>
+      scope === 'all' || (entry.repository === index.sourceRepository) === (scope === 'official'),
+  );
   const { validateManifest, validatePackage } = await import('./packages.mjs');
   const directory = await mkdtemp(path.join(os.tmpdir(), 'echo-published-'));
   try {
     const manifests = [];
-    for (const entry of index.plugins) {
-      const resolved = parsePublication(
-        JSON.parse((await download(entry.manifestUrl, 256 * 1024, fetcher)).toString('utf8')),
-        entry,
-      );
-      const manifest = await validateManifest(resolved.manifest);
-      const bytes = await download(resolved.artifactUrl, 128 * 1024 * 1024, fetcher);
-      if (createHash('sha256').update(bytes).digest('hex') !== resolved.sha256)
-        throw new Error(`Published SHA-256 mismatch: ${entry.id}`);
-      const file = path.join(directory, `${entry.id}.echomod`);
-      await writeFile(file, bytes);
-      const packaged = await validatePackage(file);
-      // Compare JSON values without depending on property serialization order.
-      const canonical = (value) =>
-        JSON.stringify(value, (_, v) =>
-          v && typeof v === 'object' && !Array.isArray(v)
-            ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
-            : v,
+    for (const entry of selected) {
+      try {
+        const resolved = parsePublication(
+          JSON.parse((await download(entry.manifestUrl, 256 * 1024, fetcher)).toString('utf8')),
+          entry,
         );
-      if (canonical(packaged) !== canonical(manifest))
-        throw new Error(`Published manifest differs from package: ${entry.id}`);
-      manifests.push(manifest);
+        const manifest = await validateManifest(resolved.manifest);
+        const bytes = await download(resolved.artifactUrl, 128 * 1024 * 1024, fetcher);
+        if (createHash('sha256').update(bytes).digest('hex') !== resolved.sha256)
+          throw new Error(`Published SHA-256 mismatch: ${entry.id}`);
+        const file = path.join(directory, `${entry.id}.echomod`);
+        await writeFile(file, bytes);
+        const packaged = await validatePackage(file);
+        // Compare JSON values without depending on property serialization order.
+        const canonical = (value) =>
+          JSON.stringify(value, (_, v) =>
+            v && typeof v === 'object' && !Array.isArray(v)
+              ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)))
+              : v,
+          );
+        if (canonical(packaged) !== canonical(manifest))
+          throw new Error(`Published manifest differs from package: ${entry.id}`);
+        manifests.push(manifest);
+      } catch (error) {
+        throw new Error(`Published package check failed: ${entry.id}: ${error.message}`, {
+          cause: error,
+        });
+      }
     }
     return manifests;
   } finally {

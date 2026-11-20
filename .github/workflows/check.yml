@@ -127,4 +127,9 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build
-      - run: npm run check:published
+      - run: npm run check:published:official
+      - uses: actions/upload-artifact@v4
+        with:
+          name: official-plugins-${{ matrix.os }}
+          path: dist/*.echomod
+          if-no-files-found: error
