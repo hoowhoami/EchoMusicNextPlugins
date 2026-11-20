@@ -17,6 +17,8 @@ Item {
     property var appearance: FoliaTheme.appearance(plugin.appearance.snapshot, settings)
     property size viewportSize: Qt.size(1100, 820)
     property bool live: true
+    property bool showErrors: true
+    property bool _retrying: false
     property bool paused: false
     property real initialTime: NaN
     property bool motionEnabled: true
@@ -66,7 +68,7 @@ Item {
         anchors.topMargin: 6
         anchors.bottom: label.top
         anchors.bottomMargin: 6
-        active: root.presentationActive && root.nativeGraphicsAvailable
+        active: root.presentationActive && !root._retrying && root.nativeGraphicsAvailable
         sourceComponent: Component {
             PreviewScene {
                 plugin: root.plugin
@@ -94,15 +96,33 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        text: root.errorString || root.previewLabel
+        text: root.previewLabel
         font: root.plugin.fonts.build([], 12)
-        color: root.errorString ? "#f56565" : root.appearance.secondaryText
+        color: root.appearance.secondaryText
         wrapMode: Text.Wrap
     }
     PresentationAssets {
         id: presentationAssets
         plugin: root.plugin
         settings: root.settings
-        live: root.presentationActive
+        live: root.presentationActive && !root._retrying
+    }
+    PresentationFailure {
+        anchors.centerIn: sceneLoader
+        width: Math.max(160, Math.min(root.width - 16, 400))
+        detail: root.showErrors ? root.errorString : ""
+        mode: root.settings.mode
+        message: qsTr("预览暂时无法显示")
+        canRetry: root.nativeGraphicsAvailable && root.presentationActive
+        showSettings: false
+        onRetryRequested: {
+            root._retrying = true;
+            retryTask.restart();
+        }
+    }
+    Timer {
+        id: retryTask
+        interval: 0
+        onTriggered: root._retrying = false
     }
 }

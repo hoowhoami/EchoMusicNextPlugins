@@ -306,24 +306,6 @@ Item {
                     onCanceled: manualReset.restart()
                 }
             }
-            FoliaFont {
-                id: errorFont
-                base: root.baseFont
-                pixelSize: 14
-                weight: 400
-            }
-            Text {
-                objectName: "pendoloError"
-                anchors.centerIn: parent
-                width: Math.max(0, parent.width - 64)
-                visible: view.errorString.length > 0
-                text: view.errorString
-                color: root.secondaryColor
-                font: errorFont.value
-                horizontalAlignment: Text.AlignHCenter
-                wrapMode: Text.Wrap
-                textFormat: Text.PlainText
-            }
         }
     }
 

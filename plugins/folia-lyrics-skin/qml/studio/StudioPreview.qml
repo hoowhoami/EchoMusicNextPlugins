@@ -7,6 +7,7 @@ import EchoMusic.PluginSdk
 import EchoMusic.Controls
 import EchoMusic.Theme
 import "../preview"
+import "../shared"
 
 ColumnLayout {
     id: root
@@ -16,6 +17,7 @@ ColumnLayout {
     property bool paused: false
     property int sampleIndex: 0
     property bool live: true
+    property bool _retrying: false
     property var frozenCapture: null
     property bool capturePending: false
     property int captureRevision: 0
@@ -27,6 +29,17 @@ ColumnLayout {
     readonly property var preview: previewHost.item
     readonly property bool renderReady: !!preview && preview.renderReady
     readonly property string errorString: preview ? preview.errorString : ""
+    function retry(): void {
+        thaw();
+        frozenCapture = null;
+        _retrying = true;
+        retryTask.restart();
+    }
+    Timer {
+        id: retryTask
+        interval: 0
+        onTriggered: root._retrying = false
+    }
     function freeze(): void {
         if (!paused || !preview || !preview.visible || !renderReady || capturePending)
             return;
@@ -98,7 +111,7 @@ ColumnLayout {
             id: previewHost
             objectName: "foliaStudioPreviewHost"
             anchors.fill: parent
-            active: root.live && root.plugin.active && root.visible && root.Window.window && root.Window.window.visible && root.Window.window.opacity > 0 && root.Window.window.visibility !== Window.Minimized
+            active: root.live && !root._retrying && root.plugin.active && root.visible && root.Window.window && root.Window.window.visible && root.Window.window.opacity > 0 && root.Window.window.visibility !== Window.Minimized
             sourceComponent: root.source === "live" ? livePreview : samplePreview
         }
         Image {
@@ -108,11 +121,20 @@ ColumnLayout {
             fillMode: Image.PreserveAspectFit
             cache: false
         }
+        PresentationFailure {
+            anchors.centerIn: parent
+            width: Math.max(160, Math.min(parent.width - 16, 400))
+            detail: root.errorString
+            mode: root.settings.mode
+            message: qsTr("预览暂时无法显示")
+            showSettings: false
+            onRetryRequested: root.retry()
+        }
     }
     Label {
         Layout.fillWidth: true
-        text: root.errorString || (root.source === "live" ? (root.plugin.player.hasTrack ? root.plugin.player.title : qsTr("当前没有正在播放的歌曲")) : qsTr("自撰示例歌词 · 模拟预览音频"))
-        color: root.errorString ? Theme.floating.dangerText : Theme.floatingSecondaryText
+        text: root.source === "live" ? (root.plugin.player.hasTrack ? root.plugin.player.title : qsTr("当前没有正在播放的歌曲")) : qsTr("自撰示例歌词 · 模拟预览音频")
+        color: Theme.floatingSecondaryText
         font: Theme.font(12, 400)
         wrapMode: Text.Wrap
     }
@@ -125,6 +147,7 @@ ColumnLayout {
             initialTime: root.sampleResumeTime
             sampleIndex: root.sampleIndex
             showControls: false
+            showErrors: false
         }
     }
     Component {

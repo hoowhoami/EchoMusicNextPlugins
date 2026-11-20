@@ -66,7 +66,11 @@ Item {
                     delete data[key];
                 _resources = data;
             }
-            const next = ({});
+            // Pose-only frames retain the same DAG. Replacing this map wakes
+            // every dependent stage/renderer binding even when its input did
+            // not change; individual descriptors still publish every pose.
+            const stable = frame.stages.length === Object.keys(_stages).length && frame.stages.every(descriptor => !!_stages[descriptor.id]);
+            const next = stable ? _stages : ({});
             for (const descriptor of frame.stages) {
                 let actor = _stages[descriptor.id];
                 if (!actor) {
@@ -85,7 +89,8 @@ Item {
             for (const key of Object.keys(_stages).reverse())
                 if (!next[key])
                     _stages[key].destroy();
-            _stages = next;
+            if (_stages !== next)
+                _stages = next;
             const out = next[frame.output];
             present.source = out ? out.output : emptyTexture;
             present.visible = !!out;

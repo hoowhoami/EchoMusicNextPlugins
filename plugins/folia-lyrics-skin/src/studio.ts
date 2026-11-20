@@ -35,24 +35,24 @@ export function registerStudio(
   configuration.errorChanged.connect(sync);
   sync();
   const open = async () => {
-    if (disposed || opening || handle?.active) return;
+    if (disposed || opening) return false;
+    if (handle?.active) return true;
     const revision = ++generation;
     opening = true;
     publish({ foliaStudioOpen: true });
+    const operation = ctx.ui.showDialog({
+      component: 'qml/studio/Studio.qml',
+      title: '歌词样式设置',
+      width: 960,
+      height: 608,
+      modal: true,
+      closeOnMask: true,
+    });
     try {
-      const next = await awaitOperation(
-        ctx.ui.showDialog({
-          component: 'qml/studio/Studio.qml',
-          title: '歌词样式设置',
-          width: 960,
-          height: 608,
-          modal: true,
-          closeOnMask: true,
-        }),
-      );
+      const next = await awaitOperation(operation);
       if (disposed || revision !== generation) {
         next.close();
-        return;
+        return false;
       }
       handle = next;
       const closed = () => {
@@ -64,9 +64,14 @@ export function registerStudio(
       };
       next.closed.connect(closed);
       if (!next.active) closed();
+      return next.active;
     } catch (error) {
       if (revision === generation) publish({ foliaStudioOpen: false });
-      throw error;
+      // Closing the reserved shell before its asynchronous body is ready is
+      // normal cancellation, including a second click landing on the mask.
+      if (operation.state === 4 || disposed || revision !== generation) return false;
+      console.warn('Folia studio open failed:', operation.errorCode, operation.errorMessage);
+      throw new Error('无法打开歌词样式设置，请重试');
     } finally {
       if (revision === generation) opening = false;
     }

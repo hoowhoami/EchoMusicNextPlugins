@@ -1,10 +1,19 @@
 // Retained source display graph for native Qt rendering. No browser/Pixi renderer or width estimate.
 const TAU = Math.PI * 2;
-export function localMatrix(node) {
+export function localMatrix(node, output = null) {
   const a = Math.cos(node.rotation + node.skew.y) * node.scale.x,
     b = Math.sin(node.rotation + node.skew.y) * node.scale.x,
     c = -Math.sin(node.rotation - node.skew.x) * node.scale.y,
     d = Math.cos(node.rotation - node.skew.x) * node.scale.y;
+  if (output) {
+    output[0] = a;
+    output[1] = c;
+    output[2] = node.x - node.pivot.x * a - node.pivot.y * c;
+    output[3] = b;
+    output[4] = d;
+    output[5] = node.y - node.pivot.x * b - node.pivot.y * d;
+    return output;
+  }
   return [
     a,
     c,
@@ -14,7 +23,22 @@ export function localMatrix(node) {
     node.y - node.pivot.x * b - node.pivot.y * d,
   ];
 }
-export function multiply(parent, child) {
+export function multiply(parent, child, output = null) {
+  if (output) {
+    const a = parent[0] * child[0] + parent[1] * child[3],
+      c = parent[0] * child[1] + parent[1] * child[4],
+      x = parent[0] * child[2] + parent[1] * child[5] + parent[2],
+      b = parent[3] * child[0] + parent[4] * child[3],
+      d = parent[3] * child[1] + parent[4] * child[4],
+      y = parent[3] * child[2] + parent[4] * child[5] + parent[5];
+    output[0] = a;
+    output[1] = c;
+    output[2] = x;
+    output[3] = b;
+    output[4] = d;
+    output[5] = y;
+    return output;
+  }
   return [
     parent[0] * child[0] + parent[1] * child[3],
     parent[0] * child[1] + parent[1] * child[4],

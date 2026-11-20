@@ -914,6 +914,61 @@
       "target": "rhi"
     },
     {
+      "source": "qml/styles/machi/shaders/stage-32da34b673ab04ce8d4f8da0.vert",
+      "output": "qml/styles/machi/shaders/stage-32da34b673ab04ce8d4f8da0.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-f79e570d3bf55d4e9bf5dcb3.frag",
+      "output": "qml/styles/machi/shaders/stage-f79e570d3bf55d4e9bf5dcb3.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-576ba6d07f3126a922fecf3c.vert",
+      "output": "qml/styles/machi/shaders/stage-576ba6d07f3126a922fecf3c.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-679853cd66c101bccf51ca92.frag",
+      "output": "qml/styles/machi/shaders/stage-679853cd66c101bccf51ca92.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-70195bade46ce883527caef3.vert",
+      "output": "qml/styles/machi/shaders/stage-70195bade46ce883527caef3.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-cab133a334da31b6293b9297.frag",
+      "output": "qml/styles/machi/shaders/stage-cab133a334da31b6293b9297.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-e3bfdc45673745bd5a8c5cda.vert",
+      "output": "qml/styles/machi/shaders/stage-e3bfdc45673745bd5a8c5cda.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-25a45fcb8ca4be3a30504d91.vert",
+      "output": "qml/styles/machi/shaders/stage-25a45fcb8ca4be3a30504d91.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-fb208193a26ebe938a4bdc5a.frag",
+      "output": "qml/styles/machi/shaders/stage-fb208193a26ebe938a4bdc5a.frag.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-0f729f5719717130adc103e6.vert",
+      "output": "qml/styles/machi/shaders/stage-0f729f5719717130adc103e6.vert.qsb",
+      "target": "rhi"
+    },
+    {
+      "source": "qml/styles/machi/shaders/stage-0a7479f339de70f489692460.frag",
+      "output": "qml/styles/machi/shaders/stage-0a7479f339de70f489692460.frag.qsb",
+      "target": "rhi"
+    },
+    {
       "source": "qml/styles/machi/shaders/prepare.vert",
       "output": "qml/styles/machi/shaders/prepare.vert.qsb",
       "target": "rhi"

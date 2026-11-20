@@ -21,6 +21,7 @@ Item {
     property var registeredScreens: []
     property size canvasSize: Qt.size(width, height)
     property bool live: true
+    property bool tightTargets: true
     readonly property bool ready: contents.item !== null && contents.item.plan !== null && contents.item.actors.length > 0
     readonly property int passCount: contents.item ? contents.item.actors.length : 0
     readonly property real cacheBytes: contents.item && contents.item.plan ? contents.item.plan.cacheBytes + (samples > 1 ? contents.item.plan.textures[0].pixelWidth * contents.item.plan.textures[0].pixelHeight * 4 * samples : 0) : 0
@@ -59,7 +60,7 @@ Item {
                             width: Math.round(root.canvasSize.width * root.resolution),
                             height: Math.round(root.canvasSize.height * root.resolution)
                         });
-                    const next = Bloom.createLumiereBloomPlan(root.width, root.height, root.resolution, JSON.parse(JSON.stringify(root.options)), screens), key = JSON.stringify([next.textures.map(texture => [texture.pixelWidth, texture.pixelHeight, texture.resolution]), next.passes.map(pass => [pass.kind, pass.input, pass.output, pass.add])]);
+                    const next = Bloom.createLumiereBloomPlan(root.width, root.height, root.resolution, JSON.parse(JSON.stringify(root.options)), screens, root.tightTargets), key = JSON.stringify([next.textures.map(texture => [texture.pixelWidth, texture.pixelHeight, texture.resolution]), next.passes.map(pass => [pass.kind, pass.input, pass.output, pass.add])]);
                     if (key !== _key) {
                         clear();
                         _key = key;
@@ -145,6 +146,9 @@ Item {
                     body.sync();
                 }
                 function onRegisteredScreensChanged() {
+                    body.sync();
+                }
+                function onTightTargetsChanged() {
                     body.sync();
                 }
             }

@@ -381,3 +381,52 @@ test('native vector line paths retain segment bounds, continuation and signed-ze
   assert.ok(Object.is(bounds.height, 0));
   line.destroy();
 });
+
+test('particle draw slots survive changes to the first visible sprite without merging paint barriers', async () => {
+  const { batchHanabiFrame } =
+    await import('../plugins/folia-lyrics-skin/qml/styles/hanabi/batch-frame.mjs');
+  const sprite = (id, order, parent = 'same') => ({
+    id,
+    kind: 'solid',
+    parent,
+    order,
+    alpha: 0.5,
+    matrix: [1, 0, id, 0, 1, 2],
+    frame: { x: 0, y: 0, width: 4, height: 8 },
+    anchor: [0, 0],
+    blendMode: 'normal',
+    tint: 0xffffff,
+  });
+  const first = batchHanabiFrame(
+    { groups: [], textures: [], leaves: [sprite(1, 0), sprite(2, 1)] },
+    100,
+    100,
+    2,
+  );
+  const moved = batchHanabiFrame(
+    { groups: [], textures: [], leaves: [sprite(2, 0), sprite(3, 1)] },
+    100,
+    100,
+    2,
+  );
+  assert.equal(first.leaves[0].id, moved.leaves[0].id);
+  assert.notEqual(first.leaves[0].payload, moved.leaves[0].payload);
+  const blocked = batchHanabiFrame(
+    {
+      groups: [],
+      textures: [],
+      leaves: [
+        sprite(2, 0),
+        { id: 'barrier', kind: 'graphics', parent: 'same', order: 1 },
+        sprite(3, 2),
+        sprite(4, 3, 'other'),
+      ],
+    },
+    100,
+    100,
+    2,
+  );
+  assert.equal(blocked.leaves.length, 4);
+  assert.equal(new Set(blocked.leaves.map((node) => node.id)).size, 4);
+  assert.equal(blocked.leaves[0].id, moved.leaves[0].id);
+});

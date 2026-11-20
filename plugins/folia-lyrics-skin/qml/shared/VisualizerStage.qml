@@ -189,6 +189,7 @@ Item {
         if (!_completed)
             return;
         clear();
+        _loadError = "";
         if (!live || !visible || !componentPath || qualityError)
             return;
         loader.active = true;

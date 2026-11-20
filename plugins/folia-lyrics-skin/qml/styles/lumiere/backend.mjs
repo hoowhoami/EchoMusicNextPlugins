@@ -163,7 +163,14 @@ export function createLumiereBackend(options = {}) {
   const screens = options.registeredScreens || [];
   const TexturePool = {
     getOptimalTexture(width, height, resolution = 1) {
-      const size = optimalTextureSize(width, height, resolution, screens);
+      // Power-of-two padding belongs to Pixi's reusable pool, not to the
+      // filter's sampling domain. Native retained targets do not use that pool.
+      const size = options.tightTargets
+        ? {
+            width: Math.max(1, Math.ceil(width * resolution - 1e-6)),
+            height: Math.max(1, Math.ceil(height * resolution - 1e-6)),
+          }
+        : optimalTextureSize(width, height, resolution, screens);
       return new Texture({
         source: {
           kind: 'target',

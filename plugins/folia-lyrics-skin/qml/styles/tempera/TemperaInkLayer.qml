@@ -63,7 +63,8 @@ Item {
                     previous[key].visible = false;
                     previous[key].destroy();
                 }
-            _actors = next;
+            if (Object.keys(_actors).length !== Object.keys(next).length || Object.keys(next).some(key => _actors[key] !== next[key]))
+                _actors = next;
             _actorCount = Object.keys(next).length;
             _bytes = bytes;
             _error = '';

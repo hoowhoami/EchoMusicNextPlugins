@@ -1,3 +1,4 @@
+import { createHanabiBatcher } from '../hanabi/batch-frame.mjs';
 import { createFramePlan } from './frame-plan.mjs';
 import { textTexture } from './text-texture.mjs';
 // Retains and evaluates the complete original scene. Native snapshots contain data only.
@@ -38,10 +39,23 @@ function filterData(filter) {
 export function snapshotLumiereScene(root, options = {}) {
   const nodes = [],
     textures = [],
-    sources = new Map();
+    sources = new Map(),
+    sourceSpecs = new Map();
+  const batcher = options.batchSprites ? createHanabiBatcher((id) => sourceSpecs.get(id)) : null;
+  const spriteTexture = { source: null, frame: null };
+  const spriteScratch = { anchor: [0, 0] };
+  const spriteMatrix = [1, 0, 0, 0, 1, 0];
   const plan = options.viewport
-    ? createFramePlan(options.viewport.width, options.viewport.height, options.resolution)
+    ? createFramePlan(
+        options.viewport.width,
+        options.viewport.height,
+        options.resolution,
+        batcher ? batcher.append : null,
+      )
     : null;
+  const textureCache = options.textureCache;
+  const snapshotSerial = textureCache ? (textureCache.snapshotSerial || 0) + 1 : 0;
+  if (textureCache) textureCache.snapshotSerial = snapshotSerial;
   let nodeCount = 0,
     pathBytes = 0,
     pathCount = 0;
@@ -70,8 +84,13 @@ export function snapshotLumiereScene(root, options = {}) {
         previous.resolution === spec.resolution;
       if (cache) {
         spec.revision = unchanged ? previous.revision : ++textureRevision;
-        if (unchanged) pathBytes += previous.pathBytes;
-        else {
+        if (unchanged) {
+          pathBytes += previous.pathBytes;
+          // A returning source keeps its identity. Republish its program so
+          // consumers may independently evict their bounded image caches.
+          if (previous.snapshot !== snapshotSerial - 1) spec.commands = copy(commands);
+          previous.snapshot = snapshotSerial;
+        } else {
           spec.commands = copy(commands);
           const bytes = JSON.stringify(spec.commands).length * 2;
           pathBytes += bytes;
@@ -83,6 +102,7 @@ export function snapshotLumiereScene(root, options = {}) {
             resolution: spec.resolution,
             revision: spec.revision,
             pathBytes: bytes,
+            snapshot: snapshotSerial,
           });
         }
       } else {
@@ -91,27 +111,38 @@ export function snapshotLumiereScene(root, options = {}) {
       }
     }
     textures.push(spec);
+    sourceSpecs.set(id, spec);
     sources.set(source, id);
     return id;
   }
   function visit(node, parent, inheritedBlend = 'normal', parentState) {
     if (node.destroyed || !node.visible || !node.renderable || node.alpha === 0) return;
     if (++nodeCount > 8192) throw new Error('Lumiere visible scene node budget exceeded');
-    const result = {
-      id: node.id,
-      parent,
-      kind: node.kind,
-      matrix: localMatrix(node),
-      alpha: node.alpha,
-      zIndex: node.zIndex,
-      blendMode:
-        options.inheritBlend && node.blendMode === 'normal' ? inheritedBlend : node.blendMode,
-      tint: node.tint === undefined ? 0xffffff : node.tint,
-      filters:
-        node.filters && node.filters.length
-          ? node.filters.filter((filter) => filter.enabled !== false).map(filterData)
-          : noFilters,
-    };
+    const fast =
+      batcher &&
+      plan &&
+      !node.children.length &&
+      (!node.filters || !node.filters.length) &&
+      ['sprite', 'tiling', 'text'].includes(node.kind);
+    const result = fast ? spriteScratch : {};
+    result.id = node.id;
+    result.parent = parent;
+    result.kind = node.kind;
+    result.matrix = localMatrix(node, fast ? spriteMatrix : null);
+    result.alpha = node.alpha;
+    result.zIndex = node.zIndex;
+    result.blendMode =
+      options.inheritBlend && node.blendMode === 'normal' ? inheritedBlend : node.blendMode;
+    result.tint = node.tint === undefined ? 0xffffff : node.tint;
+    result.filters =
+      node.filters && node.filters.length
+        ? node.filters.filter((filter) => filter.enabled !== false).map(filterData)
+        : noFilters;
+    if (fast) {
+      result.texture = null;
+      result.frame = null;
+      result.tile = null;
+    }
     if (node.filterArea) result.filterArea = rect(node.filterArea);
     if (result.filters.length) {
       if (node.filterArea) {
@@ -135,6 +166,12 @@ export function snapshotLumiereScene(root, options = {}) {
         result.filterBounds = { x, y, width: Math.max(...xs) - x, height: Math.max(...ys) - y };
       } else result.filterBounds = rect(node.getBounds());
     }
+    const state = plan ? plan.append(result, parentState, true, fast ? spriteMatrix : null) : null;
+    let textureSource = null;
+    // A clipped filter subtree contributes no pixels. Discover its visibility
+    // before publishing sources: otherwise unseen glyphs still allocate atlases
+    // and immutable textures, and can exhaust the visible scene's budget.
+    if (plan && !state.shown) return;
     if (node.kind === 'graphics') {
       result.paths = node.paths;
       result.geometryRevision = node.geometryRevision;
@@ -156,10 +193,18 @@ export function snapshotLumiereScene(root, options = {}) {
       }
       if (node.texture.source.kind === 'white') {
         result.kind = 'solid';
-        result.frame = rect(node.texture.frame);
-      } else
-        result.texture = { source: sourceOf(node.texture.source), frame: rect(node.texture.frame) };
-      result.anchor = [node.anchor.x, node.anchor.y];
+        result.frame = fast ? node.texture.frame : rect(node.texture.frame);
+      } else {
+        textureSource = node.texture.source;
+        if (fast) {
+          spriteTexture.frame = node.texture.frame;
+          result.texture = spriteTexture;
+        } else result.texture = { source: null, frame: rect(node.texture.frame) };
+      }
+      if (fast) {
+        result.anchor[0] = node.anchor.x;
+        result.anchor[1] = node.anchor.y;
+      } else result.anchor = [node.anchor.x, node.anchor.y];
     } else if (node.kind === 'light-field') {
       result.bounds = node.getLocalBounds();
       result.uniforms = {};
@@ -168,13 +213,24 @@ export function snapshotLumiereScene(root, options = {}) {
     } else if (node.kind === 'text') {
       const texture = textTexture(node, options.resolution || 1, options.registeredScreens || []);
       result.kind = 'sprite';
-      result.texture = { source: sourceOf(texture.source), frame: rect(texture.frame) };
-      result.anchor = [node.anchor.x, node.anchor.y];
+      textureSource = texture.source;
+      if (fast) {
+        spriteTexture.frame = texture.frame;
+        result.texture = spriteTexture;
+      } else result.texture = { source: null, frame: rect(texture.frame) };
+      if (fast) {
+        result.anchor[0] = node.anchor.x;
+        result.anchor[1] = node.anchor.y;
+      } else result.anchor = [node.anchor.x, node.anchor.y];
     } else if (node.kind !== 'container') throw new Error('Unsupported Lumiere scene node');
     if (pathBytes > 64 * 1024 * 1024 || pathCount > 65536)
       throw new Error('Lumiere visible geometry budget exceeded');
-    const state = plan ? plan.append(result, parentState) : null;
-    if (!plan) nodes.push(result);
+    const shown = !plan || plan.appendLeaf(result, state, false);
+    if (shown) {
+      if (textureSource) result.texture.source = sourceOf(textureSource);
+      if (plan) plan.publishLeaf(result);
+      else nodes.push(result);
+    }
     if (!node.children.length) return;
     const children = node.sortableChildren
       ? node.children.slice().sort((a, b) => a.zIndex - b.zIndex)
@@ -182,9 +238,25 @@ export function snapshotLumiereScene(root, options = {}) {
     for (let i = 0; i < children.length; ++i) visit(children[i], node.id, result.blendMode, state);
   }
   visit(root, null);
-  if (options.textureCache)
-    for (const source of options.textureCache.keys())
-      if (!sources.has(source)) options.textureCache.delete(source);
-  if (plan) return { groups: plan.groups, leaves: plan.leaves, textures };
+  if (textureCache) {
+    let retainedBytes = 0;
+    const idle = [];
+    for (const [source, entry] of textureCache) {
+      if (source.destroyed || (!sources.has(source) && snapshotSerial - entry.snapshot > 60))
+        textureCache.delete(source);
+      else {
+        retainedBytes += entry.pathBytes;
+        if (!sources.has(source)) idle.push([source, entry]);
+      }
+    }
+    idle.sort((a, b) => a[1].snapshot - b[1].snapshot);
+    for (const [source, entry] of idle) {
+      if (retainedBytes <= 2 * 1024 * 1024) break;
+      textureCache.delete(source);
+      retainedBytes -= entry.pathBytes;
+    }
+  }
+  if (plan)
+    return { groups: plan.groups, leaves: batcher ? batcher.finish() : plan.leaves, textures };
   return { nodes, textures, pathBytes, pathCount };
 }

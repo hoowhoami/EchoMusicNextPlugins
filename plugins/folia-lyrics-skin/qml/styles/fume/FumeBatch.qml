@@ -7,6 +7,9 @@ Item {
     id: root
     property bool _completed: false
     required property var commands
+    property var contexts: commands
+    property string poolKey: ""
+    property bool prefetchOnly: false
     required property font baseFont
     property real deviceScale: 1
     property real maximumRasterScale: 32
@@ -17,8 +20,9 @@ Item {
     readonly property bool posesCurrent: !nativeGlyph.preparing && _publishedSignature === _signature
     // Poses change with the music, shaping metrics only with a layout revision.
     readonly property var _anchors: nativeGlyph.metrics.map(metric => ({
-        key: metric.key, middle: metric.baseline - (metric.emAscent - metric.emDescent) * .5
-    }))
+                key: metric.key,
+                middle: metric.baseline - (metric.emAscent - metric.emDescent) * .5
+            }))
     property var _shapeCommands: []
     property var _poseCache: new Map()
     property bool _usesScaledHalo: false
@@ -35,24 +39,24 @@ Item {
     signal budgetRejected
 
     function prepare(): void {
-        if (!commands)
+        if (!contexts)
             return;
-        if (commands.length === _shapeCommands.length && commands.every((cmd, i) => {
+        if (contexts.length === _shapeCommands.length && contexts.every((cmd, i) => {
             const old = _shapeCommands[i];
             return cmd.key === old.key && cmd.size === old.size && cmd.weight === old.weight && cmd.maxHaloRadius === old.maxHaloRadius;
         })) {
             publish();
             return;
         }
-        _shapeCommands = commands;
-        const runs = commands.map(command => ({
+        _shapeCommands = contexts;
+        const runs = contexts.map(command => ({
                     key: command.key,
                     text: Frame.canvasText(command.text),
                     size: command.size,
                     weight: command.weight,
                     spacing: 0,
                     maxBlur: 0,
-                    maxHaloRadius: Frame.haloBudget(command, glowEnabled)
+                    maxHaloRadius: command.maxHaloRadius === undefined ? Frame.haloBudget(command, glowEnabled) : command.maxHaloRadius
                 }));
         const signature = JSON.stringify(runs);
         if (signature !== _signature) {
@@ -63,21 +67,19 @@ Item {
         publish();
     }
     function publish(): void {
-        if (!commands || _publishing || _prepareRejected || nativeGlyph.preparing || _anchors.length !== commands.length)
+        if (!commands || _publishing || _prepareRejected || nativeGlyph.preparing || _anchors.length !== contexts.length)
             return;
         // Camera translation changes the parent transform, not retained local
         // paints. Avoid another QVariant conversion of identical pose arrays.
-        if (_publishedSignature === _signature && _poseAnchors === _anchors &&
-            _poseGlow === glowEnabled && (!_usesScaledHalo || _poseScale === deviceScale) &&
-            _poseCommands.length === commands.length && commands.every((command, i) => command === _poseCommands[i]))
+        if (_publishedSignature === _signature && _poseAnchors === _anchors && _poseGlow === glowEnabled && (!_usesScaledHalo || _poseScale === deviceScale) && _poseCommands.length === commands.length && commands.every((command, i) => command === _poseCommands[i]))
             return;
         const signature = _signature;
         publishTask.stop();
-        const anchors = _anchors, poses = [], nextCache = new Map();
+        const anchors = _anchors, poses = [], nextCache = new Map(), byKey = new Map(anchors.map(metric => [metric.key, metric]));
         let usesScaledHalo = false;
         for (let i = 0; i < commands.length; i++) {
-            const command = commands[i], metric = anchors[i];
-            if (metric.key !== command.key)
+            const command = commands[i], glyphKey = command.glyphKey || command.key, metric = byKey.get(glyphKey);
+            if (!metric)
                 return;
             // Canvas middle is the primary face's em-box centre. The fallback
             // shaping line box may grow for CJK/emoji and cannot define it.
@@ -87,8 +89,7 @@ Item {
                 return;
             }
             const cached = _poseCache.get(command);
-            if (cached && cached.middle === middleOffset && cached.glow === glowEnabled &&
-                (!cached.scaled || cached.scale === deviceScale)) {
+            if (cached && cached.middle === middleOffset && cached.glow === glowEnabled && (!cached.scaled || cached.scale === deviceScale)) {
                 for (const pose of cached.poses)
                     poses.push(pose);
                 nextCache.set(command, cached);
@@ -109,8 +110,8 @@ Item {
                 const halo = glowEnabled && radius > 0 && shadow.a > 0 && fill.a > 0;
                 scaled = scaled || halo;
                 const pose = {
-                    key: command.key,
-                    instance: "paint" + index,
+                    key: glyphKey,
+                    instance: Frame.paintInstance(command, index),
                     x: command.x,
                     y: command.y - middleOffset,
                     opacity: 1,
@@ -136,8 +137,13 @@ Item {
             }
             usesScaledHalo = usesScaledHalo || scaled;
             if (command.retainedPose)
-                nextCache.set(command, { middle: middleOffset, glow: glowEnabled, scaled,
-                    scale: deviceScale, poses: poses.slice(start) });
+                nextCache.set(command, {
+                    middle: middleOffset,
+                    glow: glowEnabled,
+                    scaled,
+                    scale: deviceScale,
+                    poses: poses.slice(start)
+                });
         }
         _poseCache = nextCache;
         _usesScaledHalo = usesScaledHalo;
@@ -158,6 +164,7 @@ Item {
         }
     }
     onCommandsChanged: prepare()
+    onContextsChanged: prepare()
     onDeviceScaleChanged: if (_completed && _usesScaledHalo)
         schedulePublish()
     onGlowEnabledChanged: prepare()
@@ -176,7 +183,7 @@ Item {
         font: renderFont.value
         haloSampling: "canvas"
         maximumRasterScale: root.maximumRasterScale
-        opacity: root.posesCurrent ? 1 : 0
+        opacity: root.posesCurrent && !root.prefetchOnly ? 1 : 0
         onPreparationChanged: {
             if (preparing)
                 root._publishedSignature = "";
@@ -184,7 +191,7 @@ Item {
         onLayoutChanged: {
             // An automatic DPR/visibility refresh of the last accepted empty
             // layout must not erase an explicitly rejected preparation.
-            if (root.commands && metrics.length === root.commands.length) {
+            if (root.contexts && metrics.length === root.contexts.length) {
                 root._prepareRejected = false;
                 root.schedulePublish();
             }
@@ -197,7 +204,7 @@ Item {
                 if (!root._publishing && (errorString.indexOf("texture budget") >= 0 || errorString.indexOf("ink cache") >= 0))
                     root.budgetRejected();
             } else if (!root._publishing) {
-                if (root.commands && metrics.length === root.commands.length) {
+                if (root.contexts && metrics.length === root.contexts.length) {
                     root._prepareRejected = false;
                     root.errorString = "";
                     root.schedulePublish();

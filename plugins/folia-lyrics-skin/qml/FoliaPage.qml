@@ -55,12 +55,39 @@ Item {
     property bool timelineOpen: false
     property string commandError: ""
     property bool _completed: false
+    property bool _retrying: false
+    property EchoPluginOperation _studioOpening: null
     property EchoUiPartRef hostToolsPart: null
     readonly property EchoUiPartPalette toolsColors: EchoUiPartPalette {
         part: root.hostToolsPart
     }
     readonly property string presentationError: presentationAssets.errorString || page.player.lyricsInfo.errorMessage || (dynamicPresentation ? dynamicPresentation.errorString : "") || (backgroundPresentation ? backgroundPresentation.errorString : "") || harmonyTimeline.errorString || harmonyOverlay.errorString
     clip: true
+
+    function openStudio(): void {
+        if (_studioOpening || plugin.ui.state.foliaStudioOpen === true)
+            return;
+        _studioOpening = plugin.executeCommand("folia.studio.open", {});
+        watchOperation(_studioOpening);
+    }
+    Connections {
+        target: root._studioOpening
+        function onCompleted(): void {
+            root._studioOpening = null;
+        }
+    }
+
+    function retryPresentation(): void {
+        if (!presentationActive || _retrying)
+            return;
+        _retrying = true;
+        retryPresentationTask.restart();
+    }
+    Timer {
+        id: retryPresentationTask
+        interval: 0
+        onTriggered: root._retrying = false
+    }
 
     function showError(message: string): void {
         if (!presentationActive)
@@ -212,8 +239,8 @@ Item {
             id: presentationAssets
             plugin: root.plugin
             settings: root.settings
-            live: root.drawingActive
-            fontLive: root.presentationActive
+            live: root.drawingActive && !root._retrying
+            fontLive: root.presentationActive && !root._retrying
         }
         CoverPalette {
             id: coverPalette
@@ -236,7 +263,7 @@ Item {
             z: 0
             objectName: "foliaBackgroundHost"
             anchors.fill: parent
-            active: root.drawingActive && root.nativeGraphicsAvailable && !(root.selectedMode && root.selectedMode.ownBackground && !(root.selectedMode.id === "nebbia" && root.settings.nebbiaBehind === "backdrop"))
+            active: root.drawingActive && !root._retrying && root.nativeGraphicsAvailable && !(root.selectedMode && root.selectedMode.ownBackground && !(root.selectedMode.id === "nebbia" && root.settings.nebbiaBehind === "backdrop"))
             sourceComponent: BackgroundPresentation {
                 songHandoff: root.dynamicPresentation ? root.dynamicPresentation.songHandoff : null
                 styleWaits: root.dynamicPresentation ? root.dynamicPresentation.transitionWaits : false
@@ -262,7 +289,7 @@ Item {
             z: 1
             objectName: "foliaDynamicPresentationHost"
             anchors.fill: parent
-            active: root.presentationActive && (!root.dynamicMode || root.nativeGraphicsAvailable)
+            active: root.presentationActive && !root._retrying && (!root.dynamicMode || root.nativeGraphicsAvailable)
             sourceComponent: DynamicPresentation {
                 lyricSource: filteredLyrics
                 plugin: root.plugin
@@ -325,16 +352,16 @@ Item {
             onTriggered: if (root.dynamicPresentation)
                 root.dynamicPresentation.refreshClock()
         }
-        Label {
+        PresentationFailure {
             objectName: "foliaRenderError"
             anchors.centerIn: parent
-            width: Math.min(root.width - 64, 640)
-            text: root.dynamicMode && !root.nativeGraphicsAvailable ? qsTr("当前图形后端无法绘制 Folia 动态歌词，请在右上角选择“静止”或启用硬件图形后端。") : root.presentationError
-            visible: text.length > 0
-            textFormat: Text.PlainText
-            wrapMode: Text.Wrap
-            color: root.appearance.text
-            font: root.plugin.fonts.build([], 14, 500)
+            width: Math.max(160, Math.min(root.width - 64, 440))
+            mode: root.settings.mode
+            detail: root.dynamicMode && !root.nativeGraphicsAvailable ? "Graphics backend unavailable" : root.presentationError
+            message: root.dynamicMode && !root.nativeGraphicsAvailable ? qsTr("当前图形后端无法绘制动态歌词，请在样式设置中选择“静止”。") : qsTr("歌词效果暂时无法显示")
+            canRetry: root.nativeGraphicsAvailable && root.presentationActive && !root._retrying
+            onRetryRequested: root.retryPresentation()
+            onSettingsRequested: root.openStudio()
         }
     }
     EchoSoftButton {
@@ -375,8 +402,8 @@ Item {
         display: AbstractButton.IconOnly
         opacity: chrome.hidden ? 0 : 1
         visible: opacity > 0
-        enabled: root.configuration.active && root.plugin.ui.state.foliaStudioOpen !== true
-        onClicked: root.watchOperation(root.plugin.executeCommand("folia.studio.open", {}))
+        enabled: root.configuration.active && !root._studioOpening && root.plugin.ui.state.foliaStudioOpen !== true
+        onClicked: root.openStudio()
     }
     PlayerCapsule {
         id: capsule

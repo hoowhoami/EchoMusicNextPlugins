@@ -9,6 +9,7 @@ Item {
     required property var texture
     property font baseFont
     property bool live: true
+    property string glyphSampling: "canvas"
     readonly property var output: ready ? capture.item : null
     readonly property bool ready: _accepted && _baked && _error.length === 0 && capture.item !== null
     readonly property string errorString: _error
@@ -222,6 +223,7 @@ Item {
         clearPool();
         ++_revision;
     }
+    onGlyphSamplingChanged: prepare()
     onTextureChanged: prepare()
     onBaseFontChanged: prepare()
     onLiveChanged: {
@@ -291,6 +293,8 @@ Item {
             width: root.width
             height: root.height
             font: sourceFont.value
+            haloSampling: root.glyphSampling
+            maximumRasterScale: Math.min(32, root.texture.resolution / root._devicePixelRatio)
             // Sibling insertion order is the original source-over paint order.
             onLayoutChanged: if (root._complete && !root._resetting)
                 completion.restart()

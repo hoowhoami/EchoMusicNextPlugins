@@ -1,3 +1,4 @@
+import { packUniform, createUniformPacket } from './uniform-packet.mjs';
 // Original frame graph replay through public scoped resources. No host playback state.
 import { programs } from './shaders/registry.mjs';
 import { unpackBytes } from '../../shared/binary.mjs';
@@ -87,41 +88,6 @@ export function createMachiReplay(graphics, shaderPath, width, height) {
     textures.delete(id);
     if (previous.depthId) textures.delete(previous.depthId);
     targets.delete(id);
-  }
-  function packUniform(data, base, meta, values) {
-    function write(shape, value, offset) {
-      if (shape.members) {
-        for (const field of shape.members) {
-          const v = value && value[field.name];
-          for (let i = 0; i < field.count; ++i)
-            write(field, field.array ? (v || [])[i] : v, offset + field.offset + i * field.stride);
-        }
-        return;
-      }
-      const v = Array.isArray(value) ? value : [value || 0];
-      for (let c = 0; c < (shape.channels || 1); ++c) {
-        const off =
-          offset +
-          (shape.columns ? Math.floor(c / shape.columns) * 16 + (c % shape.columns) * 4 : c * 4);
-        const n = Number(v[c] || 0);
-        if (!Number.isFinite(n))
-          throw Error(
-            'Machi nonfinite uniform ' +
-              shape.name +
-              '[' +
-              c +
-              '] ' +
-              JSON.stringify(v).slice(0, 160),
-          );
-        if (/^(?:bool|int|ivec|bvec|uint|uvec)/.test(shape.type)) data.setInt32(off, n, true);
-        else data.setFloat32(off, n, true);
-      }
-    }
-    for (const u of meta.uniforms) {
-      const v = values[u.name] === undefined ? meta.defaults[u.name] : values[u.name];
-      for (let i = 0; i < u.count; ++i)
-        write(u, u.array ? (v || [])[i] : v, base + u.offset + i * u.stride);
-    }
   }
   function ingest(events, canvasSources, surface, extent = { width, height }) {
     initialize();
@@ -370,7 +336,7 @@ export function createMachiReplay(graphics, shaderPath, width, height) {
       uniformBytes += meta.bytes;
       if (meta.drawData) indexCount = Math.max(indexCount, command.objectCount);
     }
-    const uniformData = new DataView(new ArrayBuffer(Math.max(4, uniformBytes)));
+    const uniformData = createUniformPacket(new ArrayBuffer(Math.max(4, uniformBytes)));
     for (const command of recording.passes) {
       if (command.kind !== 'draw') continue;
       const meta = programs[command.key],

@@ -26,34 +26,74 @@ export function filterFrame(bounds, filters, width, height, resolution) {
 }
 // A live scene already visits parents before their children. Pass their state
 // down the tree so particle frames do not retain a second node list and ID map.
-export function createFramePlan(width, height, resolution) {
+export function spriteIntersectsCapture(node, state) {
+  if (node.kind !== 'sprite' && node.kind !== 'solid') return true;
+  const frame = node.texture ? node.texture.frame : node.frame;
+  const width = node.tile ? node.tile.width : frame.width,
+    height = node.tile ? node.tile.height : frame.height,
+    x = -node.anchor[0] * width,
+    y = -node.anchor[1] * height,
+    m = state.matrix,
+    clip = state.capture,
+    originX = m[0] * x + m[1] * y + m[2],
+    originY = m[3] * x + m[4] * y + m[5],
+    dx = m[0] * width,
+    ex = m[1] * height,
+    dy = m[3] * width,
+    ey = m[4] * height,
+    margin = 2 / clip.resolution + 1e-7;
+  return (
+    originX + Math.max(0, dx) + Math.max(0, ex) >= clip.x - margin &&
+    originX + Math.min(0, dx) + Math.min(0, ex) <= clip.x + clip.width + margin &&
+    originY + Math.max(0, dy) + Math.max(0, ey) >= clip.y - margin &&
+    originY + Math.min(0, dy) + Math.min(0, ey) <= clip.y + clip.height + margin
+  );
+}
+export function createFramePlan(width, height, resolution, leafSink = null) {
   const groups = [],
     leaves = [];
-  const origin = { matrix: identity, alpha: 1, group: null, shown: true };
+  const origin = {
+    matrix: identity,
+    alpha: 1,
+    group: null,
+    shown: true,
+    capture: { x: 0, y: 0, width, height, resolution },
+  };
   let order = 0;
-  function append(node, parent = origin) {
-    const matrix = multiply(parent.matrix, node.matrix),
+  function publishLeaf(node) {
+    if (leafSink) leafSink(node);
+    else leaves.push(node);
+  }
+  function appendLeaf(node, state, publish = true) {
+    if (!state.shown || node.kind === 'container' || !spriteIntersectsCapture(node, state))
+      return false;
+    node.parent = state.group;
+    node.matrix = state.matrix;
+    node.alpha = state.alpha;
+    node.order = order++;
+    if (publish) publishLeaf(node);
+    return true;
+  }
+  function append(node, parent = origin, deferLeaf = false, matrixBuffer = null) {
+    const matrix = multiply(parent.matrix, node.matrix, matrixBuffer),
       alpha = parent.alpha * node.alpha;
     let group = parent.group,
-      shown = parent.shown;
+      shown = parent.shown,
+      capture = parent.capture;
     if (shown && node.filters.length) {
       const bounds = filterFrame(node.filterBounds, node.filters, width, height, resolution);
       shown = bounds !== null;
       if (shown) {
         groups.push({ id: node.id, parent: group, order: order++, bounds, filters: node.filters });
         group = node.id;
+        capture = bounds;
       }
     }
-    if (shown && node.kind !== 'container') {
-      node.parent = group;
-      node.matrix = matrix;
-      node.alpha = alpha;
-      node.order = order++;
-      leaves.push(node);
-    }
-    return { matrix, alpha, group, shown };
+    const state = { matrix, alpha, group, shown, capture };
+    if (!deferLeaf) appendLeaf(node, state);
+    return state;
   }
-  return { groups, leaves, append };
+  return { groups, leaves, append, appendLeaf, publishLeaf };
 }
 export function flattenLumiereScene(frame, width, height, resolution) {
   const plan = createFramePlan(width, height, resolution),

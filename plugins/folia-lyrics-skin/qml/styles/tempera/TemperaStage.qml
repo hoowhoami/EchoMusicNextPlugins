@@ -13,9 +13,12 @@ Item {
     property EchoPluginAssets assetsService: null
     property bool live: true
     readonly property var renderers: paint.renderers
-    readonly property var output: target
-    readonly property vector2d outputUvScale: Qt.vector2d(1, 1)
-    readonly property real cacheBytes: !descriptor ? 0 : Math.ceil(width * (descriptor.targetResolution || descriptor.resolution)) * Math.ceil(height * (descriptor.targetResolution || descriptor.resolution)) * 4 + paint.cacheBytes + (descriptor.kind === 'filters' ? chain.cacheBytes : 0)
+    // A full-viewport filter already owns the exact final target. Sampling it
+    // directly avoids capturing that same image into another full-size target.
+    readonly property bool directFilter: descriptor && descriptor.kind === 'filters' && roi[0] === 0 && roi[1] === 0 && roi[2] === width && roi[3] === height && Number.isInteger(width * descriptor.targetResolution) && Number.isInteger(height * descriptor.targetResolution)
+    readonly property var output: directFilter ? chain.output : target
+    readonly property vector2d outputUvScale: directFilter ? chain.outputUvScale : Qt.vector2d(1, 1)
+    readonly property real cacheBytes: !descriptor ? 0 : (directFilter ? 0 : Math.ceil(width * (descriptor.targetResolution || descriptor.resolution)) * Math.ceil(height * (descriptor.targetResolution || descriptor.resolution)) * 4) + paint.cacheBytes + (descriptor.kind === 'filters' ? chain.cacheBytes : 0)
     readonly property string errorString: chain.errorString || paint.errorString || (difference.status === ShaderEffect.Error ? difference.log : '')
     readonly property var roi: descriptor && descriptor.roi || [0, 0, width, height]
     readonly property var previous: descriptor && descriptor.previous && stages[descriptor.previous] ? stages[descriptor.previous].output : blank
@@ -71,7 +74,7 @@ Item {
             height: Math.max(1, root.roi[3] - root.roi[1])
             visible: root.descriptor && root.descriptor.kind === 'filters'
             live: root.live && visible
-            present: true
+            present: !root.directFilter
             source: crop
             sourceIsTextureProvider: false
             passes: visible ? root.descriptor.passes : []
@@ -97,13 +100,13 @@ Item {
     }
     ShaderEffectSource {
         id: target
-        sourceItem: visual
+        sourceItem: root.directFilter ? null : visual
         sourceRect: Qt.rect(0, 0, root.width, root.height)
         textureSize: Qt.size(Math.ceil(root.width * (root.descriptor ? root.descriptor.targetResolution || root.descriptor.resolution : 1)), Math.ceil(root.height * (root.descriptor ? root.descriptor.targetResolution || root.descriptor.resolution : 1)))
         hideSource: true
         visible: false
         live: root.live
         smooth: true
-        samples: root.descriptor && (root.descriptor.kind === 'difference' || (root.descriptor.kind === 'filters' && root.roi.every((v,i) => Number.isInteger(v * (i % 2 === 0 ? target.textureSize.width / root.width : target.textureSize.height / root.height)))) || (root.descriptor.kind === 'paint' && root.descriptor.ops.every(op => op.kind === 'texture')) ) ? 1 : 4
+        samples: root.descriptor && (root.descriptor.kind === 'difference' || (root.descriptor.kind === 'filters' && root.roi.every((v, i) => Number.isInteger(v * (i % 2 === 0 ? target.textureSize.width / root.width : target.textureSize.height / root.height)))) || (root.descriptor.kind === 'paint' && root.descriptor.ops.every(op => op.kind === 'texture'))) ? 1 : 4
     }
 }

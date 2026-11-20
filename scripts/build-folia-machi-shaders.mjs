@@ -36,6 +36,94 @@ function plain(v) {
       .map((k) => [k, plain(v[k])]),
   );
 }
+async function collectPrograms(commands, { scene, weather, aa }) {
+  for (const command of commands) {
+    if (command.type !== 'render') continue;
+    const lights = command.lightState || {};
+    for (const name of [
+      'directional',
+      'point',
+      'spot',
+      'hemi',
+      'rectArea',
+      'directionalShadowMap',
+      'pointShadowMap',
+      'spotShadowMap',
+      'spotLightMap',
+    ])
+      if (!lights[name]) lights[name] = [];
+    lights.numSpotLightShadowsWithMaps ||= 0;
+    lights.numLightProbes ||= 0;
+    for (const mesh of command.meshes) {
+      const material = mesh.material,
+        geometry = mesh.geometry;
+      const shadows = !command.depthOnly && command.lights.some((l) => l.castShadow);
+      const key = shaderKey(material, geometry, lights, command.fog, shadows);
+      if (registry[key]) continue;
+      const object = Object.assign(Object.create(mesh.object), {
+        isInstancedMesh: material.isShaderMaterial && mesh.object.isInstancedMesh,
+        isBatchedMesh: false,
+      });
+      const expanded = expandMachiMaterial(material, object, lights, {
+        shadows,
+        scene: { fog: command.fog },
+      });
+      const drawData = !material.isShaderMaterial;
+      const attributes = { position: 0, normal: 1, uv: 2, color: 3 };
+      let at = 5;
+      if (material.isShaderMaterial && mesh.object.isInstancedMesh) {
+        attributes.instanceMatrix = at;
+        at += 4;
+      }
+      for (const name of Object.keys(geometry.attributes).sort())
+        if (attributes[name] === undefined) attributes[name] = at++;
+      let converted;
+      try {
+        converted = nativeShaderPair(expanded.vertex, expanded.fragment, {
+          drawData,
+          attributes,
+        });
+      } catch (error) {
+        console.error(scene, weather, aa, material.type, material.name, command.depthOnly, key);
+        await writeFile(path.join(output, 'failed.vert'), expanded.vertex);
+        await writeFile(path.join(output, 'failed.frag'), expanded.fragment);
+        throw error;
+      }
+      // Opaque post targets store CoC/coverage in alpha. Preserve that
+      // data; only straight-alpha blended materials need conversion.
+      if (
+        !command.depthOnly &&
+        material.transparent &&
+        material.blending !== 0 &&
+        !material.premultipliedAlpha
+      ) {
+        converted.fragment =
+          converted.fragment.replace(/\bvoid\s+main\s*\(/, 'void nativeSourceFragment(') +
+          '\nvoid main(){nativeSourceFragment();pc_fragColor.rgb*=pc_fragColor.a;}\n';
+      }
+      if (command.depthOnly)
+        converted.fragment = converted.fragment.replace(
+          /layout\(location=0\) out (\w+) (\w+);/g,
+          '$1 $2;',
+        );
+      const name = 'program-' + key;
+      const vertexShader = await stage(converted.vertex, 'vert');
+      const fragmentShader = await stage(converted.fragment, 'frag');
+      const { vertex, fragment, ...meta } = converted;
+      registry[key] = {
+        ...meta,
+        name,
+        vertexShader,
+        fragmentShader,
+        drawData,
+        depthOnly: !!command.depthOnly,
+        defaults: Object.fromEntries(
+          Object.entries(expanded.uniforms).map(([k, v]) => [k, plain(v.value)]),
+        ),
+      };
+    }
+  }
+}
 for (const dpr of [0.5, 0.75, 1, 1.5, 2, 3])
   for (const scene of ['konbini', 'station', 'kowloon'])
     for (const weather of ['clear', 'rain', 'snow', 'fog'])
@@ -61,104 +149,59 @@ for (const dpr of [0.5, 0.75, 1, 1.5, 2, 3])
           // Include every source material even when the fixture camera clips it.
           r.runtime.renderer.frustumCulling = false;
           try {
-            for (const command of r.frame(10)) {
-              if (command.type !== 'render') continue;
-              const lights = command.lightState || {};
-              for (const name of [
-                'directional',
-                'point',
-                'spot',
-                'hemi',
-                'rectArea',
-                'directionalShadowMap',
-                'pointShadowMap',
-                'spotShadowMap',
-                'spotLightMap',
-              ])
-                if (!lights[name]) lights[name] = [];
-              lights.numSpotLightShadowsWithMaps ||= 0;
-              lights.numLightProbes ||= 0;
-              for (const mesh of command.meshes) {
-                const material = mesh.material,
-                  geometry = mesh.geometry;
-                const shadows = !command.depthOnly && command.lights.some((l) => l.castShadow);
-                const key = shaderKey(material, geometry, lights, command.fog, shadows);
-                if (registry[key]) continue;
-                const object = Object.assign(Object.create(mesh.object), {
-                  isInstancedMesh: material.isShaderMaterial && mesh.object.isInstancedMesh,
-                  isBatchedMesh: false,
-                });
-                const expanded = expandMachiMaterial(material, object, lights, {
-                  shadows,
-                  scene: { fog: command.fog },
-                });
-                const drawData = !material.isShaderMaterial;
-                const attributes = { position: 0, normal: 1, uv: 2, color: 3 };
-                let at = 5;
-                if (material.isShaderMaterial && mesh.object.isInstancedMesh) {
-                  attributes.instanceMatrix = at;
-                  at += 4;
-                }
-                for (const name of Object.keys(geometry.attributes).sort())
-                  if (attributes[name] === undefined) attributes[name] = at++;
-                let converted;
-                try {
-                  converted = nativeShaderPair(expanded.vertex, expanded.fragment, {
-                    drawData,
-                    attributes,
-                  });
-                } catch (error) {
-                  console.error(
-                    scene,
-                    weather,
-                    aa,
-                    material.type,
-                    material.name,
-                    command.depthOnly,
-                    key,
-                  );
-                  await writeFile(path.join(output, 'failed.vert'), expanded.vertex);
-                  await writeFile(path.join(output, 'failed.frag'), expanded.fragment);
-                  throw error;
-                }
-                // Opaque post targets store CoC/coverage in alpha. Preserve that
-                // data; only straight-alpha blended materials need conversion.
-                if (
-                  !command.depthOnly &&
-                  material.transparent &&
-                  material.blending !== 0 &&
-                  !material.premultipliedAlpha
-                ) {
-                  converted.fragment =
-                    converted.fragment.replace(/\bvoid\s+main\s*\(/, 'void nativeSourceFragment(') +
-                    '\nvoid main(){nativeSourceFragment();pc_fragColor.rgb*=pc_fragColor.a;}\n';
-                }
-                if (command.depthOnly)
-                  converted.fragment = converted.fragment.replace(
-                    /layout\(location=0\) out (\w+) (\w+);/g,
-                    '$1 $2;',
-                  );
-                const name = 'program-' + key;
-                const vertexShader = await stage(converted.vertex, 'vert');
-                const fragmentShader = await stage(converted.fragment, 'frag');
-                const { vertex, fragment, ...meta } = converted;
-                registry[key] = {
-                  ...meta,
-                  name,
-                  vertexShader,
-                  fragmentShader,
-                  drawData,
-                  depthOnly: !!command.depthOnly,
-                  defaults: Object.fromEntries(
-                    Object.entries(expanded.uniforms).map(([k, v]) => [k, plain(v.value)]),
-                  ),
-                };
-              }
-            }
+            const commands = r.frame(10);
+            await collectPrograms(commands, { scene, weather, aa });
           } finally {
             r.destroy();
           }
         }
+// Weather material swaps and adaptive quality settle after presentation. A
+// cold frame alone misses valid programs (including ordinary non-wet materials).
+// Keep the build clock deterministic without changing the runtime clock API.
+const originalNow = Date.now;
+let buildNow = 1;
+try {
+  Date.now = () => buildNow;
+  for (const scene of ['konbini', 'station', 'kowloon'])
+    for (const weather of ['clear', 'rain', 'snow', 'fog'])
+      for (const shadows of ['high', 'off'])
+        for (const aa of ['off', 'fxaa', 'smaa', 'ssaa'])
+          for (const seed of ['native', '山河与月光']) {
+            buildNow = 1;
+            Native.configure({ discovery: true });
+            configureNativePixels([]);
+            const runtime = createNativeMachiRuntime({
+              width: 1100,
+              height: 820,
+              resolution: 2,
+              program: [],
+              seed,
+              metadata: { title: 'Native', artist: 'Folia', album: '' },
+              theme: { ...DEFAULT_DARK_THEME, fontFamily: 'PingFang SC' },
+              tuning: {
+                scene,
+                weather,
+                timeOfDay: 'night',
+                quality: { antialias: aa, adaptive: true, shadows },
+              },
+            });
+            runtime.runtime.renderer.frustumCulling = false;
+            try {
+              for (const elapsed of [1, 100, 500, 1500, 5000, 15000]) {
+                buildNow = elapsed;
+                await collectPrograms(runtime.frame(10 + elapsed / 1000, { presented: true }), {
+                  scene,
+                  weather,
+                  aa,
+                });
+              }
+            } finally {
+              runtime.destroy();
+            }
+          }
+} finally {
+  Date.now = originalNow;
+}
 await writeFile(
   path.join(output, 'registry.mjs'),
   '// Pinned Folia AGPL-3.0-only / Three MIT; build-only expansion.\nexport const programs=' +

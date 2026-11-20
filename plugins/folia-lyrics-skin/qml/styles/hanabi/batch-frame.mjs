@@ -4,12 +4,10 @@ import { flattenLumiereScene } from '../lumiere/frame-plan.mjs';
 // sprites.vert reads six RGBA texels per instance.
 const floatsPerSprite = 6 * 4;
 const identity = [1, 0, 0, 0, 1, 0];
-export function batchHanabiFrame(snapshot, width, height, resolution) {
-  const result = snapshot.leaves
-      ? snapshot
-      : flattenLumiereScene(snapshot, width, height, resolution),
-    specs = new Map(result.textures.map((t) => [t.id, t]));
-  const leaves = [];
+const solidTexture = { width: 1, height: 1 };
+export function createHanabiBatcher(textureFor) {
+  const leaves = [],
+    occurrences = new Map();
   let batch = null,
     floats = null,
     lastOrder = -1;
@@ -23,12 +21,11 @@ export function batchHanabiFrame(snapshot, width, height, resolution) {
     batch = null;
     floats = null;
   }
-  for (let nodeIndex = 0; nodeIndex < result.leaves.length; ++nodeIndex) {
-    const node = result.leaves[nodeIndex];
+  function append(node) {
     if (node.kind !== 'sprite' && node.kind !== 'solid') {
       finish();
       leaves.push(node);
-      continue;
+      return;
     }
     const source = node.kind === 'solid' ? null : node.texture.source;
     if (
@@ -41,8 +38,13 @@ export function batchHanabiFrame(snapshot, width, height, resolution) {
     ) {
       finish();
       floats = new Float32Array(16 * floatsPerSprite);
+      const slot = JSON.stringify([node.parent, node.blendMode]),
+        occurrence = occurrences.get(slot) || 0;
+      occurrences.set(slot, occurrence + 1);
       batch = {
-        id: 'batch-' + node.id,
+        // First visible particles change as they fade or leave the viewport.
+        // Keep the native draw slot; all instances and painter order still update.
+        id: 'batch:' + slot + ':' + occurrence,
         kind: 'batch',
         parent: node.parent,
         order: node.order,
@@ -55,7 +57,7 @@ export function batchHanabiFrame(snapshot, width, height, resolution) {
     }
     if (source && !batch.sources.includes(source)) batch.sources.push(source);
     const slot = source ? batch.sources.indexOf(source) : -1;
-    const texture = source ? specs.get(source) : { width: 1, height: 1 };
+    const texture = source ? textureFor(source) : solidTexture;
     const rect = node.texture ? node.texture.frame : node.frame;
     const w = node.tile ? node.tile.width : rect.width,
       h = node.tile ? node.tile.height : rect.height;
@@ -90,6 +92,21 @@ export function batchHanabiFrame(snapshot, width, height, resolution) {
     ++batch.count;
     lastOrder = node.order;
   }
-  finish();
-  return Object.assign({}, result, { leaves });
+  return {
+    append,
+    finish() {
+      finish();
+      return leaves;
+    },
+  };
+}
+
+export function batchHanabiFrame(snapshot, width, height, resolution) {
+  const result = snapshot.leaves
+    ? snapshot
+    : flattenLumiereScene(snapshot, width, height, resolution);
+  const specs = new Map(result.textures.map((texture) => [texture.id, texture]));
+  const batcher = createHanabiBatcher((id) => specs.get(id));
+  for (const node of result.leaves) batcher.append(node);
+  return Object.assign({}, result, { leaves: batcher.finish() });
 }

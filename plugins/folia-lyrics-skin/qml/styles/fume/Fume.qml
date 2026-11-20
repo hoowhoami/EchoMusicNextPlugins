@@ -41,7 +41,7 @@ Item {
     property string trackRevision: ""
     readonly property var article: preparation.article
     readonly property bool busy: preparation.busy
-    readonly property bool renderReady: preparation.sourceCurrent && article !== null && !_budgetRejected && _actors.length === _batches.length && !grow.running && _actors.every(actor => actor.posesCurrent && !actor._prepareRejected && !actor.errorString && actor.glyph.ready && actor.glyph.metrics.length === actor.commands.length)
+    readonly property bool renderReady: preparation.sourceCurrent && article !== null && !_budgetRejected && _actors.length === _batches.length && !grow.running && _actors.every(actor => actor.prefetchOnly || actor.posesCurrent && !actor._prepareRejected && !actor.errorString && actor.glyph.ready && actor.glyph.metrics.length === actor.contexts.length)
     readonly property int layoutRevision: preparation.layoutRevision
     readonly property int measurementBatches: preparation.measurementBatches
     readonly property int readBatches: preparation.readBatches
@@ -77,11 +77,13 @@ Item {
         })
     property var _nextStart: Object.create(null)
     property var _staticBlocks: Object.create(null)
+    property var _blockContexts: Object.create(null)
     property var _cameraState: Fume.createFumeCameraState()
     property var _batches: []
     property var _actors: []
+    property var _idleActors: []
     property bool _budgetRejected: false
-    property int _groupRunLimit: 16
+    property int _groupRunLimit: 128
     property real _peakCacheBytes: 0
     property var _stamps: []
     property var _decorCommands: []
@@ -112,8 +114,10 @@ Item {
         grow.stop();
         cacheCheck.stop();
         _staticBlocks = Object.create(null);
-        const retired = _actors;
+        _blockContexts = Object.create(null);
+        const retired = _actors.concat(_idleActors);
         _actors = [];
+        _idleActors = [];
         _batches = [];
         for (const actor of retired) {
             actor.visible = false;
@@ -130,7 +134,7 @@ Item {
         // immutable source pixels, curve geometry and all four color targets.
         const shared = new Map();
         let total = 0;
-        for (const actor of _actors) {
+        for (const actor of _actors.concat(_idleActors)) {
             total += actor.cacheBytes;
             if (actor.sharedCacheKey)
                 shared.set(actor.sharedCacheKey, Math.max(shared.get(actor.sharedCacheKey) || 0, actor.sharedCacheBytes));
@@ -139,7 +143,18 @@ Item {
             total += bytes;
         return _actors.length ? total + decorTextureBytes : 0;
     }
+    function trimIdle(): void {
+        let idleBytes = _idleActors.reduce((bytes, actor) => bytes + actor.cacheBytes, 0);
+        while (_idleActors.length && (idleBytes > 16 * 1024 * 1024 || _idleActors.length > 6 || _actors.length + _idleActors.length > 32 || nativeCacheBytes() > cacheBudgetBytes)) {
+            const retired = _idleActors[0];
+            idleBytes -= retired.cacheBytes;
+            _idleActors = _idleActors.slice(1);
+            retired.visible = false;
+            retired.destroy();
+        }
+    }
     function checkCache(): void {
+        trimIdle();
         const total = nativeCacheBytes();
         _peakCacheBytes = Math.max(_peakCacheBytes, total);
         ++_paintRevision;
@@ -159,41 +174,65 @@ Item {
         if (_budgetRejected)
             return;
         _batches = batches;
-        while (_actors.length > batches.length) {
-            const retired = _actors[_actors.length - 1];
-            _actors = _actors.slice(0, -1);
-            retired.visible = false;
-            retired.destroy();
-        }
-        for (let i = 0; i < _actors.length && !_budgetRejected; i++) {
-            const previous = _actors[i].commands, next = batches[i];
+        const previousActors = new Map(_idleActors.concat(_actors).map(actor => [actor.poolKey, actor]));
+        _idleActors = [];
+        const retained = [];
+        for (let i = 0; i < batches.length; ++i) {
+            const next = batches[i], actor = previousActors.get(next.key);
+            if (!actor)
+                continue;
+            previousActors.delete(next.key);
+            actor.z = i;
+            actor.prefetchOnly = next.prefetch === true;
+            actor.contexts = next.contexts;
+            const previous = actor.commands;
             if (previous.length !== next.length || !next.every((command, index) => command === previous[index]))
-                _actors[i].commands = next;
+                actor.commands = next;
+            retained.push(actor);
         }
+        _actors = retained;
+        const idle = [];
+        for (const actor of previousActors.values()) {
+            if (!actor.glyph.preparing && !actor.errorString && !actor._prepareRejected) {
+                // Keep only bounded prepared values while this style is active.
+                // Empty poses retire the old paint; revisiting a camera region
+                // can reuse its shaping instead of blanking for another job.
+                actor.prefetchOnly = true;
+                if (actor.commands.length)
+                    actor.commands = [];
+                idle.push(actor);
+            } else {
+                actor.visible = false;
+                actor.destroy();
+            }
+        }
+        _idleActors = idle;
         checkCache();
         if (!_budgetRejected && _actors.length < batches.length)
             grow.restart();
     }
     function splitRejectedGroup(actor: var): void {
-        if (_budgetRejected || _actors.indexOf(actor) < 0 || actor.commands.length <= 1)
+        if (_budgetRejected || _actors.indexOf(actor) < 0 || actor.contexts.length <= 1)
             return;
         // Keep every complete shaping context. Smaller groups retain the same
         // paint order and source poses; no glyph or effect is removed.
-        _groupRunLimit = Math.max(1, Math.min(_groupRunLimit - 1, Math.floor(actor.commands.length / 2)));
-        const commands = _batches.reduce((all, group) => all.concat(group), []);
+        _groupRunLimit = Math.max(1, Math.min(_groupRunLimit - 1, Math.floor(actor.contexts.length / 2)));
         clearPool();
-        try {
-            updatePool(Frame.batches(commands, tuning.glowIntensity > 0, _groupRunLimit));
-        } catch (error) {
-            _budgetRejected = true;
-            _renderError = String(error.message || error);
-        }
+        schedule();
     }
     function growPool(): void {
         if (!live || !visible || _budgetRejected || _actors.length >= _batches.length)
             return;
+        const index = _batches.findIndex(batch => !_actors.some(actor => actor.poolKey === batch.key));
+        if (index < 0)
+            return;
+        const batch = _batches[index];
         const actor = batchComponent.createObject(paper, {
-            commands: _batches[_actors.length]
+            commands: batch,
+            contexts: batch.contexts,
+            poolKey: batch.key,
+            prefetchOnly: batch.prefetch === true,
+            z: index
         });
         if (!actor) {
             _renderError = "Fume native glyph group creation failed";
@@ -211,7 +250,7 @@ Item {
         resetBudget();
         clearPool();
         _peakCacheBytes = 0;
-        _groupRunLimit = 16;
+        _groupRunLimit = 128;
         _hasPrinted = false;
         _cameraState = Fume.createFumeCameraState();
         Fume.syncFumeCameraToArticle(_cameraState, article);
@@ -285,6 +324,14 @@ Item {
             const retained = Object.create(null);
             let visibleCount = 0;
             if (article && settings.showText !== false) {
+                if (Object.keys(_blockContexts).length === 0)
+                    _blockContexts = Frame.articleContexts(article.blocks, {
+                        theme: theme,
+                        glowIntensity: tuning.glowIntensity,
+                        activeGlowBoost: glow.activeGlowBoost,
+                        passedGlowBase: glow.passedGlowBase,
+                        minimumDeviceScale: Fume.CAMERA_SCALE_MIN * devicePixelRatio
+                    }, _groupRunLimit);
                 for (let blockIndex = 0; blockIndex < article.blocks.length; ++blockIndex) {
                     const block = article.blocks[blockIndex];
                     if (!Fume.isFumeBlockOnScreen(block, _cameraState.camera, viewport))
@@ -292,6 +339,7 @@ Item {
                     ++visibleCount;
                     const next = _nextStart[block.id];
                     const isWaiting = timeSeconds < block.line.startTime;
+                    const plan = _blockContexts[block.id];
                     const previous = _staticBlocks[block.id];
                     const reuse = previous && (previous.timing.staticState === "waiting" ? isWaiting : timeSeconds >= previous.reusableFrom && (previous.restore === undefined || previous.restore === restore));
                     const recorded = reuse ? previous : Frame.recordBlock(block, {
@@ -301,6 +349,7 @@ Item {
                         activeGlowBoost: glow.activeGlowBoost,
                         passedGlowBase: glow.passedGlowBase,
                         minimumDeviceScale: Fume.CAMERA_SCALE_MIN * devicePixelRatio,
+                        contexts: plan,
                         showPrintStamp: !tuning.hidePrintSymbols
                     }, next, {
                         time: timeSeconds,
@@ -333,7 +382,8 @@ Item {
                 }
             }
             _staticBlocks = retained;
-            const batches = Frame.batches(commands, tuning.glowIntensity > 0, _groupRunLimit);
+            const drawn = Frame.batches(commands, tuning.glowIntensity > 0, _groupRunLimit);
+            const batches = article && settings.showText !== false ? Frame.withUpcomingContexts(drawn, article.chronologicalBlocks, _blockContexts, timeSeconds) : drawn;
             // Prepare one bounded group per GUI turn; frames update existing poses only.
             updatePool(batches);
             _visibleCount = visibleCount;
@@ -360,16 +410,19 @@ Item {
     }
     onSettingsChanged: {
         _staticBlocks = Object.create(null);
+        _blockContexts = Object.create(null);
         resetBudget();
         _fadeDuration = article ? Fume.resolveFumePassedFadeDuration(article.chronologicalBlocks.map(block => block.line), tuning.textHoldRatio) : Infinity;
         schedule();
     }
     onThemeChanged: {
         _staticBlocks = Object.create(null);
+        _blockContexts = Object.create(null);
         schedule();
     }
     onBaseFontChanged: {
         _staticBlocks = Object.create(null);
+        _blockContexts = Object.create(null);
         schedule();
     }
     onPausedChanged: schedule()
@@ -388,6 +441,7 @@ Item {
     }
     onDevicePixelRatioChanged: {
         _staticBlocks = Object.create(null);
+        _blockContexts = Object.create(null);
         schedule();
     }
     onAvatarSeedChanged: rebuildScene()

@@ -33,7 +33,7 @@ ColumnLayout {
         function onCompleted(): void {
             const operation = root.opening;
             root.opening = null;
-            if (operation.state === EchoPluginOperation.Succeeded)
+            if (operation.state === EchoPluginOperation.Succeeded && operation.result === true)
                 root.page.closeSkinSettings();
         }
     }

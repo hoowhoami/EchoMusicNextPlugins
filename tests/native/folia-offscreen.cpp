@@ -1,7 +1,8 @@
 // No Cocoa windows or activation calls. Verify real Metal pixels before using
 // this harness for any plugin cost measurement.
-#include "FloatTexture.h"
 #include "EchoGpuSurface.h"
+#include "GlyphRunStaticLayout_p.h"
+#include "FloatTexture.h"
 #include "folia-benchmark-support.h"
 #include <QAbstractAnimation>
 #include <QGuiApplication>
@@ -28,6 +29,8 @@ class FoliaOffscreenTest : public QObject
     Q_OBJECT
 private slots:
     void metalTexturePixels();
+    void bloomPaddedAndTightPixels();
+    void glyphBakingPixels();
     void floatTextureCodecPixels();
     void virtualPresentationState();
     void installedPlaybackPage();
@@ -250,7 +253,8 @@ void FoliaOffscreenTest::staticGlyphAtlasConsumerRecovery()
 {
     const auto shaders = qEnvironmentVariable("FOLIA_GPU_FIXTURE_SHADERS");
     if (shaders.isEmpty())
-        QSKIP("Set FOLIA_GPU_FIXTURE_SHADERS to the host's built GPU fixture shaders");
+        QSKIP("Set FOLIA_GPU_FIXTURE_SHADERS to the host's built GPU fixture "
+              "shaders");
     QTest::failOnWarning(QRegularExpression("No QSGTexture provided"));
     Host host;
     const auto directory =
@@ -478,6 +482,146 @@ Item {
     QVERIFY(!session.window.handle());
 }
 
+void FoliaOffscreenTest::bloomPaddedAndTightPixels()
+{
+    OffscreenSession session;
+    QVERIFY(session.initialize(QSize(540, 420), 2));
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    const auto directory =
+        QUrl::fromLocalFile(qEnvironmentVariable("FOLIA_TEST_BLOOM_DIR")).toString();
+    component.setData(("import QtQuick\nimport \"" + directory + "\" as Native\n" + R"(
+Item {
+    id: root
+    width: 540; height: 420
+    property bool tight: false
+    property real density: 2
+    property int samples: 1
+    readonly property real bytes: bloom.cacheBytes
+    Item {
+        id: raw
+        width: 379.25; height: 287.75
+        Rectangle { x: 1; y: 1; width: 115.5; height: 63.25; color: "#ecb13a"; radius: 17 }
+        Rectangle { x: 338.5; y: 244.5; width: 40.75; height: 43.25; color: "#36d6e8"; rotation: 17 }
+        Text { x: 32; y: 98; font.pixelSize: 38; text: "山河 ffi á"; color: "#f6d99b" }
+    }
+    Native.LumiereBloom {
+        id: bloom
+        x: 65; y: 60; width: raw.width; height: raw.height
+        source: raw; tightTargets: root.tight; resolution: root.density; samples: root.samples
+        options: ({ strength: 1.3, threshold: .42, knee: .3, levels: 6, spread: .9, padding: 0, tint: [1,.8,.6] })
+    }
+})")
+                          .toUtf8(),
+                      QUrl("qrc:/folia-bloom-parity.qml"));
+    std::unique_ptr<QObject> root(component.create());
+    QVERIFY2(root, qPrintable(component.errorString()));
+    auto *item = qobject_cast<QQuickItem *>(root.get());
+    item->setParentItem(session.window.contentItem());
+    auto read = [&] {
+        runEventLoop(400);
+        QRhiReadbackResult pixels;
+        session.frame(&pixels);
+        return pixels.data;
+    };
+    for (const double density : {1., 1.25, 2., 3.})
+        for (const int samples : {1, 4}) {
+            root->setProperty("density", density);
+            root->setProperty("samples", samples);
+            root->setProperty("tight", false);
+            const auto padded = read();
+            const auto oldBytes = root->property("bytes").toDouble();
+            root->setProperty("tight", true);
+            const auto tight = read();
+            QVERIFY(root->property("bytes").toDouble() < oldBytes);
+            QCOMPARE(tight.size(), padded.size());
+            int maximum = 0, changed = 0, bright = 0;
+            for (qsizetype i = 0; i < tight.size(); ++i) {
+                const int delta = qAbs(int(uchar(tight[i])) - int(uchar(padded[i])));
+                maximum = std::max(maximum, delta);
+                changed += delta > 2;
+                bright += uchar(tight[i]) > 32;
+            }
+            qInfo() << "Bloom allocation parity" << density << samples << maximum << changed
+                    << "bytes" << oldBytes << root->property("bytes");
+            QVERIFY(bright > 10000);
+            QVERIFY2(maximum <= 3 && changed < tight.size() / 1000,
+                     "Tight targets changed source bloom pixels");
+        }
+    QVERIFY(!session.window.handle());
+}
+
+void FoliaOffscreenTest::glyphBakingPixels()
+{
+    configureUiTypography();
+    OffscreenSession session;
+    QVERIFY(session.initialize(QSize(540, 170), 2));
+    QQmlEngine engine;
+    QQmlComponent component(&engine);
+    const auto directory =
+        QUrl::fromLocalFile(qEnvironmentVariable("FOLIA_TEST_BLOOM_DIR")).toString();
+    component.setData(("import QtQuick\nimport \"" + directory + "\" as Native\n" + R"(
+Item {
+    id: root
+    width: 540; height: 170
+    property string sampling: "static"
+    property bool outline: false
+    readonly property bool ready: glyph.ready
+    readonly property string error: glyph.errorString
+    Native.LumiereGlyphTexture {
+        id: glyph
+        glyphSampling: root.sampling
+        baseFont: Qt.font({ family: "Arial" })
+        texture: ({ width: 520, height: 150, pixelWidth: 1040, pixelHeight: 300, resolution: 2,
+            commands: [{kind: "text",text: "山河 office ffi á 😀",x:12,y:70,stroke:root.outline,
+                style: {matrix:[2,0,0,0,2,0], font:'640 38px "Arial"', textBaseline:"middle", globalCompositeOperation:"source-over", globalAlpha:.8, fillStyle:"#dbac5f",strokeStyle:"#dbac5f",lineWidth:1.5}}] })
+    }
+    ShaderEffect {
+        x: 10; y: 10; width: 520; height: 150
+        property var source: glyph.output
+        property real outputAlpha: 1
+        fragmentShader: ")" +
+                       directory + R"(/glyph-prime.frag.qsb"
+    }
+})")
+                          .toUtf8(),
+                      QUrl("qrc:/folia-glyph-bake-parity.qml"));
+    std::unique_ptr<QObject> root(component.create());
+    QVERIFY2(root, qPrintable(component.errorString()));
+    qobject_cast<QQuickItem *>(root.get())->setParentItem(session.window.contentItem());
+    auto read = [&] {
+        QRhiReadbackResult pixels;
+        session.frame(&pixels);
+        return pixels.data;
+    };
+    for (const bool outline : {false, true}) {
+        root->setProperty("outline", outline);
+        root->setProperty("sampling", "static");
+        QVERIFY2(awaitEvent([&] { return root->property("ready").toBool(); }, 15000),
+                 qPrintable(root->property("error").toString()));
+        runEventLoop(100);
+        const auto before = read();
+        root->setProperty("sampling", "canvas");
+        QVERIFY2(awaitEvent([&] { return root->property("ready").toBool(); }, 15000),
+                 qPrintable(root->property("error").toString()));
+        runEventLoop(100);
+        const auto after = read();
+        QCOMPARE(before.size(), after.size());
+        int maximum = 0, changed = 0, visible = 0;
+        for (qsizetype i = 0; i < before.size(); ++i) {
+            const int delta = qAbs(int(uchar(before[i])) - int(uchar(after[i])));
+            maximum = std::max(maximum, delta);
+            changed += delta > 2;
+            visible += uchar(after[i]) > 32;
+        }
+        qInfo() << "Glyph bake parity" << outline << maximum << changed;
+        QVERIFY(visible > 1000);
+        QVERIFY2(maximum <= 3 && changed < before.size() / 1000,
+                 "Compact glyph baking changed pixels");
+    }
+    QVERIFY(!session.window.handle());
+}
+
 void FoliaOffscreenTest::virtualPresentationState()
 {
     QCOMPARE(QGuiApplication::platformName(), QString("offscreen"));
@@ -505,7 +649,7 @@ void FoliaOffscreenTest::installedPlaybackPage()
     QTest::failOnWarning(
         QRegularExpression("invalid context|TypeError:|ReferenceError:|is not a function"));
     configureUiTypography();
-    const auto mode = qEnvironmentVariable("FOLIA_PERF_MODE", "classic");
+    auto mode = qEnvironmentVariable("FOLIA_PERF_MODE", "classic");
     Host host;
     host.shell.attachPlayback(host.playback);
     host.shell.attachTheme(host.theme);
@@ -527,8 +671,17 @@ void FoliaOffscreenTest::installedPlaybackPage()
     QCOMPARE(host.runtime.state(installation), PluginRuntime::Active);
     auto *entry = host.theme.extensions()->entries("skin").first();
     if (mode != "native") {
-        QVERIFY(
-            entry->configuration()->patch({{"mode", mode}, {"fontFamilies", QVariantList{font}}}));
+        QVariantMap values;
+        const auto settingsFile = qEnvironmentVariable("FOLIA_TEST_SETTINGS");
+        if (!settingsFile.isEmpty()) {
+            QFile file(settingsFile);
+            QVERIFY(file.open(QIODevice::ReadOnly));
+            values = QJsonDocument::fromJson(file.readAll()).object().toVariantMap();
+            QVERIFY(!values.isEmpty());
+        }
+        values["mode"] = mode;
+        values["fontFamilies"] = QVariantList{font};
+        QVERIFY(entry->configuration()->patch(values));
         QTRY_VERIFY(!entry->configuration()->busy());
         QVERIFY(host.runtime.context(installation)->appearance()->useSkin("folia"));
     }
@@ -583,7 +736,8 @@ Item {
     QJsonArray auditStalls;
     QString auditPhase = "initial";
     QElapsedTimer auditBeat;
-    if (qEnvironmentVariableIsSet("FOLIA_TEST_EXPERIENCE")) {
+    if (qEnvironmentVariableIsSet("FOLIA_TEST_EXPERIENCE") ||
+        qEnvironmentVariableIsSet("FOLIA_TEST_STUDIO_LATENCY")) {
         auditBeat.start();
         auditHeartbeat.setInterval(4);
         QObject::connect(&auditHeartbeat, &QTimer::timeout, window, [&] {
@@ -619,8 +773,14 @@ Item {
     const auto ready = [&] { return presentationContentReady(window, mode); };
     const auto awaitReadyFrame = [&](int timeoutMs) {
         qint64 candidateFrame = -1;
-        return awaitEvent(
+        bool failed = false;
+        const bool settled = awaitEvent(
             [&] {
+                auto *stage = visual(window->contentItem(), "foliaVisualizerStage");
+                if (stage && !presentationError(stage).isEmpty()) {
+                    failed = true;
+                    return true;
+                }
                 if (!ready()) {
                     candidateFrame = -1;
                     return false;
@@ -630,11 +790,28 @@ Item {
                 return session.frameCount > candidateFrame;
             },
             timeoutMs);
+        return settled && !failed;
     };
     const bool initialReady = awaitReadyFrame(60000);
     if (!initialReady) {
         qInfo() << "Offscreen not ready" << mode << root->property("presentationPage")
                 << presentationResources(window);
+        QJsonArray states;
+        for (auto *object : presentationObjects(window->contentItem())) {
+            const auto type = QString::fromLatin1(object->metaObject()->className());
+            if (type.startsWith("LumiereSceneView") || type.startsWith("Nebbia")) {
+                auto wrapper = host.engine.newQObject(object);
+                auto inspect = wrapper.property("inspect");
+                if (inspect.isCallable())
+                    states.append(QJsonObject{
+                        {"type", type},
+                        {"state",
+                         QJsonValue::fromVariant(inspect.callWithInstance(wrapper).toVariant())}});
+            }
+        }
+        QFile diagnostic(qEnvironmentVariable("FOLIA_CAPTURE_DIR") + "/not-ready.json");
+        if (diagnostic.open(QIODevice::WriteOnly))
+            diagnostic.write(QJsonDocument(states).toJson());
         for (auto *object : presentationObjects(window->contentItem()))
             if (!object->objectName().isEmpty())
                 qInfo() << object->metaObject()->className() << object->objectName()
@@ -643,6 +820,249 @@ Item {
     }
     QVERIFY(initialReady);
     const auto preparationMs = preparation.elapsed();
+    if (qEnvironmentVariableIsSet("FOLIA_TEST_STYLE_CYCLE")) {
+        QTest::failOnWarning(QRegularExpression("Binding loop detected"));
+        QJsonArray results;
+        bool passed = true;
+        for (const auto &next :
+             {"still",    "classic", "cadenza",  "partita", "tilt",    "claddagh",
+              "cappella", "pendolo", "fume",     "tempera", "lumiere", "sonnet",
+              "monet",    "diorama", "metaphor", "hanabi",  "nebbia",  "machi",
+              "fume",     "nebbia",  "lumiere",  "hanabi"}) {
+            mode = QString::fromLatin1(next);
+            QElapsedTimer switching;
+            switching.start();
+            QVERIFY(entry->configuration()->patch({{"mode", mode}}));
+            QVERIFY(awaitEvent([&] { return !entry->configuration()->busy(); }, 10000));
+            const bool rendered = awaitReadyFrame(30000);
+            const auto first = switching.elapsed();
+            runEventLoop(1500);
+            auto *stage = visual(window->contentItem(), "foliaVisualizerStage");
+            const auto error = stage ? presentationError(stage) : QString("No stage");
+            results.append(QJsonObject{{"mode", mode},
+                                       {"ready", rendered},
+                                       {"firstFrameMs", first},
+                                       {"error", error},
+                                       {"resources", presentationResources(window)},
+                                       {"memory", memory()}});
+            qInfo() << "Style cycle" << mode << rendered << first << error.left(160);
+            passed = passed && rendered && error.isEmpty();
+            QFile evidence(qEnvironmentVariable("FOLIA_CAPTURE_DIR") + "/style-cycle.json");
+            QVERIFY(evidence.open(QIODevice::WriteOnly));
+            evidence.write(QJsonDocument(results).toJson());
+        }
+        QVERIFY(QMetaObject::invokeMethod(root.get(), "closePlayback"));
+        QVERIFY(
+            awaitEvent([&] { return !visual(window->contentItem(), "foliaPlaybackPage"); }, 10000));
+        QCOMPARE(presentationResources(window)["glyphRunCount"].toInt(), 0);
+        QVERIFY(passed);
+        QVERIFY(!window->handle());
+        return;
+    }
+    if (qEnvironmentVariableIsSet("FOLIA_TEST_FUME_PIXELS") ||
+        qEnvironmentVariableIsSet("FOLIA_TEST_STYLE_PIXELS")) {
+        host.playback.pause();
+        QVERIFY(awaitEvent([&] { return !host.playback.playing(); }, 5000));
+        auto *skin = visual(window->contentItem(), "foliaPlaybackPage");
+        auto *background = visual(skin, "foliaBackgroundHost");
+        if (background)
+            background->setVisible(false);
+        auto *stage = visual(skin, "foliaVisualizerStage");
+        auto *renderer = stage ? nativeObject(stage->property("renderer")) : nullptr;
+        QVERIFY(renderer);
+        renderer->setProperty("paused", true);
+        renderer->setProperty("motionEnabled", false);
+        for (double time : {14.5, 16.01, 17.0, 20.25}) {
+            const int index = int(time / 4);
+            host.playback.seek(qRound64(time * 1000));
+            QVERIFY(awaitEvent(
+                [&] { return std::abs(host.playback.positionMs() - qRound64(time * 1000)) < 50; },
+                10000));
+            renderer->setProperty("timeSeconds", time);
+            renderer->setProperty("currentIndex", index);
+            if (mode == "fume") {
+                auto state = renderer->property("_cameraState").value<QJSValue>();
+                auto retarget = state.property("retarget");
+                retarget.setProperty("sourceLineIndex", index);
+                retarget.setProperty("startedAt", -1000);
+                retarget.setProperty("bridgeMode", "none");
+                auto camera = state.property("camera");
+                auto block = renderer->property("article")
+                                 .value<QJSValue>()
+                                 .property("chronologicalBlocks")
+                                 .property(index);
+                camera.setProperty("x", block.property("x").toNumber());
+                camera.setProperty("y", block.property("y").toNumber());
+                camera.setProperty("scale", 1.);
+                camera.setProperty("velocityX", 0.);
+                camera.setProperty("velocityY", 0.);
+                camera.setProperty("velocityScale", 0.);
+                for (int i = 0; i < 360; ++i)
+                    QVERIFY(QMetaObject::invokeMethod(renderer, "draw", Q_ARG(double, 1. / 60)));
+            }
+            QVERIFY2(awaitReadyFrame(30000), qPrintable(presentationError(renderer)));
+            if (mode == "lumiere" || mode == "hanabi") {
+                // The ready image may precede a just-issued seek/settings
+                // request. Observe explicitly requested worker frames before
+                // comparing a frozen pose, rather than capturing its predecessor.
+                for (int i = 0; i < 2; ++i) {
+                    const auto previous = renderer->property("workerFrameRevision").toLongLong();
+                    QVERIFY(QMetaObject::invokeMethod(renderer, "requestFrame"));
+                    QVERIFY(awaitEvent(
+                        [&] {
+                            return renderer->property("workerFrameRevision").toLongLong() >
+                                   previous;
+                        },
+                        30000));
+                    QVERIFY2(awaitReadyFrame(30000), qPrintable(presentationError(renderer)));
+                }
+            }
+            runEventLoop(800);
+            QVERIFY2(awaitReadyFrame(30000), qPrintable(presentationError(renderer)));
+            QRhiReadbackResult pixels;
+            session.frame(&pixels);
+            QImage image(reinterpret_cast<const uchar *>(pixels.data.constData()),
+                         pixels.pixelSize.width(), pixels.pixelSize.height(),
+                         QImage::Format_RGBA8888);
+            QVERIFY(image.copy().save(qEnvironmentVariable("FOLIA_CAPTURE_DIR") +
+                                      QString("/foreground-%1.png").arg(qRound(time * 1000))));
+        }
+        QVERIFY(!window->handle());
+        return;
+    }
+    if (qEnvironmentVariableIsSet("FOLIA_TEST_STUDIO_LATENCY")) {
+        auto *context = host.runtime.context(installation);
+        QJsonArray cycles;
+        for (int cycle = 0; cycle < 2; ++cycle) {
+            auditPhase = "studio-open";
+            QElapsedTimer elapsed;
+            elapsed.start();
+            auto *operation = context->executeCommand("folia.studio.open", {});
+            QPointer<QObject> dialog;
+            QVERIFY(awaitEvent(
+                [&] {
+                    for (auto *child : context->children())
+                        if (child->inherits("EchoMusic::EchoPluginDialog") &&
+                            child->property("active").toBool())
+                            for (auto *owner : child->children()) {
+                                auto *popup = nativeObject(owner->property("popup"));
+                                auto *shell =
+                                    popup ? nativeObject(popup->property("item")) : nullptr;
+                                if (shell && shell->property("visible").toBool()) {
+                                    dialog = child;
+                                    return true;
+                                }
+                            }
+                    return false;
+                },
+                10000));
+            const auto shellMs = elapsed.elapsed();
+            QVERIFY(awaitEvent([&] { return operation->finished(); }, 30000));
+            const auto bodyMs = elapsed.elapsed();
+            QCOMPARE(operation->state(), EchoPluginOperation::Succeeded);
+            auto *preview = visual(window->contentItem(), "foliaStudioPreview");
+            QVERIFY(preview);
+            QVERIFY2(awaitEvent([&] { return preview->property("renderReady").toBool(); }, 30000),
+                     qPrintable(preview->property("errorString").toString()));
+            const auto previewMs = elapsed.elapsed();
+            QVERIFY(dialog);
+            auditPhase = "studio-close";
+            elapsed.restart();
+            QVERIFY(QMetaObject::invokeMethod(dialog, "close"));
+            const auto closeCallMs = elapsed.elapsed();
+            QVERIFY(awaitEvent([&] { return !context->ui()->state()["foliaStudioOpen"].toBool(); },
+                               15000));
+            const auto closedMs = elapsed.elapsed();
+            QVERIFY(awaitReadyFrame(30000));
+            cycles.append(QJsonObject{{"shellMs", shellMs},
+                                      {"bodyMs", bodyMs},
+                                      {"previewMs", previewMs},
+                                      {"closeCallMs", closeCallMs},
+                                      {"closedMs", closedMs},
+                                      {"mainReadyMs", elapsed.elapsed()}});
+        }
+        QFile file(qEnvironmentVariable("FOLIA_CAPTURE_DIR") + "/studio-latency.json");
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write(QJsonDocument(QJsonObject{{"cycles", cycles},
+                                             {"heartbeat", distribution(auditGaps)},
+                                             {"stalls", auditStalls}})
+                       .toJson());
+        return;
+    }
+    if (qEnvironmentVariableIsSet("FOLIA_TEST_DIALOG_REENTRY")) {
+        auto *context = host.runtime.context(installation);
+        int pendingCloses = 0;
+        for (int cycle = 0; cycle < 4; ++cycle) {
+            auto *first = context->executeCommand("folia.studio.open", {});
+            auto *second = context->executeCommand("folia.studio.open", {});
+            QPointer<QObject> dialog;
+            QVERIFY(awaitEvent(
+                [&] {
+                    for (auto *child : context->children())
+                        if (child->inherits("EchoMusic::EchoPluginDialog") &&
+                            child->property("active").toBool()) {
+                            for (auto *owner : child->children()) {
+                                auto *popup = nativeObject(owner->property("popup"));
+                                auto *shell =
+                                    popup ? nativeObject(popup->property("item")) : nullptr;
+                                if (shell && shell->property("visible").toBool()) {
+                                    dialog = child;
+                                    return true;
+                                }
+                            }
+                        }
+                    return false;
+                },
+                10000));
+            pendingCloses += first->state() < EchoPluginOperation::Succeeded;
+            QVERIFY(awaitEvent([&] { return second->finished(); }, 10000));
+            QVERIFY(QMetaObject::invokeMethod(dialog, "close"));
+            const bool finished =
+                awaitEvent([&] { return first->finished() && second->finished(); }, 10000);
+            if (!finished)
+                qInfo() << "Studio unfinished" << cycle << first->state() << second->state()
+                        << (dialog ? dialog->property("active") : QVariant())
+                        << context->ui()->state()["foliaStudioOpen"];
+            QVERIFY(finished);
+            QCOMPARE(first->state(), EchoPluginOperation::Succeeded);
+            QCOMPARE(second->state(), EchoPluginOperation::Succeeded);
+            QVERIFY(first->errorMessage().isEmpty());
+            QVERIFY(second->errorMessage().isEmpty());
+            qInfo() << "Studio reentry cycle" << cycle << "results" << first->result()
+                    << second->result() << "dialog active"
+                    << (dialog ? dialog->property("active") : QVariant()) << "studio flag"
+                    << context->ui()->state()["foliaStudioOpen"];
+            QVERIFY(awaitEvent([&] { return !context->ui()->state()["foliaStudioOpen"].toBool(); },
+                               10000));
+            QVERIFY(awaitReadyFrame(30000));
+            auto *skin = visual(window->contentItem(), "foliaPlaybackPage");
+            QVERIFY(skin && skin->property("commandError").toString().isEmpty());
+        }
+        QVERIFY(pendingCloses > 0);
+        auto *stage = visual(window->contentItem(), "foliaVisualizerStage");
+        auto *renderer = stage ? nativeObject(stage->property("renderer")) : nullptr;
+        QVERIFY(renderer);
+        QVERIFY(renderer->setProperty("_budgetRejected", true));
+        const QString diagnostic = "Canvas curve preparation exceeds the bounded native budget";
+        QVERIFY(renderer->setProperty("_renderError", diagnostic));
+        auto *skin = visual(window->contentItem(), "foliaPlaybackPage");
+        auto *failure = visual(skin, "foliaRenderError");
+        QVERIFY(failure);
+        QVERIFY(awaitEvent([&] { return failure->property("visible").toBool(); }, 5000));
+        QCOMPARE(failure->property("detail").toString(), diagnostic);
+        QVERIFY(!failure->property("message").toString().contains("Canvas"));
+        auto *retry = visual(failure, "foliaRenderRetry");
+        QVERIFY(retry);
+        QVERIFY(QMetaObject::invokeMethod(retry, "clicked"));
+        QVERIFY(awaitReadyFrame(30000));
+        QVERIFY(skin->property("presentationError").toString().isEmpty());
+        QVERIFY(QMetaObject::invokeMethod(root.get(), "closePlayback"));
+        QVERIFY(
+            awaitEvent([&] { return !visual(window->contentItem(), "foliaPlaybackPage"); }, 10000));
+        QCOMPARE(presentationResources(window)["glyphRunCount"].toInt(), 0);
+        QVERIFY(!window->handle());
+        return;
+    }
     if (qEnvironmentVariableIsSet("FOLIA_TEST_GLYPH_RESTART")) {
         QTest::failOnWarning(QRegularExpression("No QSGTexture provided"));
         auto *toggle = visual(window->contentItem(), "foliaCapsulePlayToggle");
@@ -1275,9 +1695,18 @@ Item {
             QVERIFY2(presentationError(renderer).isEmpty(),
                      qPrintable(presentationError(renderer)));
             QVERIFY(capture(QString("play-%1").arg(frame, 3, 10, QChar('0'))));
+            QJsonValue renderState;
+            if (mode == "lumiere") {
+                auto wrapper = host.engine.newQObject(renderer);
+                auto inspect = wrapper.property("inspect");
+                if (inspect.isCallable())
+                    renderState =
+                        QJsonValue::fromVariant(inspect.callWithInstance(wrapper).toVariant());
+            }
             samples.append(QJsonObject{{"elapsedMs", duration.elapsed()},
                                        {"positionMs", host.playback.positionMs()},
-                                       {"ready", renderer->property("renderReady").toBool()},
+                                       {"ready", presentationContentReady(window, mode)},
+                                       {"renderState", renderState},
                                        {"resources", presentationResources(window)}});
             peak = std::max(peak, memory().value("footprintBytes").toDouble());
             ++frame;
@@ -1321,6 +1750,7 @@ Item {
             const auto resources = presentationResources(window);
             QCOMPARE(resources.value("floatTextureCount").toInt(), 0);
             QCOMPARE(resources.value("glyphRunCount").toInt(), 0);
+            QCOMPARE(EchoMusic::GlyphStaticLayout::statistics().liveResults, qsizetype(0));
             QVERIFY(capture(QString("closed-%1").arg(cycle)));
             auditPhase = QString("reopen-%1").arg(cycle);
             QElapsedTimer opening;
@@ -1427,9 +1857,11 @@ Item {
     wall.start();
     const auto cpuStart = cpuMs();
     const auto framesBefore = session.frameCount;
+    const auto layoutsBefore = EchoMusic::GlyphStaticLayout::statistics();
     observer.start();
     heartbeat.start();
     session.collecting = true;
+    qInfo() << "FOLIA_SAMPLE_BEGIN" << mode;
     runEventLoop(qBound(6000, qEnvironmentVariableIntValue("FOLIA_PERF_SAMPLE_MS"), 300000));
     session.collecting = false;
     observer.stop();
@@ -1437,7 +1869,13 @@ Item {
     const auto wallMs = wall.elapsed();
     const auto cpuElapsed = cpuMs() - cpuStart;
     const auto completed = session.frameCount - framesBefore;
+    const auto layoutsAfter = EchoMusic::GlyphStaticLayout::statistics();
     QVERIFY(completed > 2);
+    // A busy RenderControl can keep submitting an unchanged scene. Animated
+    // worker styles must advance their own scene, not just the window counter.
+    if (mode == "lumiere" || mode == "hanabi" || mode == "machi")
+        QVERIFY2(workerRevision - workerStart > wallMs / 200,
+                 "Animated worker scene stopped advancing during sampling");
     QVERIFY(!window->handle());
     identity.checkContent(host.playback, track.id);
     QVERIFY2(identity.failures.isEmpty(), qPrintable(identity.failures.join(';')));
@@ -1446,6 +1884,30 @@ Item {
     QVERIFY(host.playback.errorMessage().isEmpty());
     const auto activeMemory = memory();
     const auto resourcesAfter = presentationResources(window);
+    if (qEnvironmentVariableIsSet("FOLIA_TEST_GLYPH_INPUTS")) {
+        QMap<QByteArray, QList<QObject *>> groups;
+        for (auto *object : presentationObjects(window->contentItem())) {
+            auto *glyph = qobject_cast<GlyphRun *>(object);
+            if (!glyph || glyph->measurementOnly() || glyph->runs().isEmpty() ||
+                !glyph->isVisible())
+                continue;
+            QByteArray key;
+            QDataStream stream(&key, QIODevice::WriteOnly);
+            stream << glyph->font() << glyph->runs()
+                   << glyph->window()->effectiveDevicePixelRatio();
+            groups[key].append(glyph);
+        }
+        QJsonArray inputs;
+        for (auto it = groups.cbegin(); it != groups.cend(); ++it) {
+            qint64 bytes = 0;
+            for (auto *object : it.value())
+                bytes += object->property("cacheBytes").toLongLong();
+            inputs.append(QJsonObject{{"identicalLiveInputs", it.value().size()},
+                                      {"reportedCacheBytes", double(bytes)}});
+        }
+        write(qEnvironmentVariable("FOLIA_CAPTURE_DIR") + "/glyph-inputs.json",
+              QJsonDocument(inputs).toJson());
+    }
     QJsonArray sourceCanvasWork;
     if (identity.renderer) {
         const auto packet = identity.renderer->property("_recording").value<QJSValue>();
@@ -1479,6 +1941,8 @@ Item {
     runEventLoop(1000);
     const auto hiddenMemory = memory();
     const auto hiddenResources = presentationResources(window);
+    const auto layoutsHidden = EchoMusic::GlyphStaticLayout::statistics();
+    QCOMPARE(layoutsHidden.liveResults, qsizetype(0));
     QVERIFY(!hiddenResources["hasDynamicStage"].toBool());
     QCOMPARE(hiddenResources["skinRunningFrameAnimationCount"].toInt(), 0);
     const auto hiddenCpuStart = cpuMs();
@@ -1552,6 +2016,11 @@ Item {
         {"sourceCanvasWorkAtSampleEnd", sourceCanvasWork},
         {"presentationTiming", presentationReport},
         {"workerFrameRevisionDelta", double(workerRevision - workerStart)},
+        {"staticGlyphLayouts",
+         QJsonObject{{"hits", double(layoutsAfter.hits - layoutsBefore.hits)},
+                     {"builds", double(layoutsAfter.builds - layoutsBefore.builds)},
+                     {"liveResults", double(layoutsAfter.liveResults)},
+                     {"hiddenLiveResults", double(layoutsHidden.liveResults)}}},
         {"guiHeartbeatGaps", distribution(heartbeatGaps)},
         {"validityChecks", identity.checks},
         {"validityFailures", QJsonArray{}},

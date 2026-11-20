@@ -2,7 +2,14 @@
 import { createLumiereBackend } from './backend.mjs';
 import { createBloomFilter } from './source/light/bloomFilter.mjs';
 const copy = (value) => JSON.parse(JSON.stringify(value));
-export function createLumiereBloomPlan(width, height, resolution, options, registeredScreens = []) {
+export function createLumiereBloomPlan(
+  width,
+  height,
+  resolution,
+  options,
+  registeredScreens = [],
+  tightTargets = true,
+) {
   if (
     ![width, height, resolution].every(Number.isFinite) ||
     width <= 0 ||
@@ -10,7 +17,7 @@ export function createLumiereBloomPlan(width, height, resolution, options, regis
     resolution <= 0
   )
     throw new Error('Invalid Lumiere bloom extent');
-  const pixi = createLumiereBackend({ registeredScreens }),
+  const pixi = createLumiereBackend({ registeredScreens, tightTargets }),
     input = pixi.TexturePool.getOptimalTexture(width, height, resolution),
     textures = [input],
     output = { root: true },

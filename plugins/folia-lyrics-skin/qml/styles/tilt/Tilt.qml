@@ -144,26 +144,9 @@ Item {
         }
         textFormat: Text.PlainText
     }
-    Text {
-        objectName: "foliaTiltError"
-        anchors.centerIn: parent
-        width: Math.max(0, parent.width - 64)
-        horizontalAlignment: Text.AlignHCenter
-        wrapMode: Text.Wrap
-        visible: root.live && root.errorString.length > 0
-        text: root.errorString
-        color: root.secondaryColor
-        font: errorFont.value
-        textFormat: Text.PlainText
-    }
     TiltFont {
         id: waitingFont
         base: root.baseFont
         pixelSize: 24
-    }
-    TiltFont {
-        id: errorFont
-        base: root.baseFont
-        pixelSize: 14
     }
 }

@@ -316,6 +316,7 @@ QJsonObject presentationResources(QQuickWindow *window)
     int items = 0, frameAnimations = 0, glyphs = 0, floatTextures = 0;
     qint64 glyphBytes = 0, floatBytes = 0;
     QJsonArray gpuSurfaces;
+    QJsonArray glyphStates;
     if (skin)
         for (auto *child : presentationObjects(skin)) {
             items += qobject_cast<QQuickItem *>(child) != nullptr;
@@ -325,6 +326,12 @@ QJsonObject presentationResources(QQuickWindow *window)
             if (child->inherits("EchoMusic::GlyphRun")) {
                 ++glyphs;
                 glyphBytes += child->property("cacheBytes").toLongLong();
+                if (child->objectName() == "fumeGlyph")
+                    glyphStates.append(QJsonObject{
+                        {"preparing", child->property("preparing").toBool()},
+                        {"ready", child->property("ready").toBool()},
+                        {"posesCurrent", child->parent()->property("posesCurrent").toBool()},
+                        {"poolKey", child->parent()->property("poolKey").toString()}});
             }
             if (child->inherits("EchoMusic::FloatTexture")) {
                 ++floatTextures;
@@ -333,7 +340,8 @@ QJsonObject presentationResources(QQuickWindow *window)
             if (child->inherits("EchoMusic::EchoGpuSurface"))
                 gpuSurfaces.append(QJsonObject::fromVariantMap(child->property("status").toMap()));
         }
-    return {{"skinItemCount", items},
+    return {{"fumeGlyphStates", glyphStates},
+            {"skinItemCount", items},
             {"skinRunningFrameAnimationCount", frameAnimations},
             {"hasDynamicStage", stage != nullptr},
             {"rendererPlannedCacheBytes",

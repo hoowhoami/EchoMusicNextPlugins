@@ -224,12 +224,6 @@ Item {
         pixelSize: Math.round(Layout.emptyFontSize(root.width, root.tuning.lyricsFontScale))
         weight: 400
     }
-    FoliaFont {
-        id: errorFont
-        base: root.baseFont
-        pixelSize: 14
-        weight: 400
-    }
     Text {
         anchors.centerIn: parent
         visible: root.live && root.textVisible && root.currentIndex < 0
@@ -237,18 +231,6 @@ Item {
         font: waitingFont.value
         color: root.secondaryColor
         opacity: .5
-        textFormat: Text.PlainText
-    }
-    Text {
-        objectName: "foliaPartitaError"
-        anchors.centerIn: parent
-        width: Math.max(0, parent.width - 64)
-        visible: root.live && root.errorString.length > 0
-        text: root.errorString
-        font: errorFont.value
-        color: root.secondaryColor
-        horizontalAlignment: Text.AlignHCenter
-        wrapMode: Text.Wrap
         textFormat: Text.PlainText
     }
 }

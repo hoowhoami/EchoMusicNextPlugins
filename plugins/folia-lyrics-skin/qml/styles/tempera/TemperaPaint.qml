@@ -47,8 +47,15 @@ Item {
             if (ops.length > 32768)
                 throw Error('Tempera paint primitive budget exceeded');
             let z = 0;
+            const occurrences = new Map();
             for (const op of ops) {
-                const key = op.kind === 'texture' ? 'texture:' + op.source : 'primitive:' + op.id;
+                const resource = op.kind !== 'texture' ? resources[op.id] : null;
+                let key = op.kind === 'texture' ? 'texture:' + op.source : 'primitive:' + op.id;
+                if (resource && resource.kind === 'text') {
+                    const shape = resource.shapeIdentity, occurrence = occurrences.get(shape) || 0;
+                    occurrences.set(shape, occurrence + 1);
+                    key = 'text:' + shape + ':' + occurrence;
+                }
                 let item = _actors[key];
                 if (!item) {
                     item = (op.kind === 'texture' ? textureComponent : primitiveComponent).createObject(root);
@@ -78,7 +85,8 @@ Item {
                     _actors[k].visible = false;
                     _actors[k].destroy();
                 }
-            _actors = next;
+            if (Object.keys(_actors).length !== Object.keys(next).length || Object.keys(next).some(key => _actors[key] !== next[key]))
+                _actors = next;
             _error = '';
         } catch (e) {
             for (const item of created)

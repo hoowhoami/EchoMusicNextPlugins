@@ -7,6 +7,8 @@ let metrics = new Map(),
   requests = new Map(),
   evaluator = null,
   discovery = false;
+let missingReads = 0;
+export const missingMeasurementRevision = () => missingReads;
 export const normalize = PretextNative.normalize;
 export const canvasText = PretextNative.canvasText;
 function parseFont(font) {
@@ -28,6 +30,7 @@ function measure(font, text) {
   const key = metricKey(font, text);
   if (metrics.has(key)) return metrics.get(key);
   if (!discovery) throw new Error('Missing native Lumiere measurement: ' + key);
+  ++missingReads;
   if (!requests.has(key)) {
     const value = parseFont(font);
     requests.set(key, {
@@ -48,7 +51,12 @@ export function configure(input) {
   PretextNative.configure({
     pieces: input.pieces || [],
     evaluator: measure,
-    collectMissing: input.collectMissing,
+    collectMissing: input.collectMissing
+      ? (text) => {
+          ++missingReads;
+          input.collectMissing(text);
+        }
+      : null,
   });
 }
 export function pendingMeasurements() {

@@ -6,41 +6,42 @@ export function hashSource(text) {
   return value.toString(16);
 }
 export function shaderKey(material, geometry, lights, fog, shadows) {
-  return hashSource(
-    JSON.stringify([
-      material.type,
-      material.vertexShader || '',
-      material.fragmentShader || '',
-      material.type === 'MeshToonMaterial'
-        ? material.name.startsWith('machi:wet:')
-          ? 'wet'
-          : material.customProgramCacheKey() === 'machi-snow'
-            ? 'snow'
-            : 'plain'
-        : 'plain',
-      material.defines || {},
-      !!material.map,
-      !!material.alphaMap,
-      !!material.gradientMap,
-      !!material.vertexColors,
-      material.side,
-      !!material.premultipliedAlpha,
-      !!material.transparent && material.blending !== 0 && !material.premultipliedAlpha,
-      material.alphaTest > 0,
-      !!fog,
-      !!(fog && fog.isFogExp2),
-      !!shadows,
-      ...[
-        'directional',
-        'point',
-        'spot',
-        'hemi',
-        'rectArea',
-        'directionalShadowMap',
-        'spotShadowMap',
-        'pointShadowMap',
-      ].map((k) => (lights[k] || []).length),
-      Object.keys(geometry.attributes).sort(),
-    ]),
-  );
+  return hashSource(JSON.stringify(shaderInputs(material, geometry, lights, fog, shadows)));
+}
+export function shaderInputs(material, geometry, lights, fog, shadows) {
+  return [
+    material.type,
+    material.vertexShader || '',
+    material.fragmentShader || '',
+    material.type === 'MeshToonMaterial'
+      ? material.name.startsWith('machi:wet:')
+        ? 'wet'
+        : material.customProgramCacheKey() === 'machi-snow'
+          ? 'snow'
+          : 'plain'
+      : 'plain',
+    material.defines || {},
+    !!material.map,
+    !!material.alphaMap,
+    !!material.gradientMap,
+    !!material.vertexColors,
+    material.side,
+    !!material.premultipliedAlpha,
+    !!material.transparent && material.blending !== 0 && !material.premultipliedAlpha,
+    material.alphaTest > 0,
+    !!fog,
+    !!(fog && fog.isFogExp2),
+    !!shadows,
+    ...[
+      'directional',
+      'point',
+      'spot',
+      'hemi',
+      'rectArea',
+      'directionalShadowMap',
+      'spotShadowMap',
+      'pointShadowMap',
+    ].map((k) => (lights[k] || []).length),
+    Object.keys(geometry.attributes).sort(),
+  ];
 }

@@ -196,7 +196,22 @@ Item {
     }
     function requestFrame(): void {
         now();
-        layout.requestFrame();
+        // The animation callback already coalesces this frame's input changes.
+        // A second animation-synchronised zero timer adds another frame of
+        // latency; keep the same worker/baking guards and dispatch it now.
+        layout.flushFrame();
+    }
+    function inspect(): var {
+        return {
+            layoutBusy: layout.busy,
+            measuring: layout._measuring,
+            queries: layout._queries.length,
+            cursor: layout._cursor,
+            measurementCount: layout.measurementCount,
+            viewReady: view.ready,
+            acceptsFrame: view.acceptsFrame,
+            sourcePreparations: view.sourcePreparations
+        };
     }
     onSeedChanged: gate()
     onTimeSecondsChanged: if (_watching)
@@ -243,9 +258,10 @@ Item {
         options: root._options
         runtimeMode: true
         coalesceFrameChanges: true
-        // A baking view cannot consume another particle frame. Its ready signal
-        // wakes the coalesced latest request, including changes while paused.
-        frameRequestsEnabled: !layout.frame || view.ready
+        // Wait for immutable source baking, while allowing the existing draw
+        // slots to consume their next poses during the current GPU upload.
+        // renderReady still waits for the complete native image.
+        frameRequestsEnabled: !layout.frame || view.acceptsFrame
         runtimeParameters: ({
                 song: root._song,
                 tuning: root.tuning,

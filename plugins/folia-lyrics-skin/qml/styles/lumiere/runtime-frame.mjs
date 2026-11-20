@@ -1,10 +1,11 @@
+import { retainMeasuredScenes } from './measurement-retention.mjs';
+import { missingMeasurementRevision } from './native-measure.mjs';
 // Original runtime owns shot/cache/credits/setting semantics; Qt supplies its native app sink.
 import { LumierePixiRuntime } from './source/createLumierePixiRuntime.mjs';
 import { LumiereDarkFieldLayer } from './source/lumiereDarkField.mjs';
 import { LumiereCreditsLayer } from './source/lumiereCreditsLayer.mjs';
 import { createLightSprites } from './source/light/sprites.mjs';
 import { createLumiereBackend } from './backend.mjs';
-import { batchHanabiFrame } from '../hanabi/batch-frame.mjs';
 import { snapshotLumiereScene } from './scene-frame.mjs';
 import {
   createRuntimeEnvironment,
@@ -75,6 +76,7 @@ export function createNativeLumiereRuntime(input, RuntimeClass = LumierePixiRunt
     value.resizeToHost(true);
     return value;
   });
+  const measurements = retainMeasuredScenes(runtime, missingMeasurementRevision);
   function invoke(run) {
     if (destroyed) throw new Error('Lumiere runtime is released');
     return withRuntimeEnvironment(environment, run);
@@ -115,22 +117,26 @@ export function createNativeLumiereRuntime(input, RuntimeClass = LumierePixiRunt
         if (frame.motionEnabled !== undefined) runtime.setStaticMode(!frame.motionEnabled);
         if (frame.paused !== undefined) runtime.setPaused(frame.paused);
         if (renderCount === before) runtime.renderOnce();
-        return batchHanabiFrame(
-          snapshotLumiereScene(app.stage, {
-            viewport: { width: runtime.width, height: runtime.height },
-            textureCache,
-            resolution: runtime.renderResolution,
-            registeredScreens: [
-              {
-                width: Math.round(runtime.width * runtime.renderResolution),
-                height: Math.round(runtime.height * runtime.renderResolution),
-              },
-            ],
-          }),
-          runtime.width,
-          runtime.height,
-          runtime.renderResolution,
-        );
+        return snapshotLumiereScene(app.stage, {
+          batchSprites: true,
+          viewport: { width: runtime.width, height: runtime.height },
+          textureCache,
+          resolution: runtime.renderResolution,
+          registeredScreens: [
+            {
+              width: Math.round(runtime.width * runtime.renderResolution),
+              height: Math.round(runtime.height * runtime.renderResolution),
+            },
+          ],
+        });
+      });
+    },
+    refreshMeasurements() {
+      invoke(() => {
+        measurements.refresh();
+        // Discovery snapshots are not delivered to the GUI. Their surviving
+        // sources must carry programs again with the first resolved frame.
+        for (const entry of textureCache.values()) entry.snapshot = -1;
       });
     },
     setPaused(value) {
@@ -166,6 +172,7 @@ export function createNativeLumiereRuntime(input, RuntimeClass = LumierePixiRunt
     destroy() {
       if (destroyed) return;
       withRuntimeEnvironment(environment, () => runtime.destroy());
+      measurements.clear();
       textureCache.clear();
       environment.timers.clear();
       destroyed = true;

@@ -3,18 +3,20 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import "frame-plan.mjs" as Frames
 import "texture-programs.mjs" as TexturePrograms
+import "texture-identity.mjs" as TextureIdentity
 import "../../shared/render-quality.mjs" as Quality
 
 Item {
     id: root
     property var frame: null
     property var _texturePrograms: new Map()
+    property var _textureIdentities: TextureIdentity.createTextureIdentityLedger()
     property var _retainedFrame: null
     signal retainedFrameReady
     function retainFrame(): void {
         const value = TexturePrograms.retainTexturePrograms(frame, _texturePrograms);
         _texturePrograms = value.retained;
-        _retainedFrame = value.frame;
+        _retainedFrame = root.flattened ? TextureIdentity.shareTextureIdentities(value.frame, _textureIdentities) : value.frame;
         retainedFrameReady();
     }
     onFrameChanged: retainFrame()
@@ -41,7 +43,16 @@ Item {
     layer.smooth: true
     layer.samples: samples
     property real maxCacheBytes: 128 * 1024 * 1024
+    property var lastFailure: null
     readonly property bool ready: contents.item ? contents.item.ready : false
+    readonly property bool acceptsFrame: {
+        const body = contents.item;
+        if (!body)
+            return false;
+        const revision = body._auditRevision;
+        return !body.errorString && !body._building && Array.from(body._textures.values()).every(entry => entry.actor.ready !== undefined ? entry.actor.ready : entry.actor.paintCount > 0);
+    }
+    readonly property int sourcePreparations: contents.item ? contents.item._sourcePreparations : 0
     readonly property string errorString: rasterError || (contents.item ? contents.item.errorString : '')
     readonly property real cacheBytes: contents.item ? contents.item.cacheBytes + rasterBytes : 0
     readonly property int nodeCount: contents.item ? contents.item.nodeCount : 0
@@ -50,9 +61,12 @@ Item {
     function inspect(): var {
         const body = contents.item;
         return body ? {
+            failure: root.lastFailure,
             ready: body.ready,
             building: body._building,
             queued: body._queue.length,
+            sourcePreparations: body._sourcePreparations,
+            idleTextures: Array.from(body._textures.keys()).filter(id => !body._wantedTextures.has(id)).length,
             textures: Array.from(body._textures.entries()).map(([id, entry]) => ({
                         id,
                         ready: entry.actor.ready,
@@ -86,11 +100,40 @@ Item {
             property var _leaves: new Map()
             property var _groups: new Map()
             property var _textures: new Map()
+            property var _wantedTextures: new Set()
+            property int _sourcePreparations: 0
+            property int _syncRevision: 0
+            property int _auditRevision: 0
             property var _queue: []
             property var _next: null
             property bool _building: false
             property bool _auditQueued: false
+            property var _waitingTexture: null
+            function retireTexture(id, entry) {
+                if (_waitingTexture === entry.actor)
+                    _waitingTexture = null;
+                unwatch(entry.actor);
+                entry.actor.live = false;
+                entry.actor.destroy();
+                _textures.delete(id);
+            }
+            function trimIdleTextures() {
+                const idle = Array.from(_textures.entries()).filter(([id]) => !_wantedTextures.has(id)).sort((a, b) => a[1].used - b[1].used);
+                let bytes = idle.reduce((sum, [id, entry]) => sum + entry.actor.cacheBytes, 0);
+                let count = idle.length;
+                for (const [id, entry] of idle) {
+                    if (bytes <= 16 * 1024 * 1024 && count <= 32)
+                        break;
+                    bytes -= entry.actor.cacheBytes;
+                    --count;
+                    retireTexture(id, entry);
+                }
+            }
             function queueAudit() {
+                if (_building && _waitingTexture && _waitingTexture.ready) {
+                    _waitingTexture = null;
+                    step.restart();
+                }
                 if (_auditQueued)
                     return;
                 _auditQueued = true;
@@ -117,6 +160,7 @@ Item {
                 syncTimer.stop();
                 detachWatchers();
                 _queue = [];
+                _waitingTexture = null;
                 _next = null;
                 _building = false;
                 ready = false;
@@ -137,12 +181,39 @@ Item {
                     entry.actor.destroy();
                 }
                 _textures.clear();
+                _wantedTextures.clear();
                 cacheBytes = 0;
                 nodeCount = 0;
                 textureCount = 0;
                 texturePaintCount = 0;
             }
             function fail(message: string) {
+                const textures = Array.from(_textures.values()).map(entry => entry.actor.cacheBytes || 0);
+                const groups = Array.from(_groups.values()).map(actor => ({
+                            bytes: actor.cacheBytes || 0,
+                            bounds: actor.bounds,
+                            filters: actor.filters
+                        }));
+                const leaves = Array.from(_leaves.values()).map(actor => actor.cacheBytes || 0);
+                const sum = values => values.reduce((total, value) => total + value, 0);
+                root.lastFailure = {
+                    width: root.width,
+                    height: root.height,
+                    resolution: root.resolution,
+                    rasterBytes: root.rasterBytes,
+                    textureBytes: sum(textures),
+                    groupBytes: sum(groups.map(group => group.bytes)),
+                    leafBytes: sum(leaves),
+                    largestTextures: Array.from(_textures.values()).map(entry => ({
+                                width: entry.spec.pixelWidth,
+                                height: entry.spec.pixelHeight,
+                                bytes: entry.actor.cacheBytes,
+                                ready: entry.actor.ready,
+                                nativeBytes: entry.actor.nativeCacheBytes || 0
+                            })).sort((a, b) => b.bytes - a.bytes).slice(0, 4),
+                    largestGroups: groups.sort((a, b) => b.bytes - a.bytes).slice(0, 4)
+                };
+                console.warn("Folia viewport allocation failed:", message, JSON.stringify(root.lastFailure));
                 clear();
                 errorString = message;
             }
@@ -155,6 +226,8 @@ Item {
                 }
                 try {
                     const next = root.flattened ? root._retainedFrame : Frames.flattenLumiereScene(root._retainedFrame, root.width, root.height, root.resolution), wantedLeaves = new Set(next.leaves.map(node => node.id)), wantedGroups = new Set(next.groups.map(group => group.id)), wantedTextures = new Set(next.textures.map(texture => texture.id));
+                    _wantedTextures = wantedTextures;
+                    ++_syncRevision;
                     for (const [id, actor] of Array.from(_leaves.entries()))
                         if (!wantedLeaves.has(id)) {
                             unwatch(actor);
@@ -172,12 +245,9 @@ Item {
                             _groups.delete(id);
                         }
                     for (const [id, entry] of Array.from(_textures.entries()))
-                        if (!wantedTextures.has(id)) {
-                            unwatch(entry.actor);
-                            entry.actor.live = false;
-                            entry.actor.destroy();
-                            _textures.delete(id);
-                        }
+                        if (!wantedTextures.has(id) && (!entry.actor.ready || entry.actor.errorString))
+                            retireTexture(id, entry);
+                    trimIdleTextures();
                     const queue = [];
                     for (const group of next.groups) {
                         if (_groups.has(group.id))
@@ -190,6 +260,8 @@ Item {
                     }
                     for (const texture of next.textures) {
                         const previous = _textures.get(texture.id), key = texture.revision === undefined ? JSON.stringify(texture) : String(texture.revision);
+                        if (previous)
+                            previous.used = _syncRevision;
                         if (previous && previous.key === key)
                             continue;
                         if (!texture.commands)
@@ -277,6 +349,11 @@ Item {
                 actor.apply(node);
             }
             function buildNext() {
+                // A baked source releases its shaping atlas/Canvas scratch.
+                // Do not prepare the next source while that scratch is live.
+                if (_waitingTexture && !_waitingTexture.ready)
+                    return;
+                _waitingTexture = null;
                 try {
                     const started = Date.now();
                     let cheap = 0;
@@ -308,14 +385,18 @@ Item {
                             _textures.set(value.id, {
                                 actor,
                                 key: task.key,
-                                spec: value
+                                spec: value,
+                                used: _syncRevision
                             });
+                            ++_sourcePreparations;
                             actor.errorStringChanged.connect(queueAudit);
                             if (actor.readyChanged)
                                 actor.readyChanged.connect(queueAudit);
                             if (actor.paintCountChanged)
                                 actor.paintCountChanged.connect(queueAudit);
                             actor.cacheBytesChanged.connect(queueAudit);
+                            if (actor.ready !== undefined && !actor.ready)
+                                _waitingTexture = actor;
                             break;
                         } else if (task.kind === 'update') {
                             applyLeaf(_leaves.get(value.id), value);
@@ -354,8 +435,10 @@ Item {
             }
             function audit() {
                 _auditQueued = false;
+                ++_auditRevision;
                 if (errorString)
                     return;
+                trimIdleTextures();
                 let total = 0, paint = 0, complete = !_building;
                 for (const entry of _textures.values()) {
                     if (entry.actor.errorString) {
@@ -386,6 +469,14 @@ Item {
                         total += actor.cacheBytes;
                     if (actor.ready !== undefined)
                         complete = complete && actor.ready;
+                }
+                if (total > root.maxCacheBytes - root.rasterBytes) {
+                    for (const [id, entry] of Array.from(_textures.entries()).filter(([id]) => !_wantedTextures.has(id)).sort((a, b) => a[1].used - b[1].used)) {
+                        total -= entry.actor.cacheBytes;
+                        retireTexture(id, entry);
+                        if (total <= root.maxCacheBytes - root.rasterBytes)
+                            break;
+                    }
                 }
                 if (total > root.maxCacheBytes - root.rasterBytes) {
                     fail('Lumiere viewport native cache exceeds 128MiB');

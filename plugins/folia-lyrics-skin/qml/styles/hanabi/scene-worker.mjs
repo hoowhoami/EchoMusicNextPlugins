@@ -1,5 +1,6 @@
 // Every retained job is made from Worker-owned values, never the transient message wrapper.
 import { createHanabiSceneJob as createLumiereSceneJob } from './scene-job.mjs';
+import { encodeSceneResources } from '../lumiere/scene-packets.mjs';
 let state = null;
 WorkerScript.onMessage = function (message) {
   const request = JSON.parse(JSON.stringify(message)),
@@ -17,6 +18,7 @@ WorkerScript.onMessage = function (message) {
         generation: request.generation,
         trackRevision: request.trackRevision,
         job: createLumiereSceneJob(request.input),
+        paths: new Map(),
       };
       result = state.job.run();
     } else {
@@ -36,11 +38,18 @@ WorkerScript.onMessage = function (message) {
       } else throw new Error('Unknown Lumiere scene worker phase');
     }
     const evaluated = Date.now();
+    let bulkBytes = 0;
+    if (result.phase === 'frame' && result.frame.leaves) {
+      const resources = encodeSceneResources(result.frame.leaves, state.paths);
+      state.paths = resources.paths;
+      reply.spriteRows = resources.rows;
+      bulkBytes = resources.bytes;
+    }
     reply.payload = JSON.stringify(result);
     reply.timing = {
       evaluateMs: evaluated - started,
       serializeMs: Date.now() - evaluated,
-      payloadBytes: reply.payload.length * 2,
+      payloadBytes: reply.payload.length * 2 + bulkBytes,
     };
   } catch (error) {
     reply.error = String(error.message || error);

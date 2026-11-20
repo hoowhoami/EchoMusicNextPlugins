@@ -1,3 +1,4 @@
+import { missingMeasurementRevision } from '../lumiere/native-measure.mjs';
 // Native scene orchestration; original Hanabi math stays in pinned source modules.
 import { createHanabiBackend } from './backend.mjs';
 import { snapshotLumiereScene } from '../lumiere/scene-snapshot.mjs';
@@ -16,7 +17,6 @@ import {
   resolveHanabiChorusWeight,
 } from './source/hanabiScreenBloom.mjs';
 import { createBloomFilter } from './bloom.mjs';
-import { batchHanabiFrame } from './batch-frame.mjs';
 
 export function createHanabiRuntime(options) {
   const pixi = createHanabiBackend({ measureText: options.measureText, maxNodes: 16384 });
@@ -45,7 +45,8 @@ export function createHanabiRuntime(options) {
   const textureCache = new Map();
   let entry = null,
     overlay = null,
-    destroyed = false;
+    destroyed = false,
+    creditsPending = false;
   if (options.tuning.overlayFrame && !options.tuning.textOnly) {
     overlay = buildHanabiOverlay(
       pixi,
@@ -100,7 +101,8 @@ export function createHanabiRuntime(options) {
       entry.scene.prepare(time);
       entry.scene.update(time, null);
       const creditsFrame = credits.resolveFrame(time, options.program, options.metadata);
-      if (credits.needsBuild(time, options.program, options.metadata))
+      if (credits.needsBuild(time, options.program, options.metadata)) {
+        const before = missingMeasurementRevision();
         credits.build({
           width: options.width,
           height: options.height,
@@ -111,6 +113,8 @@ export function createHanabiRuntime(options) {
           textures,
           icons: options.theme.lyricsIcons || [],
         });
+        creditsPending = creditsPending || before !== missingMeasurementRevision();
+      }
       applyHanabiLayerFrame(
         pixi,
         entry,
@@ -132,17 +136,13 @@ export function createHanabiRuntime(options) {
         resolveHanabiChorusWeight(options.program.chorus, time),
       );
       scenes.filters = filter.options.strength > 0.01 ? [filter] : [];
-      return batchHanabiFrame(
-        snapshotLumiereScene(stage, {
-          viewport: { width: options.width, height: options.height },
-          resolution: options.resolution,
-          textureCache,
-          inheritBlend: true,
-        }),
-        options.width,
-        options.height,
-        options.resolution,
-      );
+      return snapshotLumiereScene(stage, {
+        batchSprites: true,
+        viewport: { width: options.width, height: options.height },
+        resolution: options.resolution,
+        textureCache,
+        inheritBlend: true,
+      });
     },
     refreshMeasurements() {
       // Only the lyric scene depends on newly measured text. The sky, frame
@@ -151,7 +151,9 @@ export function createHanabiRuntime(options) {
       entry = null;
       // Discovery frames are never published. Republish their source programs
       // with the first real frame instead of sending bare unseen revisions.
-      textureCache.clear();
+      for (const source of textureCache.values()) source.snapshot = -1;
+      if (creditsPending) credits.invalidate();
+      creditsPending = false;
     },
     destroy() {
       if (destroyed) return;

@@ -1,3 +1,4 @@
+import { textIdentity } from './text-identity.mjs';
 // Source display order is retained. A difference filter samples its actual painted prefix.
 import { localMatrix, multiply, color } from '../sonnet/scene-graph.mjs';
 import { fontSpec } from '../sonnet/pixi-text-metrics.mjs';
@@ -93,6 +94,7 @@ export class RenderPlanner {
         value.font = fontSpec(node.style);
         value.anchor = [node.anchor.x, node.anchor.y];
         value.tint = color(node.tint);
+        value.shapeIdentity = textIdentity(value);
       } else if (node.kind === 'sprite') {
         value.texture = node.texture;
         value.anchor = [node.anchor.x, node.anchor.y];
