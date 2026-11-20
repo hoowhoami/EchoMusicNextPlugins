@@ -238,9 +238,10 @@ async function exists(file) {
   }
 }
 
-export async function buildPackage(source, outputRoot) {
+export async function buildPackage(source, outputRoot, { version } = {}) {
   source = await realpath(source);
-  const manifest = await validateManifest(await readJson(path.join(source, 'manifest.json')));
+  const authored = await readJson(path.join(source, 'manifest.json'));
+  const manifest = await validateManifest({ ...authored, version: version ?? authored.version });
   const config = await readJson(path.join(source, 'plugin.config.json'));
   if (
     !config ||
@@ -356,8 +357,8 @@ export async function buildPackage(source, outputRoot) {
   return destination;
 }
 
-export async function buildPluginArchive(source, outputRoot) {
-  const directory = await buildPackage(source, outputRoot);
+export async function buildPluginArchive(source, outputRoot, options) {
+  const directory = await buildPackage(source, outputRoot, options);
   const manifest = await readJson(path.join(directory, 'manifest.json'));
   return packPluginArchive(
     directory,

@@ -66,6 +66,8 @@ echo-plugin index-entry dist/my-plugin-1.0.0.echomod \
 
 发布校验可通过 `check-published --scope official|third-party|all` 分开运行，默认 `all`。官方范围按作者仓库是否等于 `echo-plugin.build.json.repository`（或 `--repo`）判断，显式填写同仓 `repo` 仍属官方。`npm run check:published:official` 与 `npm run check:published:third-party` 分别提供对应入口。GitHub Actions 的 `Plugin SDK and packages` 只构建和校验官方插件并保存安装包；`Third-party plugin publications` 独立校验第三方发布，失败不影响官方打包。两个工作流都仅手动触发。
 
+手动运行官方工作流时，`publish` 默认开启，`plugin_versions` 指定要发布的官方插件及版本，例如 `{"folia-lyrics-skin":"1.0.4"}`。三个平台检查全部通过后，发布任务从同一提交与完整预编译缓存构建指定版本，将 `artifacts/` 中的新包和匹配的作者清单作为同一个 Git 提交推送到 `main`，并将正式包保存为 Actions 的 `published-plugins` 产物；`candidate-plugins-*` 仅为各平台的源码版本验收包。历史包保留，同版本不同内容拒绝覆盖；未选择的插件、第三方索引及 changelog 不变。构建期间 `main` 前进则停止发布，需从最新提交重新运行。关闭 `publish` 可只构建验收，其他分支也只构建验收。
+
 ## 支持平台
 
 仅支持部分系统的插件在 `manifest.json` 中声明：

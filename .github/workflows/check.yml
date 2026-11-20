@@ -1,5 +1,18 @@
 name: Plugin SDK and packages
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Commit verified packages and author manifests back to main
+        type: boolean
+        default: true
+      plugin_versions:
+        description: Official plugin versions to publish as a JSON object
+        type: string
+        default: '{"folia-lyrics-skin":"1.0.4"}'
+concurrency:
+  group: plugin-packages-${{ github.ref }}
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
@@ -121,6 +134,42 @@ jobs:
       - run: npm run check:published:official
       - uses: actions/upload-artifact@v4
         with:
-          name: official-plugins-${{ matrix.os }}
+          name: candidate-plugins-${{ matrix.os }}
           path: dist/*.echomod
+          if-no-files-found: error
+  publish:
+    needs: check
+    if: inputs.publish && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    env:
+      ECHO_NATIVE_SHADER_PACKS: ${{ github.workspace }}/build/portable-packs
+      ECHO_SHADER_PACK_TOOL: ${{ github.workspace }}/build/shader-tool/echo-plugin-shader-pack
+      PLUGIN_RELEASE_VERSIONS: ${{ inputs.plugin_versions }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: ./.github/actions/setup-qt
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@v4
+        with:
+          name: folia-precompiled-shaders
+          path: build/portable-packs
+      - name: Build the native shader publication verifier
+        shell: bash
+        run: |
+          cmake -S packages/tools/native/shader-pack -B build/shader-tool -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$(qtpaths --query QT_INSTALL_PREFIX)"
+          cmake --build build/shader-tool --config Release --parallel 4
+      - name: Publish verified packages and matching manifests
+        run: npm run publish:ci
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published-plugins
+          path: build/published-plugins/*.echomod
           if-no-files-found: error

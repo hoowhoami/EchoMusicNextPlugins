@@ -1,6 +1,7 @@
 node_modules/
 dist/
 build/
+/aqtinstall.log
 .DS_Store
 .planning/
 *.tgz

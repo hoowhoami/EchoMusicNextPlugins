@@ -20,6 +20,7 @@
     "format:write": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare:source": "echo-plugin prepare-index",
+    "publish:ci": "node scripts/publish-plugin-packages.mjs",
     "check:published": "echo-plugin check-published",
     "check:published:official": "echo-plugin check-published --scope official",
     "check:published:third-party": "echo-plugin check-published --scope third-party",
