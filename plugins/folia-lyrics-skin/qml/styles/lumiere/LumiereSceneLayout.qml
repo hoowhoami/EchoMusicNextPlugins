@@ -58,6 +58,7 @@ Item {
     property bool _working: false
     property bool _measuring: false
     property bool _complete: false
+    property bool _hasPrepared: false
     property bool _dirtyFrame: false
     property var _runs: []
     property string _family: ""
@@ -144,6 +145,7 @@ Item {
         }
     }
     function prepare() {
+        _hasPrepared = true;
         _runtimeParametersDirty = true;
         send({
             phase: 'prepare',
@@ -415,7 +417,7 @@ Item {
     }
     Timer {
         id: debounce
-        interval: 220
+        interval: root._hasPrepared ? 220 : 0
         onTriggered: root.prepare()
     }
     Timer {

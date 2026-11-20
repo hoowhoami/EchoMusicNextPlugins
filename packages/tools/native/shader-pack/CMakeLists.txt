@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.24)
+project(EchoPluginShaderPack LANGUAGES CXX)
+find_package(Qt6 6.12.0 EXACT REQUIRED COMPONENTS Core Gui GuiPrivate)
+add_executable(echo-plugin-shader-pack main.cpp)
+target_compile_features(echo-plugin-shader-pack PRIVATE cxx_std_20)
+target_link_libraries(echo-plugin-shader-pack PRIVATE Qt6::Core Qt6::GuiPrivate)

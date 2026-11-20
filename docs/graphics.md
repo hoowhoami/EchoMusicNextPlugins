@@ -148,3 +148,20 @@ Render pipelines accept `depthCompare` (`less` by default; also `less-equal`, `g
 `graphicsLimits` can declare four explicit positive integer limits: `logicalBytes`, `nativeBytes`, `renderTargetBytes`, and `maxCommands`. The hard maxima are 256 MiB, 512 MiB, 768 MiB, and 128 respectively. All four fields are required when this object is present, together with the `graphics` capability and `graphics.limits` feature. Omission uses the host defaults of 64 / 128 / 256 MiB and 32 commands. Limits are fixed when the activation is created; account and presentation children share that activation's budget. `graphics.capabilities.limits` reports the actual values. Declared limits do not preallocate memory.
 
 Resource count (256), surfaces (16), texture axis (4096), readback (32 MiB) and submission snapshots (64 MiB) retain their separate fixed limits. Snapshots charge actual retained CPU upload data, shader bytes and conservative bounded command metadata. GPU-only target capacity is charged by the separate GPU budgets. A large empty target therefore does not itself consume the CPU snapshot quota; queued upload data still can exhaust it and are rejected. There are no named profiles or legacy accounting branches.
+
+## 原生着色器预编译
+
+插件打包可通过 `ECHO_NATIVE_SHADER_PACKS` 导入同一插件的完整预编译缓存。Windows 阶段编译 DXBC，macOS 阶段编译 Metal 库（最低 macOS 14.4），Linux 阶段验证 SPIR-V；三端产物用 Qt6.12.0 的 QShader 合并，保留原有入口、资源绑定及 GLSL/HLSL/MSL 源变体。缓存必须覆盖包内全部 `.qsb`，源码/反射指纹、文件哈希或任一后端不一致都会停止打包。驱动最终管线创建仍由运行设备负责；OpenGL 继续使用 GLSL。
+
+`packages/tools/native/shader-pack` 是独立构建工具，需要相同版本 Qt 的 GuiPrivate 开发包，不进入插件或宿主运行时。配置其路径后可执行三端阶段及合并：
+
+```sh
+cmake -S packages/tools/native/shader-pack -B build/shader-tool -DCMAKE_PREFIX_PATH=/path/to/Qt/6.12.0
+cmake --build build/shader-tool --config Release
+# 设置 ECHO_SHADER_PACK_TOOL 为生成的 echo-plugin-shader-pack 可执行文件。
+node scripts/precompile-plugin-shaders.mjs stage plugins/folia-lyrics-skin --backend macos --out build/native-macos
+node scripts/precompile-plugin-shaders.mjs merge --windows build/native-windows --macos build/native-macos --linux build/native-linux --out build/portable-packs/folia-lyrics-skin
+ECHO_NATIVE_SHADER_PACKS=build/portable-packs npm run prepare:source
+```
+
+Windows/macOS 阶段分别在对应系统运行，并要求 FXC/Metal 编译器实际可执行；`--backend linux` 使用离线 SPIR-V。在 GitHub Actions 中手动运行 `Plugin SDK and packages`，即可依次生成三端缓存、合并并在各平台重建检查插件；推送及 PR 不自动触发。`echo-plugin.build.json` 的 `nativeShaderPlugins` 列表要求发布准备必须提供完整缓存；普通 `build` 不导入缓存时仅供本地开发。预编译不调整插件版本，也不自动提交或发布。

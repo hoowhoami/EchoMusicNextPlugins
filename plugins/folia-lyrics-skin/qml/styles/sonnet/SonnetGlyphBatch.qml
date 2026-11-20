@@ -2,6 +2,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import EchoMusic.PluginSdk
+import "glyph-input.mjs" as GlyphInput
 
 Item {
     id: root
@@ -14,16 +15,6 @@ Item {
     readonly property string errorString: _error || glyph.errorString
     readonly property var renderers: [glyph]
     readonly property real cacheBytes: glyph.cacheBytes
-    function canonical(value: var): var {
-        if (value === null || typeof value !== "object")
-            return value;
-        if (Array.isArray(value))
-            return value.map(canonical);
-        const result = ({});
-        for (const key of Object.keys(value).sort())
-            result[key] = canonical(value[key]);
-        return result;
-    }
     function colour(value: var): color {
         if (typeof value === "string" && value.indexOf("rgb") === 0) {
             const match = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/.exec(value);
@@ -37,13 +28,13 @@ Item {
         descriptor = value;
         if (!_ready || !live || !value)
             return;
-        const signature = JSON.stringify(canonical([value.family, value.runs, value.composition]));
+        const signature = JSON.stringify(GlyphInput.canonical([value.family, value.runs, value.composition]));
         if (signature !== _signature) {
             families.familyStack = value.family;
             families.refresh();
             glyph.font = families.value;
             glyph.runs = value.runs;
-            if (glyph.errorString || JSON.stringify(canonical(JSON.parse(JSON.stringify(glyph.runs)))) !== JSON.stringify(canonical(value.runs))) {
+            if (glyph.errorString || JSON.stringify(GlyphInput.canonical(JSON.parse(JSON.stringify(glyph.runs)))) !== JSON.stringify(GlyphInput.canonical(value.runs))) {
                 _error = glyph.errorString || "Sonnet native layout rejected its input";
                 return;
             }

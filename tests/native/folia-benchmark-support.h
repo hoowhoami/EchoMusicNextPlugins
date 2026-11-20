@@ -183,7 +183,8 @@ bool presentationContentReady(QQuickWindow *window, const QString &mode)
         return false;
     auto *stage = visual(skin, "foliaVisualizerStage");
     if (!stage || stage->property("loadedMode").toString() != mode ||
-        stage->property("layerCount").toInt() != 1 || !presentationError(stage).isEmpty())
+        stage->property("layerCount").toInt() != 1 || stage->property("styleSwitching").toBool() ||
+        !presentationError(stage).isEmpty())
         return false;
     auto *renderer = nativeObject(stage->property("renderer"));
     if (!renderer || renderer->property("busy").toBool() ||

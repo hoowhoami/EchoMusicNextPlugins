@@ -361,10 +361,11 @@ Item {
             fail("Sonnet native font measurement: " + measure.errorString);
             return;
         }
-        if (measure.metrics.length !== _batch.length)
+        const metrics = measure.metrics;
+        if (metrics.length !== _batch.length)
             return;
         for (let index = 0; index < _batch.length; ++index) {
-            const metric = measure.metrics[index];
+            const metric = metrics[index];
             if (metric.key !== "m" + _sceneToken + ":" + index)
                 return;
             _measurements.push({

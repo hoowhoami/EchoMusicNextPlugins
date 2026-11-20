@@ -12,6 +12,7 @@
   },
   "files": [
     "*.mjs",
+    "native/shader-pack",
     "README.md",
     "LICENSE"
   ],

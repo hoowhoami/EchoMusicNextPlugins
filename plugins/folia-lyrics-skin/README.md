@@ -11,7 +11,7 @@ npm ci
 npm run build:folia
 ```
 
-安装包输出到 `dist/folia-lyrics-skin-1.0.3.echomod`。
+安装包输出到 `dist/folia-lyrics-skin-1.0.3.echomod`。发布准备还需[完整原生着色器缓存](../../docs/graphics.md#原生着色器预编译)。
 
 ## 许可
 

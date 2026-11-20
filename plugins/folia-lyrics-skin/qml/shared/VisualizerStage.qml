@@ -1,4 +1,4 @@
-// One visible renderer owns its resources; no style transition surfaces.
+// One renderer at a time; switching feedback never captures or retains an outgoing scene.
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
@@ -76,7 +76,7 @@ Item {
     property string trackRevision: ""
     readonly property int layerCount: _actors.length
     readonly property var actors: _actors
-    readonly property bool transitionWaits: false
+    readonly property bool transitionWaits: _phase === "covering" || _phase === "loading"
     readonly property real transitionBytes: 0
     readonly property var renderer: _current ? _current.renderer : null
     // Monet consumes individual bins. Decide before constructing its renderer,
@@ -92,7 +92,42 @@ Item {
     property var _current: null
     property bool _completed: false
     property string _loadError: ""
+    property string _loadingPath: ""
+    property string _loadingMode: ""
+    property string _phase: "idle"
+    property bool _createPending: false
+    property bool _revealPending: false
+    property int _frameFence: 0
+    readonly property bool drawingActive: live && visible && Window.window !== null && Window.window.visible && Window.window.visibility !== Window.Minimized
+    readonly property bool styleSwitching: _phase !== "idle"
+    readonly property bool contentReady: !!renderer && _loadingPath === componentPath && loadedMode === mode && !errorString && ("renderReady" in renderer ? renderer.renderReady : lyricCount === 0 || paintedContent(renderer)) && (!("busy" in renderer) || !renderer.busy)
+    onContentReadyChanged: considerReveal()
+    onErrorStringChanged: if (errorString && _phase !== "idle") {
+        _createPending = false;
+        _revealPending = false;
+        _phase = "idle";
+        switchCover.reset();
+    }
 
+    function paintedContent(item: var): bool {
+        if (!item || !item.visible)
+            return false;
+        if (("renderBatches" in item && item.renderBatches > 0) || ("paintedWidth" in item && "text" in item && item.text.length > 0 && item.paintedWidth > 0))
+            return true;
+        return Array.from(item.children || []).some(paintedContent);
+    }
+    function freezeCurrent(): void {
+        if (!renderer || _loadingPath === componentPath && _loadingMode === mode)
+            return;
+        // A departing renderer must not observe the next style's settings or
+        // article indices while its last picture fades beneath the cover.
+        const names = ["preparedLines", "currentIndex", "timeSeconds", "baseFont", "settings", "primaryColor", "secondaryColor", "accentColor", "dark", "motionEnabled", "previewMode", "songHandoff", "backdropSources", "graphicsService", "assetsService", "textService", "subtitleFont", "lyricSource", "lyricCount", "lyricOffsetMs", "trackRevision", "paused", "wordColors", "animationIntensity", "nextStartBySourceIndex", "lineMetadata", "metadataBySourceIndex", "bassPower", "vocalPower", "audioPower", "audioBands", "backgroundColor", "songTitle", "songArtist", "songAlbum", "themeDescription", "themeDisplayName", "lyricsIcons", "spectrumBins", "customPortraitImages", "customLayerImages", "coverColors", "coverUrl", "avatarSeed", "themeName", "customAvatarImages", "customEmojiImages", "seed", "previewRows"];
+        for (const name of names)
+            if (name in renderer)
+                renderer[name] = renderer[name];
+        if ("paused" in renderer)
+            renderer.paused = true;
+    }
     function bindInputs(target: var): void {
         if ("previewMode" in target)
             target.previewMode = Qt.binding(() => root.previewMode);
@@ -179,21 +214,56 @@ Item {
             target.previewRows = Qt.binding(() => root.previewRows);
     }
 
-    function clear(): void {
+    function clearRenderer(): void {
         loader.active = false;
         loader.source = "";
         _actors = [];
         _current = null;
+        _loadingPath = "";
+        _loadingMode = "";
+    }
+    function clear(): void {
+        _createPending = false;
+        _revealPending = false;
+        _phase = "idle";
+        switchCover.reset();
+        clearRenderer();
     }
     function sync(): void {
         if (!_completed)
             return;
-        clear();
-        _loadError = "";
-        if (!live || !visible || !componentPath || qualityError)
+        if (!drawingActive || !componentPath || qualityError) {
+            clear();
             return;
+        }
+        if (_loadingPath === componentPath && _loadingMode === mode && loader.active) {
+            if (_phase === "covering" && renderer) {
+                _createPending = false;
+                _revealPending = false;
+                resumeCurrent();
+                _phase = "revealing";
+                switchCover.reveal();
+            }
+            return;
+        }
+        _loadError = "";
+        _createPending = false;
+        _revealPending = false;
+        _phase = "covering";
+        switchCover.cover();
+    }
+    function createRequested(): void {
+        if (!_completed || !drawingActive || !componentPath || qualityError)
+            return;
+        clearRenderer();
+        _loadingPath = componentPath;
+        _loadingMode = mode;
+        _phase = "loading";
         loader.active = true;
-        loader.setSource(Qt.resolvedUrl('../' + componentPath), {
+        loader.setSource(Qt.resolvedUrl('../' + _loadingPath), commonInputs());
+    }
+    function commonInputs(): var {
+        return {
             preparedLines: Qt.binding(() => root.preparedLines),
             currentIndex: Qt.binding(() => root.currentIndex),
             timeSeconds: Qt.binding(() => root.timeSeconds),
@@ -205,15 +275,27 @@ Item {
             dark: Qt.binding(() => root.dark),
             live: Qt.binding(() => root.live),
             motionEnabled: Qt.binding(() => root.motionEnabled)
-        });
+        };
     }
-    onComponentPathChanged: refresh.restart()
+    function resumeCurrent(): void {
+        const values = commonInputs();
+        for (const name of Object.keys(values))
+            renderer[name] = values[name];
+        bindInputs(renderer);
+    }
+    function considerReveal(): void {
+        if (_phase !== "loading" || !contentReady || !drawingActive)
+            return;
+        _frameFence = 0;
+        _revealPending = true;
+    }
+    onModeChanged: freezeCurrent()
+    onComponentPathChanged: {
+        freezeCurrent();
+        refresh.restart();
+    }
     onQualityErrorChanged: refresh.restart()
-    onLiveChanged: if (live)
-        refresh.restart()
-    else
-        clear()
-    onVisibleChanged: if (visible)
+    onDrawingActiveChanged: if (drawingActive)
         refresh.restart()
     else
         clear()
@@ -225,6 +307,25 @@ Item {
         _completed = false;
         refresh.stop();
         clear();
+    }
+    // Let an actual covered frame reach the renderer before expensive teardown
+    // or incubation, and a prepared frame before revealing the new scene.
+    FrameAnimation {
+        running: root.drawingActive && (root._createPending || root._revealPending)
+        onTriggered: {
+            if (++root._frameFence < 2)
+                return;
+            if (root._createPending) {
+                root._createPending = false;
+                root.createRequested();
+            } else if (root._revealPending) {
+                root._revealPending = false;
+                if (!root.contentReady)
+                    return;
+                root._phase = "revealing";
+                switchCover.reveal();
+            }
+        }
     }
     Timer {
         id: refresh
@@ -239,16 +340,31 @@ Item {
         onLoaded: {
             root.bindInputs(item);
             const actor = {
-                modeKey: root.mode,
+                modeKey: root._loadingMode,
                 renderer: item,
                 errorString: "",
                 transitionBytes: 0
             };
             root._current = actor;
             root._actors = [actor];
+            root.considerReveal();
         }
-        onStatusChanged: if (status === Loader.Error)
+        onStatusChanged: if (active && status === Loader.Error)
             root._loadError = qsTr("无法载入 Folia 样式：%1").arg(root.mode)
+    }
+    StyleSwitchCover {
+        id: switchCover
+        objectName: "foliaStyleSwitchCover"
+        anchors.fill: parent
+        z: 1
+        backgroundColor: root.backgroundColor
+        textColor: root.primaryColor
+        motionEnabled: root.motionEnabled
+        onCovered: {
+            root._frameFence = 0;
+            root._createPending = true;
+        }
+        onRevealed: root._phase = "idle"
     }
     Connections {
         target: loader.item

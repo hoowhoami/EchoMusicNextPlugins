@@ -32,3 +32,5 @@ echo-plugin index-entry dist/my-plugin-1.0.0.echomod \
 `test-host <package.echomod>` 直接验证独立作者的实际包，无需官方源或本地构建清单；省略包路径才批量构建本仓库插件。索引类型为 SDK 的 `PluginSourceIndex` / `PluginSourceEntry`。
 
 GPU 着色器可在 plugin.config.json 的 shaders 中声明 source/output/target（rhi 或 quick），由匹配宿主 Qt 版本的 qsb 编译并验证跨后端包。设置 ECHO_QSB 或将 qsb 放入 PATH。编译失败保留旧产物，发布信息与包仍执行哈希校验。详见[GPU 绘图](../../docs/graphics.md)。
+
+打包时可设置 `ECHO_NATIVE_SHADER_PACKS` 导入完整三端着色器缓存，并以 `ECHO_SHADER_PACK_TOOL` 指定 Qt6.12.0 的原生合并/校验工具。声明在本地构建清单 `nativeShaderPlugins` 中的插件，发布准备缺少完整缓存会失败；工具与编译器不进入运行包。见[原生着色器预编译](../../docs/graphics.md#原生着色器预编译)。

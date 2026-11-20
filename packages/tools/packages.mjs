@@ -13,6 +13,7 @@ import {
   access,
 } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
+import { applyNativeBundle } from './native-shaders.mjs';
 import Ajv from 'ajv/dist/2020.js';
 import { parse } from 'acorn';
 import { build, transform } from 'esbuild';
@@ -330,6 +331,12 @@ export async function buildPackage(source, outputRoot) {
       relativePath,
       await loadContract(),
     );
+    const nativeRoot = process.env.ECHO_NATIVE_SHADER_PACKS;
+    if (nativeRoot) {
+      const nativeBundle = path.resolve(nativeRoot, manifest.id);
+      if (await exists(path.join(nativeBundle, 'index.json')))
+        await applyNativeBundle(staging, nativeBundle, manifest.id);
+    }
     await validatePackage(staging);
     if (await exists(destination)) {
       backup = `${destination}.previous-${randomUUID()}`;
@@ -393,6 +400,22 @@ export async function prepareIndex(root) {
   const config = await readJson(path.join(root, 'echo-plugin.build.json'));
   const published = await readIndex(root, config.repository);
   const sources = await localPackages(root);
+  const nativePlugins = config.nativeShaderPlugins ?? [];
+  if (
+    !Array.isArray(nativePlugins) ||
+    new Set(nativePlugins).size !== nativePlugins.length ||
+    nativePlugins.some((id) => !sources.some((source) => source.manifest.id === id))
+  )
+    throw new Error('nativeShaderPlugins must name unique local plugins');
+  for (const id of nativePlugins) {
+    if (
+      !process.env.ECHO_NATIVE_SHADER_PACKS ||
+      !(await exists(path.resolve(process.env.ECHO_NATIVE_SHADER_PACKS, id, 'index.json')))
+    )
+      throw new Error(
+        `Release preparation requires the complete native shader bundle for ${id}; set ECHO_NATIVE_SHADER_PACKS`,
+      );
+  }
   const destinations = await buildIndex(root);
   await mkdir(path.join(root, 'artifacts'), { recursive: true });
   for (let i = 0; i < sources.length; ++i) {
