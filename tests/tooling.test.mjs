@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import os from 'node:os';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { mkdtemp, rm, cp, readFile, writeFile, symlink, chmod, stat } from 'node:fs/promises';
 import {
   buildPackage,
@@ -464,8 +464,9 @@ test('glyph atlas bindings retain native producer, readonly pages and unsigned g
   await assert.rejects(checkBindings(badCounter), /property type differs/);
 });
 
-test('opt-in QML modules preserve relative imports and semantics and publish atomically', async (t) => {
-  const { source, output } = await author(t);
+test('opt-in QML modules preserve relative imports in encoded paths and publish atomically', async (t) => {
+  const { source, output: outputBase } = await author(t);
+  const output = path.join(outputBase, '模块 % # output');
   const configFile = path.join(source, 'plugin.config.json');
   const config = JSON.parse(await readFile(configFile, 'utf8'));
   config.assets.push('modules');
@@ -481,7 +482,7 @@ test('opt-in QML modules preserve relative imports and semantics and publish ato
   assert.match(compiled, /@license MIT test fixture/);
   assert.match(compiled, /\.\/value\.mjs/);
   assert.doesNotMatch(compiled, /async function|\.\.\./);
-  const loaded = await import(path.join(built, 'modules/sample.mjs'));
+  const loaded = await import(pathToFileURL(path.join(built, 'modules/sample.mjs')).href);
   assert.deepEqual(await loaded.sample(), { value: 7, total: 9 });
   assert.equal(await readFile(path.join(source, 'modules/sample.mjs'), 'utf8'), input);
   await writeFile(path.join(source, 'modules/sample.mjs'), 'export const invalid = ;');

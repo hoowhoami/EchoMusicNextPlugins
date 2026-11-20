@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createServer } from 'node:http';
+import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 
 const bundled = await build({
-  entryPoints: [new URL('../plugins/webdav-backup/src/entry.ts', import.meta.url).pathname],
+  entryPoints: [fileURLToPath(new URL('../plugins/webdav-backup/src/entry.ts', import.meta.url))],
   bundle: true,
   write: false,
   format: 'esm',
