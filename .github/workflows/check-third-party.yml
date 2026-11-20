@@ -11,9 +11,6 @@ jobs:
         with:
           node-version: '24'
           cache: npm
-      - uses: jurplel/install-qt-action@v4
-        with:
-          version: '6.12.0'
-          modules: 'qtshadertools'
+      - uses: ./.github/actions/setup-qt
       - run: npm ci --ignore-scripts
       - run: npm run check:published:third-party

@@ -165,3 +165,5 @@ ECHO_NATIVE_SHADER_PACKS=build/portable-packs npm run prepare:source
 ```
 
 Windows/macOS 阶段分别在对应系统运行，并要求 FXC/Metal 编译器实际可执行；`--backend linux` 使用离线 SPIR-V。在 GitHub Actions 中手动运行 `Plugin SDK and packages`，即可依次生成三端缓存、合并并在各平台重建检查插件；推送及 PR 不自动触发。`echo-plugin.build.json` 的 `nativeShaderPlugins` 列表要求发布准备必须提供完整缓存；普通 `build` 不导入缓存时仅供本地开发。预编译不调整插件版本，也不自动提交或发布。
+
+CI 的 Qt 安装统一使用 `.github/actions/setup-qt`。Windows 固定 Python 3.12、aqtinstall 3.3.0 和 MSVC2022 x64 SDK，通过 `scripts/qt_download.py` 解析 Qt 6.12.0 的独立 MSVC 元数据目录，下载、校验及解压仍由 aqt 执行。

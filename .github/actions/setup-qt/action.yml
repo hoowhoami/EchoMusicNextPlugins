@@ -1,0 +1,30 @@
+name: Set up the plugin Qt toolchain
+description: Install the pinned Qt SDK, including the Windows split MSVC repository
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v6
+      if: runner.os == 'Windows'
+      with:
+        python-version: '3.12'
+    - name: Install Windows Qt SDK
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        python -m pip install aqtinstall==3.3.0 py7zr==1.1.0
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        python "$env:GITHUB_WORKSPACE/scripts/qt_download.py" install-qt windows desktop 6.12.0 win64_msvc2022_64 --outputdir "$env:GITHUB_WORKSPACE/build/ci-qt" --modules qtshadertools --base https://download.qt.io --timeout 30
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        $prefix = Join-Path $env:GITHUB_WORKSPACE 'build/ci-qt/6.12.0/msvc2022_64'
+        $installedVersion = & "$prefix/bin/qmake.exe" -query QT_VERSION
+        if ($LASTEXITCODE -ne 0 -or $installedVersion.Trim() -ne '6.12.0') { throw 'Qt SDK version mismatch' }
+        "$prefix/bin" >> $env:GITHUB_PATH
+        "QT_ROOT_DIR=$prefix" >> $env:GITHUB_ENV
+        "CMAKE_PREFIX_PATH=$prefix" >> $env:GITHUB_ENV
+        "QT_PLUGIN_PATH=$prefix/plugins" >> $env:GITHUB_ENV
+        "QML2_IMPORT_PATH=$prefix/qml" >> $env:GITHUB_ENV
+    - uses: jurplel/install-qt-action@v4
+      if: runner.os != 'Windows'
+      with:
+        version: '6.12.0'
+        modules: 'qtshadertools'
